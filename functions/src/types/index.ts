@@ -74,6 +74,51 @@ export interface ApiResponse<T> {
   error?: string;
 }
 
+// Task response types
+export interface TaskRegisterResponse {
+  taskId: string;
+  title: string;
+  url: string;
+  deadline: string;
+  targetMembers: string[];
+  isCompleted: boolean;
+  completedAt: null;
+  ogpTitle: null;
+  ogpImage: null;
+}
+
+export interface TaskData {
+  taskId: string;
+  title: string;
+  url: string;
+  deadline: string;
+  targetMembers: string[];
+  isCompleted: boolean;
+  completedAt: string | null;
+  ogpTitle: string | null;
+  ogpImage: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface TasksResponse {
+  tasks: TaskData[];
+  count: number;
+}
+
+export interface TaskOGPResponse {
+  taskId: string;
+  ogpTitle: string | null;
+  ogpImage: string | null;
+}
+
+export interface TaskStatusResponse {
+  taskId: string;
+  isCompleted: boolean;
+  completedAt: string | null;
+  updatedAt: string | null;
+}
+
 // Validation result
 export interface ValidationResult {
   valid: boolean;

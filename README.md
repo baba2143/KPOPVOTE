@@ -45,11 +45,11 @@ KPOPVOTE/
 
 ## 開発フェーズ
 
-### Phase 0: バックエンド基盤（2週間）✅ 進行中
-- Firebase環境構築
-- 認証API実装
-- タスク管理API実装
-- OGP取得機能
+### Phase 0: バックエンド基盤（2週間）✅ 完了
+- Firebase環境構築 ✅
+- 認証API実装 ✅
+- タスク管理API実装 ✅
+- OGP取得機能 ✅
 
 ### Phase 0+: Web管理画面（3週間）
 - ダッシュボード
@@ -124,11 +124,23 @@ firebase deploy
   - ヘッダー: `Authorization: Bearer <token>`
   - レスポンス: `{ success, data: { myBias } }`
 
-### タスク管理
-- `POST /task/register` - 投票タスク登録
-- `GET /task/getUserTasks` - タスク一覧取得
-- `POST /task/fetchOGP` - OGP情報取得
-- `PATCH /task/updateStatus` - ステータス更新
+### タスク管理 ✅ デプロイ済み
+- `POST /registerTask` - 投票タスク登録
+  - ヘッダー: `Authorization: Bearer <token>`
+  - リクエスト: `{ title, url, deadline, targetMembers? }`
+  - レスポンス: `{ success, data: { taskId, title, url, deadline, ... } }`
+- `GET /getUserTasks` - タスク一覧取得
+  - ヘッダー: `Authorization: Bearer <token>`
+  - クエリ: `?isCompleted=true&limit=100`
+  - レスポンス: `{ success, data: { tasks, count } }`
+- `POST /fetchTaskOGP` - OGP情報取得
+  - ヘッダー: `Authorization: Bearer <token>`
+  - リクエスト: `{ taskId, url }`
+  - レスポンス: `{ success, data: { taskId, ogpTitle, ogpImage } }`
+- `PATCH /updateTaskStatus` - ステータス更新
+  - ヘッダー: `Authorization: Bearer <token>`
+  - リクエスト: `{ taskId, isCompleted }`
+  - レスポンス: `{ success, data: { taskId, isCompleted, completedAt } }`
 
 ## ドキュメント
 
