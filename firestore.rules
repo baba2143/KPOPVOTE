@@ -92,14 +92,69 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    match /adminActions/{actionId} {
+      allow read, write: if isAdmin();
+    }
+
+    // ========================================
+    // Vote Records Collection
+    // ========================================
+    match /voteRecords/{recordId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      // Admins can read all records
+      allow read, write: if isAdmin();
+    }
+
+    // ========================================
+    // Idol Masters Collection
+    // ========================================
     match /idolMaster/{idolId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
 
+    match /idolMasters/{idolId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ========================================
+    // External App Masters Collection
+    // ========================================
     match /externalAppMaster/{appId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
+    }
+
+    match /externalAppMasters/{appId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ========================================
+    // Community Reports Collection
+    // ========================================
+    match /communityReports/{reportId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ========================================
+    // Point Transactions Collection
+    // ========================================
+    match /pointTransactions/{transactionId} {
+      allow read: if isAuthenticated() &&
+                     (request.auth.uid == resource.data.userId || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    // ========================================
+    // Deleted Posts Collection (Admin only)
+    // ========================================
+    match /deletedPosts/{postId} {
+      allow read, write: if isAdmin();
     }
   }
 }

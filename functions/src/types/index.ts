@@ -124,3 +124,174 @@ export interface ValidationResult {
   valid: boolean;
   error?: string;
 }
+
+// In-App Vote related types (Phase 0+)
+export interface InAppVote {
+  voteId: string;
+  title: string;
+  description: string;
+  choices: InAppVoteChoice[];
+  startDate: Date;
+  endDate: Date;
+  requiredPoints: number;
+  status: "upcoming" | "active" | "ended";
+  totalVotes: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface InAppVoteChoice {
+  choiceId: string;
+  label: string;
+  voteCount: number;
+}
+
+export interface InAppVoteCreateRequest {
+  title: string;
+  description: string;
+  choices: string[]; // Array of choice labels
+  startDate: string; // ISO 8601
+  endDate: string; // ISO 8601
+  requiredPoints: number;
+}
+
+export interface InAppVoteUpdateRequest {
+  voteId: string;
+  title?: string;
+  description?: string;
+  startDate?: string;
+  endDate?: string;
+  requiredPoints?: number;
+}
+
+export interface VoteExecuteRequest {
+  voteId: string;
+  choiceId: string;
+}
+
+export interface RankingData {
+  choiceId: string;
+  label: string;
+  voteCount: number;
+  percentage: number;
+}
+
+export interface RankingResponse {
+  voteId: string;
+  title: string;
+  totalVotes: number;
+  ranking: RankingData[];
+}
+
+// Master Data related types (Phase 0+)
+export interface IdolMaster {
+  idolId: string;
+  name: string;
+  groupName: string;
+  imageUrl?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface IdolCreateRequest {
+  name: string;
+  groupName: string;
+  imageUrl?: string;
+}
+
+export interface IdolUpdateRequest {
+  idolId: string;
+  name?: string;
+  groupName?: string;
+  imageUrl?: string;
+}
+
+export interface ExternalAppMaster {
+  appId: string;
+  appName: string;
+  appUrl: string;
+  iconUrl?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ExternalAppCreateRequest {
+  appName: string;
+  appUrl: string;
+  iconUrl?: string;
+}
+
+export interface ExternalAppUpdateRequest {
+  appId: string;
+  appName?: string;
+  appUrl?: string;
+  iconUrl?: string;
+}
+
+// Community related types (Phase 0+)
+export interface CommunityPost {
+  postId: string;
+  userId: string;
+  content: string;
+  imageUrls?: string[];
+  likeCount: number;
+  commentCount: number;
+  isReported: boolean;
+  reportCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CommunityReport {
+  reportId: string;
+  postId: string;
+  reporterId: string;
+  reason: string;
+  reportedAt: Date;
+}
+
+export interface CommunityStats {
+  totalPosts: number;
+  deletedPosts: number;
+  reportedPosts: number;
+  activeUsers: number;
+}
+
+// User Management related types (Phase 0+)
+export interface UserDetail extends UserProfile {
+  points: number;
+  taskCount: number;
+  voteCount: number;
+  isSuspended: boolean;
+  suspendedUntil?: Date;
+  suspendReason?: string;
+}
+
+export interface UserSearchRequest {
+  query?: string; // email, displayName, uid
+  limit?: number;
+  offset?: number;
+}
+
+export interface PointGrantRequest {
+  uid: string;
+  points: number;
+  reason: string;
+}
+
+export interface UserSuspendRequest {
+  uid: string;
+  suspend: boolean; // true to suspend, false to restore
+  reason?: string;
+  suspendUntil?: string; // ISO 8601
+}
+
+// Admin Auth related types (Phase 0+)
+export interface AdminAuthRequest {
+  uid: string;
+}
+
+export interface AdminAuthResponse {
+  uid: string;
+  isAdmin: boolean;
+}
