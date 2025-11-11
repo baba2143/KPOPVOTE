@@ -7,10 +7,13 @@ import * as admin from "firebase-admin";
 import { ApiResponse } from "../types";
 
 export const getInAppVoteDetail = functions.https.onRequest(async (req, res) => {
+  // Set CORS headers for all requests
   res.set("Access-Control-Allow-Origin", "*");
-  res.set("Access-Control-Allow-Methods", "GET");
+  res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.set("Access-Control-Max-Age", "3600");
 
+  // Handle CORS preflight request
   if (req.method === "OPTIONS") {
     res.status(204).send("");
     return;

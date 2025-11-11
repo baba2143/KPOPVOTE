@@ -26,6 +26,7 @@ export { searchUsers } from "./admin/searchUsers";
 export { getUserDetail } from "./admin/getUserDetail";
 export { grantPoints } from "./admin/grantPoints";
 export { suspendUser } from "./admin/suspendUser";
+export { getAdminLogs } from "./admin/getAdminLogs";
 
 // In-App Vote functions (Phase 0+)
 export { createInAppVote } from "./inAppVote/createInAppVote";

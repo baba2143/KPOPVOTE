@@ -4,6 +4,11 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { VoteListPage } from './pages/VoteListPage';
+import { VoteDetailPage } from './pages/VoteDetailPage';
+import { IdolListPage } from './pages/IdolListPage';
+import { UserListPage } from './pages/UserListPage';
+import { AdminLogPage } from './pages/AdminLogPage';
 import { AppLayout } from './components/layout/AppLayout';
 import { PrivateRoute } from './components/layout/PrivateRoute';
 
@@ -48,7 +53,17 @@ function AppRoutes() {
         element={
           <PrivateRoute>
             <AppLayout>
-              <div>独自投票管理 (Week 2 Day 6-8で実装予定)</div>
+              <VoteListPage />
+            </AppLayout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/votes/:voteId"
+        element={
+          <PrivateRoute>
+            <AppLayout>
+              <VoteDetailPage />
             </AppLayout>
           </PrivateRoute>
         }
@@ -58,7 +73,7 @@ function AppRoutes() {
         element={
           <PrivateRoute>
             <AppLayout>
-              <div>アイドル管理 (Week 2 Day 9-10で実装予定)</div>
+              <IdolListPage />
             </AppLayout>
           </PrivateRoute>
         }
@@ -88,7 +103,17 @@ function AppRoutes() {
         element={
           <PrivateRoute>
             <AppLayout>
-              <div>ユーザー管理 (Week 3 Day 13-14で実装予定)</div>
+              <UserListPage />
+            </AppLayout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/logs"
+        element={
+          <PrivateRoute>
+            <AppLayout>
+              <AdminLogPage />
             </AppLayout>
           </PrivateRoute>
         }

@@ -12,12 +12,13 @@ import {
 import { verifyToken, verifyAdmin, AuthenticatedRequest } from "../middleware/auth";
 
 export const createInAppVote = functions.https.onRequest(async (req, res) => {
-  // Enable CORS
+  // Set CORS headers for all requests
   res.set("Access-Control-Allow-Origin", "*");
-  res.set("Access-Control-Allow-Methods", "POST");
+  res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.set("Access-Control-Max-Age", "3600");
 
-  // Handle preflight request
+  // Handle CORS preflight request
   if (req.method === "OPTIONS") {
     res.status(204).send("");
     return;
@@ -32,22 +33,22 @@ export const createInAppVote = functions.https.onRequest(async (req, res) => {
     return;
   }
 
-  // Verify authentication and admin role
-  await new Promise<void>((resolve, reject) => {
-    verifyToken(req as AuthenticatedRequest, res, (error?: unknown) => {
-      if (error) reject(error);
-      else resolve();
-    });
-  });
-
-  await new Promise<void>((resolve, reject) => {
-    verifyAdmin(req as AuthenticatedRequest, res, (error?: unknown) => {
-      if (error) reject(error);
-      else resolve();
-    });
-  });
-
   try {
+    // Verify authentication and admin role
+    await new Promise<void>((resolve, reject) => {
+      verifyToken(req as AuthenticatedRequest, res, (error?: unknown) => {
+        if (error) reject(error);
+        else resolve();
+      });
+    });
+
+    await new Promise<void>((resolve, reject) => {
+      verifyAdmin(req as AuthenticatedRequest, res, (error?: unknown) => {
+        if (error) reject(error);
+        else resolve();
+      });
+    });
+
     const {
       title,
       description,
