@@ -6,7 +6,7 @@ import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import axios from "axios";
 import * as cheerio from "cheerio";
-import { ApiResponse } from "../types";
+import { ApiResponse, TaskOGPResponse } from "../types";
 
 /**
  * Extract OGP data from HTML
@@ -18,15 +18,15 @@ function extractOGP(html: string): { title: string | null; image: string | null 
 
   // Try to get OGP title
   let title =
-    $('meta[property="og:title"]').attr("content") ||
-    $('meta[name="og:title"]').attr("content") ||
+    $("meta[property=\"og:title\"]").attr("content") ||
+    $("meta[name=\"og:title\"]").attr("content") ||
     $("title").text() ||
     null;
 
   // Try to get OGP image
-  let image =
-    $('meta[property="og:image"]').attr("content") ||
-    $('meta[name="og:image"]').attr("content") ||
+  const image =
+    $("meta[property=\"og:image\"]").attr("content") ||
+    $("meta[name=\"og:image\"]").attr("content") ||
     null;
 
   // Clean up title
@@ -151,7 +151,7 @@ export const fetchTaskOGP = functions.https.onRequest(async (req, res) => {
         ogpTitle: ogpData.title,
         ogpImage: ogpData.image,
       },
-    } as ApiResponse<any>);
+    } as ApiResponse<TaskOGPResponse>);
   } catch (error: unknown) {
     console.error("Fetch OGP error:", error);
 

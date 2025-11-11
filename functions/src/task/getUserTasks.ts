@@ -4,7 +4,7 @@
 
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
-import { ApiResponse } from "../types";
+import { ApiResponse, TasksResponse } from "../types";
 
 export const getUserTasks = functions.https.onRequest(async (req, res) => {
   // Enable CORS
@@ -59,7 +59,11 @@ export const getUserTasks = functions.https.onRequest(async (req, res) => {
     // Filter by completion status if specified
     if (isCompleted !== undefined) {
       const completedFilter = isCompleted === "true";
-      query = query.where("isCompleted", "==", completedFilter) as any;
+      query = query.where(
+        "isCompleted",
+        "==",
+        completedFilter
+      ) as admin.firestore.Query<admin.firestore.DocumentData>;
     }
 
     // Execute query
@@ -75,17 +79,17 @@ export const getUserTasks = functions.https.onRequest(async (req, res) => {
         deadline: data.deadline.toDate().toISOString(),
         targetMembers: data.targetMembers || [],
         isCompleted: data.isCompleted,
-        completedAt: data.completedAt
-          ? data.completedAt.toDate().toISOString()
-          : null,
+        completedAt: data.completedAt ?
+          data.completedAt.toDate().toISOString() :
+          null,
         ogpTitle: data.ogpTitle || null,
         ogpImage: data.ogpImage || null,
-        createdAt: data.createdAt
-          ? data.createdAt.toDate().toISOString()
-          : null,
-        updatedAt: data.updatedAt
-          ? data.updatedAt.toDate().toISOString()
-          : null,
+        createdAt: data.createdAt ?
+          data.createdAt.toDate().toISOString() :
+          null,
+        updatedAt: data.updatedAt ?
+          data.updatedAt.toDate().toISOString() :
+          null,
       };
     });
 
@@ -96,7 +100,7 @@ export const getUserTasks = functions.https.onRequest(async (req, res) => {
         tasks,
         count: tasks.length,
       },
-    } as ApiResponse<any>);
+    } as ApiResponse<TasksResponse>);
   } catch (error: unknown) {
     console.error("Get user tasks error:", error);
 

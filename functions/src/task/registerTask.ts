@@ -4,7 +4,11 @@
 
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
-import { TaskRegisterRequest, ApiResponse } from "../types";
+import {
+  TaskRegisterRequest,
+  ApiResponse,
+  TaskRegisterResponse,
+} from "../types";
 import { validateURL, validateISODate } from "../utils/validation";
 
 export const registerTask = functions.https.onRequest(async (req, res) => {
@@ -113,10 +117,16 @@ export const registerTask = functions.https.onRequest(async (req, res) => {
       success: true,
       data: {
         taskId: taskRef.id,
-        ...taskData,
+        title: taskData.title,
+        url: taskData.url,
         deadline: deadline,
+        targetMembers: taskData.targetMembers,
+        isCompleted: taskData.isCompleted,
+        completedAt: null,
+        ogpTitle: null,
+        ogpImage: null,
       },
-    } as ApiResponse<any>);
+    } as ApiResponse<TaskRegisterResponse>);
   } catch (error: unknown) {
     console.error("Register task error:", error);
 

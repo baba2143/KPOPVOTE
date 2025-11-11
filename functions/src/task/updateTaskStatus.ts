@@ -4,7 +4,11 @@
 
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
-import { TaskUpdateStatusRequest, ApiResponse } from "../types";
+import {
+  TaskUpdateStatusRequest,
+  ApiResponse,
+  TaskStatusResponse,
+} from "../types";
 
 export const updateTaskStatus = functions.https.onRequest(async (req, res) => {
   // Enable CORS
@@ -83,17 +87,19 @@ export const updateTaskStatus = functions.https.onRequest(async (req, res) => {
     }
 
     // Update task status
-    const updateData: any = {
+    const updateData: {
+      isCompleted: boolean;
+      updatedAt: admin.firestore.FieldValue;
+      completedAt: admin.firestore.FieldValue | null;
+    } = {
       isCompleted,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      completedAt: null,
     };
 
     // Set completedAt timestamp if task is being completed
     if (isCompleted) {
       updateData.completedAt = admin.firestore.FieldValue.serverTimestamp();
-    } else {
-      // Clear completedAt if task is being marked incomplete
-      updateData.completedAt = null;
     }
 
     await taskRef.update(updateData);
@@ -108,14 +114,14 @@ export const updateTaskStatus = functions.https.onRequest(async (req, res) => {
       data: {
         taskId: updatedDoc.id,
         isCompleted: updatedData?.isCompleted,
-        completedAt: updatedData?.completedAt
-          ? updatedData.completedAt.toDate().toISOString()
-          : null,
-        updatedAt: updatedData?.updatedAt
-          ? updatedData.updatedAt.toDate().toISOString()
-          : null,
+        completedAt: updatedData?.completedAt ?
+          updatedData.completedAt.toDate().toISOString() :
+          null,
+        updatedAt: updatedData?.updatedAt ?
+          updatedData.updatedAt.toDate().toISOString() :
+          null,
       },
-    } as ApiResponse<any>);
+    } as ApiResponse<TaskStatusResponse>);
   } catch (error: unknown) {
     console.error("Update task status error:", error);
 

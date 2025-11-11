@@ -124,11 +124,23 @@ firebase deploy
   - ヘッダー: `Authorization: Bearer <token>`
   - レスポンス: `{ success, data: { myBias } }`
 
-### タスク管理
-- `POST /task/register` - 投票タスク登録
-- `GET /task/getUserTasks` - タスク一覧取得
-- `POST /task/fetchOGP` - OGP情報取得
-- `PATCH /task/updateStatus` - ステータス更新
+### タスク管理 ✅ デプロイ済み
+- `POST /registerTask` - 投票タスク登録
+  - ヘッダー: `Authorization: Bearer <token>`
+  - リクエスト: `{ title, url, deadline, targetMembers? }`
+  - レスポンス: `{ success, data: { taskId, title, url, deadline, ... } }`
+- `GET /getUserTasks` - タスク一覧取得
+  - ヘッダー: `Authorization: Bearer <token>`
+  - クエリ: `?isCompleted=true&limit=100`
+  - レスポンス: `{ success, data: { tasks, count } }`
+- `POST /fetchTaskOGP` - OGP情報取得
+  - ヘッダー: `Authorization: Bearer <token>`
+  - リクエスト: `{ taskId, url }`
+  - レスポンス: `{ success, data: { taskId, ogpTitle, ogpImage } }`
+- `PATCH /updateTaskStatus` - ステータス更新
+  - ヘッダー: `Authorization: Bearer <token>`
+  - リクエスト: `{ taskId, isCompleted }`
+  - レスポンス: `{ success, data: { taskId, isCompleted, completedAt } }`
 
 ## ドキュメント
 
