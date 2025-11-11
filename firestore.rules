@@ -1,0 +1,105 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper function: Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function: Check if user is admin
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+
+    // Helper function: Check if user owns the document
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // ========================================
+    // Users Collection
+    // ========================================
+    match /users/{userId} {
+      // Users can read and write their own data
+      allow read, write: if isAuthenticated() && isOwner(userId);
+
+      // Admins can read all user data
+      allow read: if isAdmin();
+
+      // Tasks Subcollection
+      match /tasks/{taskId} {
+        // Users can read and write their own tasks
+        allow read, write: if isAuthenticated() && isOwner(userId);
+      }
+    }
+
+    // ========================================
+    // Community Posts Collection
+    // ========================================
+    match /communityPosts/{postId} {
+      // Anyone authenticated can read posts
+      allow read: if isAuthenticated();
+
+      // Anyone authenticated can create posts
+      allow create: if isAuthenticated();
+
+      // Only post author can update or delete
+      allow update, delete: if isAuthenticated() &&
+                               request.auth.uid == resource.data.authorId;
+
+      // Admins can delete any post
+      allow delete: if isAdmin();
+
+      // Comments Subcollection
+      match /comments/{commentId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated();
+        allow update, delete: if isAuthenticated() &&
+                                 request.auth.uid == resource.data.authorId;
+      }
+    }
+
+    // ========================================
+    // In-App Votes Collection
+    // ========================================
+    match /inAppVotes/{voteId} {
+      // Anyone authenticated can read votes
+      allow read: if isAuthenticated();
+
+      // Only admins can create, update, or delete votes
+      allow write: if isAdmin();
+
+      // Candidates Subcollection
+      match /candidates/{candidateId} {
+        allow read: if isAuthenticated();
+        allow write: if isAdmin();
+      }
+
+      // User Votes Subcollection
+      match /userVotes/{userVoteId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated();
+        // Prevent vote modification/deletion
+        allow update, delete: if false;
+      }
+    }
+
+    // ========================================
+    // Admin Collections (Admin only)
+    // ========================================
+    match /adminLogs/{logId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /idolMaster/{idolId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /externalAppMaster/{appId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+  }
+}
