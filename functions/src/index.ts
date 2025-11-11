@@ -13,8 +13,11 @@ export { login } from "./auth/login";
 export { setBias } from "./user/setBias";
 export { getBias } from "./user/getBias";
 
-// Task functions will be added here
-// export { registerTask, getUserTasks, fetchTaskOGP, updateTaskStatus } from "./task";
+// Task functions
+export { registerTask } from "./task/registerTask";
+export { getUserTasks } from "./task/getUserTasks";
+export { fetchTaskOGP } from "./task/fetchTaskOGP";
+export { updateTaskStatus } from "./task/updateTaskStatus";
 
 // Placeholder function for testing
 import * as functions from "firebase-functions";
