@@ -10,59 +10,52 @@ import SwiftUI
 struct MainTabView: View {
     @EnvironmentObject var authService: AuthService
     @State private var selectedTab = 0
+    @State private var showingTaskSheet = false
 
     var body: some View {
-        TabView(selection: $selectedTab) {
-            // Home Tab
-            HomeView()
-                .environmentObject(authService)
-                .tabItem {
-                    Label("Home", systemImage: selectedTab == 0 ? "house.fill" : "house")
-                }
-                .tag(0)
+        ZStack {
+            // Main Tab Content
+            TabView(selection: $selectedTab) {
+                // Home Tab
+                HomeView()
+                    .environmentObject(authService)
+                    .tag(0)
+                    .toolbar(.hidden, for: .tabBar)
 
-            // Votes Tab (Placeholder)
-            VotesListView()
-                .tabItem {
-                    Label("Votes", systemImage: selectedTab == 1 ? "chart.bar.fill" : "chart.bar")
-                }
-                .tag(1)
+                // Votes Tab (Placeholder)
+                VotesListView()
+                    .tag(1)
+                    .toolbar(.hidden, for: .tabBar)
 
-            // Tasks Tab (Placeholder)
-            TasksListView()
-                .tabItem {
-                    Label("Tasks", systemImage: selectedTab == 2 ? "checkmark.circle.fill" : "checkmark.circle")
-                }
-                .tag(2)
+                // Center Button Placeholder (Empty, handled by custom tab bar)
+                Color.clear
+                    .tag(2)
+                    .toolbar(.hidden, for: .tabBar)
 
-            // Profile Tab (Placeholder)
-            ProfileView()
-                .environmentObject(authService)
-                .tabItem {
-                    Label("Profile", systemImage: selectedTab == 3 ? "person.fill" : "person")
+                // Tasks Tab (Placeholder)
+                TasksListView()
+                    .tag(3)
+                    .toolbar(.hidden, for: .tabBar)
+
+                // Profile Tab
+                ProfileView()
+                    .environmentObject(authService)
+                    .tag(4)
+                    .toolbar(.hidden, for: .tabBar)
+            }
+
+            // Custom Tab Bar (Overlay)
+            VStack {
+                Spacer()
+                CustomTabBar(selectedTab: $selectedTab) {
+                    showingTaskSheet = true
                 }
-                .tag(3)
+                .padding(.bottom, 0)
+            }
+            .edgesIgnoringSafeArea(.bottom)
         }
-        .accentColor(Constants.Colors.accentPink)
-        .onAppear {
-            let appearance = UITabBarAppearance()
-            appearance.configureWithOpaqueBackground()
-            appearance.backgroundColor = UIColor(Constants.Colors.cardDark)
-
-            // Unselected tab color
-            appearance.stackedLayoutAppearance.normal.iconColor = UIColor(Constants.Colors.textGray)
-            appearance.stackedLayoutAppearance.normal.titleTextAttributes = [
-                .foregroundColor: UIColor(Constants.Colors.textGray)
-            ]
-
-            // Selected tab color
-            appearance.stackedLayoutAppearance.selected.iconColor = UIColor(Constants.Colors.accentPink)
-            appearance.stackedLayoutAppearance.selected.titleTextAttributes = [
-                .foregroundColor: UIColor(Constants.Colors.accentPink)
-            ]
-
-            UITabBar.appearance().standardAppearance = appearance
-            UITabBar.appearance().scrollEdgeAppearance = appearance
+        .sheet(isPresented: $showingTaskSheet) {
+            TaskRegistrationView()
         }
     }
 }
