@@ -10,8 +10,10 @@ import SwiftUI
 struct LoginView: View {
     @StateObject private var viewModel: AuthViewModel
     @State private var showRegister = false
+    private let authService: AuthService
 
     init(authService: AuthService) {
+        self.authService = authService
         _viewModel = StateObject(wrappedValue: AuthViewModel(authService: authService))
     }
 
@@ -115,7 +117,7 @@ struct LoginView: View {
                 Text(viewModel.errorMessage ?? "エラーが発生しました")
             }
             .sheet(isPresented: $showRegister) {
-                RegisterView(authService: AuthService())
+                RegisterView(authService: authService)
             }
         }
     }

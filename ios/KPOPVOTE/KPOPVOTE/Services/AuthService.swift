@@ -39,83 +39,133 @@ class AuthService: ObservableObject {
 
     // MARK: - Register
     func register(email: String, password: String) async throws -> User {
-        // 1. Create Firebase Auth account
-        let authResult = try await Auth.auth().createUser(withEmail: email, password: password)
+        do {
+            // 1. Create Firebase Auth account
+            print("🔐 [Register] Creating Firebase Auth account for: \(email)")
+            let authResult = try await Auth.auth().createUser(withEmail: email, password: password)
+            print("✅ [Register] Firebase Auth account created: \(authResult.user.uid)")
 
-        // 2. Register user in Cloud Functions
-        let url = URL(string: Constants.API.register)!
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            // 2. Register user in Cloud Functions
+            let url = URL(string: Constants.API.register)!
+            print("📡 [Register] Calling API: \(url.absoluteString)")
 
-        let body: [String: Any] = [
-            "uid": authResult.user.uid,
-            "email": email
-        ]
-        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+            let body: [String: Any] = [
+                "uid": authResult.user.uid,
+                "email": email
+            ]
+            request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-        guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 200 else {
+            print("📤 [Register] Request body: \(body)")
+
+            let (data, response) = try await URLSession.shared.data(for: request)
+
+            // Log response details
+            if let httpResponse = response as? HTTPURLResponse {
+                print("📥 [Register] HTTP Status: \(httpResponse.statusCode)")
+                if let responseString = String(data: data, encoding: .utf8) {
+                    print("📥 [Register] Response body: \(responseString)")
+                }
+
+                guard httpResponse.statusCode == 200 else {
+                    print("❌ [Register] API returned non-200 status: \(httpResponse.statusCode)")
+                    throw AuthError.registrationFailed
+                }
+            }
+
+            let result = try JSONDecoder().decode(RegisterResponse.self, from: data)
+            print("✅ [Register] Successfully decoded response")
+
+            // 3. Create User object
+            let user = User(
+                id: authResult.user.uid,
+                email: email,
+                points: result.data.points
+            )
+
+            await MainActor.run {
+                self.currentUser = user
+                self.isAuthenticated = true
+            }
+
+            print("✅ [Register] Registration complete for: \(email)")
+            return user
+
+        } catch let error as AuthError {
+            print("❌ [Register] AuthError: \(error.localizedDescription)")
+            throw error
+        } catch {
+            print("❌ [Register] Unexpected error: \(error.localizedDescription)")
             throw AuthError.registrationFailed
         }
-
-        let result = try JSONDecoder().decode(RegisterResponse.self, from: data)
-
-        // 3. Create User object
-        let user = User(
-            id: authResult.user.uid,
-            email: email,
-            points: result.data.points
-        )
-
-        await MainActor.run {
-            self.currentUser = user
-            self.isAuthenticated = true
-        }
-
-        return user
     }
 
     // MARK: - Login
     func login(email: String, password: String) async throws -> User {
-        // 1. Firebase Auth login
-        let authResult = try await Auth.auth().signIn(withEmail: email, password: password)
+        do {
+            // 1. Firebase Auth login
+            print("🔐 [Login] Attempting Firebase Auth login for: \(email)")
+            let authResult = try await Auth.auth().signIn(withEmail: email, password: password)
+            print("✅ [Login] Firebase Auth successful: \(authResult.user.uid)")
 
-        // 2. Get ID Token
-        let token = try await authResult.user.getIDToken()
+            // 2. Get ID Token
+            print("🎫 [Login] Getting ID token...")
+            let token = try await authResult.user.getIDToken()
+            print("✅ [Login] ID token obtained")
 
-        // 3. Verify with Cloud Functions
-        let url = URL(string: Constants.API.login)!
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            // 3. Verify with Cloud Functions
+            let url = URL(string: Constants.API.login)!
+            print("📡 [Login] Calling API: \(url.absoluteString)")
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 200 else {
+            let (data, response) = try await URLSession.shared.data(for: request)
+
+            // Log response details
+            if let httpResponse = response as? HTTPURLResponse {
+                print("📥 [Login] HTTP Status: \(httpResponse.statusCode)")
+                if let responseString = String(data: data, encoding: .utf8) {
+                    print("📥 [Login] Response body: \(responseString)")
+                }
+
+                guard httpResponse.statusCode == 200 else {
+                    print("❌ [Login] API returned non-200 status: \(httpResponse.statusCode)")
+                    throw AuthError.loginFailed
+                }
+            }
+
+            let result = try JSONDecoder().decode(LoginResponse.self, from: data)
+            print("✅ [Login] Successfully decoded response")
+
+            // 4. Create User object
+            let user = User(
+                id: result.data.uid,
+                email: result.data.email,
+                displayName: result.data.displayName,
+                points: result.data.points,
+                isSuspended: result.data.isSuspended
+            )
+
+            await MainActor.run {
+                self.currentUser = user
+                self.isAuthenticated = true
+            }
+
+            print("✅ [Login] Login complete for: \(email)")
+            return user
+
+        } catch let error as AuthError {
+            print("❌ [Login] AuthError: \(error.localizedDescription)")
+            throw error
+        } catch {
+            print("❌ [Login] Unexpected error: \(error.localizedDescription)")
             throw AuthError.loginFailed
         }
-
-        let result = try JSONDecoder().decode(LoginResponse.self, from: data)
-
-        // 4. Create User object
-        let user = User(
-            id: result.data.uid,
-            email: result.data.email,
-            displayName: result.data.displayName,
-            points: result.data.points,
-            isSuspended: result.data.isSuspended
-        )
-
-        await MainActor.run {
-            self.currentUser = user
-            self.isAuthenticated = true
-        }
-
-        return user
     }
 
     // MARK: - Logout

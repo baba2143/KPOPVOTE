@@ -1,15 +1,28 @@
 /**
- * User registration endpoint
+ * User registration endpoint - iOS Client-Side Auth Pattern
+ *
+ * iOS creates Firebase Auth user first, then calls this endpoint
+ * to create Firestore user profile
  */
 
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
-import { RegisterRequest, AuthResponse, ApiResponse } from "../types";
-import {
-  validateEmail,
-  validatePassword,
-  validateDisplayName,
-} from "../utils/validation";
+import { ApiResponse } from "../types";
+import { validateEmail } from "../utils/validation";
+
+// iOS request format
+interface IOSRegisterRequest {
+  uid: string;
+  email: string;
+  displayName?: string;
+}
+
+// iOS response format
+interface IOSRegisterResponse {
+  uid: string;
+  email: string;
+  points: number;
+}
 
 export const register = functions.https.onRequest(async (req, res) => {
   // Enable CORS
@@ -33,9 +46,18 @@ export const register = functions.https.onRequest(async (req, res) => {
   }
 
   try {
-    const { email, password, displayName } = req.body as RegisterRequest;
+    const { uid, email, displayName } = req.body as IOSRegisterRequest;
 
-    // Validate input
+    // Validate required fields
+    if (!uid || !email) {
+      res.status(400).json({
+        success: false,
+        error: "Missing required fields: uid and email",
+      } as ApiResponse<null>);
+      return;
+    }
+
+    // Validate email format
     const emailValidation = validateEmail(email);
     if (!emailValidation.valid) {
       res.status(400).json({
@@ -45,38 +67,26 @@ export const register = functions.https.onRequest(async (req, res) => {
       return;
     }
 
-    const passwordValidation = validatePassword(password);
-    if (!passwordValidation.valid) {
-      res.status(400).json({
+    // Verify Firebase Auth user exists
+    try {
+      await admin.auth().getUser(uid);
+    } catch (error) {
+      console.error("User not found in Firebase Auth:", error);
+      res.status(404).json({
         success: false,
-        error: passwordValidation.error,
+        error: "Firebase Auth user not found. Please create user first.",
       } as ApiResponse<null>);
       return;
     }
-
-    const displayNameValidation = validateDisplayName(displayName);
-    if (!displayNameValidation.valid) {
-      res.status(400).json({
-        success: false,
-        error: displayNameValidation.error,
-      } as ApiResponse<null>);
-      return;
-    }
-
-    // Create user with Firebase Authentication
-    const userRecord = await admin.auth().createUser({
-      email,
-      password,
-      displayName: displayName || email.split("@")[0],
-    });
 
     // Create user profile in Firestore
     const userProfile = {
-      uid: userRecord.uid,
-      email: userRecord.email!,
-      displayName: userRecord.displayName || email.split("@")[0],
+      uid: uid,
+      email: email,
+      displayName: displayName || email.split("@")[0],
       photoURL: null,
       myBias: [],
+      points: 0, // Initial points
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
@@ -84,35 +94,31 @@ export const register = functions.https.onRequest(async (req, res) => {
     await admin
       .firestore()
       .collection("users")
-      .doc(userRecord.uid)
+      .doc(uid)
       .set(userProfile);
 
-    // Generate custom token for immediate login
-    const customToken = await admin.auth().createCustomToken(userRecord.uid);
-
-    // Return success response
-    res.status(201).json({
+    // Return success response in iOS expected format
+    res.status(200).json({
       success: true,
       data: {
-        uid: userRecord.uid,
-        email: userRecord.email!,
-        displayName: userRecord.displayName,
-        token: customToken,
-      } as AuthResponse,
-    } as ApiResponse<AuthResponse>);
+        uid: uid,
+        email: email,
+        points: 0,
+      } as IOSRegisterResponse,
+    } as ApiResponse<IOSRegisterResponse>);
   } catch (error: unknown) {
     console.error("Registration error:", error);
 
-    // Handle specific Firebase errors
+    // Handle Firestore errors
     if (
       typeof error === "object" &&
       error !== null &&
       "code" in error &&
-      error.code === "auth/email-already-exists"
+      error.code === 6 // ALREADY_EXISTS
     ) {
       res.status(409).json({
         success: false,
-        error: "Email already registered",
+        error: "User profile already exists",
       } as ApiResponse<null>);
       return;
     }

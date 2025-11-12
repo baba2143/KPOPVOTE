@@ -1,17 +1,28 @@
 /**
- * User login endpoint
+ * User login endpoint - iOS Client-Side Auth Pattern
+ *
+ * iOS authenticates with Firebase Auth first, then calls this endpoint
+ * with ID token to fetch user profile data
  */
 
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
-import { LoginRequest, AuthResponse, ApiResponse } from "../types";
-import { validateEmail, validatePassword } from "../utils/validation";
+import { ApiResponse } from "../types";
+
+// iOS response format
+interface IOSLoginResponse {
+  uid: string;
+  email: string;
+  displayName?: string;
+  points: number;
+  isSuspended: boolean;
+}
 
 export const login = functions.https.onRequest(async (req, res) => {
   // Enable CORS
   res.set("Access-Control-Allow-Origin", "*");
   res.set("Access-Control-Allow-Methods", "POST");
-  res.set("Access-Control-Allow-Headers", "Content-Type");
+  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
   // Handle preflight request
   if (req.method === "OPTIONS") {
@@ -29,72 +40,72 @@ export const login = functions.https.onRequest(async (req, res) => {
   }
 
   try {
-    const { email, password } = req.body as LoginRequest;
-
-    // Validate input
-    const emailValidation = validateEmail(email);
-    if (!emailValidation.valid) {
-      res.status(400).json({
+    // Extract ID token from Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      res.status(401).json({
         success: false,
-        error: emailValidation.error,
+        error: "Missing or invalid Authorization header",
       } as ApiResponse<null>);
       return;
     }
 
-    const passwordValidation = validatePassword(password);
-    if (!passwordValidation.valid) {
-      res.status(400).json({
+    const idToken = authHeader.split("Bearer ")[1];
+
+    // Verify ID token
+    let decodedToken;
+    try {
+      decodedToken = await admin.auth().verifyIdToken(idToken);
+    } catch (error) {
+      console.error("Token verification failed:", error);
+      res.status(401).json({
         success: false,
-        error: passwordValidation.error,
+        error: "Invalid or expired ID token",
       } as ApiResponse<null>);
       return;
     }
 
-    // Get user by email
-    const userRecord = await admin.auth().getUserByEmail(email);
-
-    // NOTE: Firebase Admin SDK cannot verify password directly
-    // In production, client should use Firebase Client SDK for authentication
-    // This endpoint is for generating custom tokens after client-side auth
-
-    // Generate custom token
-    const customToken = await admin.auth().createCustomToken(userRecord.uid);
+    const uid = decodedToken.uid;
 
     // Get user profile from Firestore
     const userDoc = await admin
       .firestore()
       .collection("users")
-      .doc(userRecord.uid)
+      .doc(uid)
       .get();
 
-    const userProfile = userDoc.data();
-
-    // Return success response
-    res.status(200).json({
-      success: true,
-      data: {
-        uid: userRecord.uid,
-        email: userRecord.email!,
-        displayName: userProfile?.displayName || userRecord.displayName,
-        token: customToken,
-      } as AuthResponse,
-    } as ApiResponse<AuthResponse>);
-  } catch (error: unknown) {
-    console.error("Login error:", error);
-
-    // Handle specific Firebase errors
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "code" in error &&
-      error.code === "auth/user-not-found"
-    ) {
+    if (!userDoc.exists) {
       res.status(404).json({
         success: false,
-        error: "User not found",
+        error: "User profile not found in database",
       } as ApiResponse<null>);
       return;
     }
+
+    const userProfile = userDoc.data()!;
+
+    // Check if user is suspended
+    if (userProfile.isSuspended) {
+      res.status(403).json({
+        success: false,
+        error: "Account is suspended",
+      } as ApiResponse<null>);
+      return;
+    }
+
+    // Return success response in iOS expected format
+    res.status(200).json({
+      success: true,
+      data: {
+        uid: uid,
+        email: userProfile.email || decodedToken.email,
+        displayName: userProfile.displayName,
+        points: userProfile.points || 0,
+        isSuspended: userProfile.isSuspended || false,
+      } as IOSLoginResponse,
+    } as ApiResponse<IOSLoginResponse>);
+  } catch (error: unknown) {
+    console.error("Login error:", error);
 
     res.status(500).json({
       success: false,
