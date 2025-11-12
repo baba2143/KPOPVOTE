@@ -14,18 +14,26 @@ class AuthService: ObservableObject {
     @Published var isAuthenticated = false
 
     private var cancellables = Set<AnyCancellable>()
+    private var authStateListener: AuthStateDidChangeListenerHandle?
 
     init() {
         // Monitor Firebase Auth state changes
-        Auth.auth().addStateDidChangeListener { [weak self] _, firebaseUser in
+        authStateListener = Auth.auth().addStateDidChangeListener { [weak self] _, firebaseUser in
+            guard let self = self else { return }
             Task { @MainActor in
                 if let firebaseUser = firebaseUser {
-                    await self?.loadUserData(uid: firebaseUser.uid, email: firebaseUser.email ?? "")
+                    await self.loadUserData(uid: firebaseUser.uid, email: firebaseUser.email ?? "")
                 } else {
-                    self?.currentUser = nil
-                    self?.isAuthenticated = false
+                    self.currentUser = nil
+                    self.isAuthenticated = false
                 }
             }
+        }
+    }
+
+    deinit {
+        if let listener = authStateListener {
+            Auth.auth().removeStateDidChangeListener(listener)
         }
     }
 
