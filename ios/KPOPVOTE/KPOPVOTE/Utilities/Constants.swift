@@ -13,17 +13,36 @@ enum Constants {
 
     // MARK: - Color Palette
     enum Colors {
+        // Primary Colors
         static let primaryBlue = Color(hex: "1976d2")
         static let primaryPink = Color(hex: "e91e63")
+
+        // Dark Mode Colors
+        static let backgroundDark = Color(hex: "0a1628")
+        static let cardDark = Color(hex: "1a2744")
+        static let accentPink = Color(hex: "ff1f8f")
+        static let accentBlue = Color(hex: "00d4ff")
+
+        // Light Mode Colors (Legacy)
         static let background = Color(hex: "f5f5f5")
         static let cardBackground = Color.white
         static let textPrimary = Color.black
         static let textSecondary = Color.gray
 
+        // Dark Mode Text
+        static let textWhite = Color.white
+        static let textGray = Color(hex: "9ca3af")
+
+        // Gradient Colors
+        static let gradientPink = Color(hex: "ff1f8f")
+        static let gradientBlue = Color(hex: "00d4ff")
+        static let gradientPurple = Color(hex: "7c3aed")
+
         // Task Status Colors
         static let statusPending = Color.blue
         static let statusCompleted = Color.green
         static let statusExpired = Color.red
+        static let statusUrgent = Color(hex: "ef4444")
     }
 
     // MARK: - Typography

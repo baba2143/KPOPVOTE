@@ -17,21 +17,21 @@ struct MainTabView: View {
             HomeView()
                 .environmentObject(authService)
                 .tabItem {
-                    Label("ホーム", systemImage: selectedTab == 0 ? "house.fill" : "house")
+                    Label("Home", systemImage: selectedTab == 0 ? "house.fill" : "house")
                 }
                 .tag(0)
 
             // Votes Tab (Placeholder)
             VotesListView()
                 .tabItem {
-                    Label("投票", systemImage: selectedTab == 1 ? "list.bullet.circle.fill" : "list.bullet.circle")
+                    Label("Votes", systemImage: selectedTab == 1 ? "chart.bar.fill" : "chart.bar")
                 }
                 .tag(1)
 
             // Tasks Tab (Placeholder)
             TasksListView()
                 .tabItem {
-                    Label("タスク", systemImage: selectedTab == 2 ? "checkmark.circle.fill" : "checkmark.circle")
+                    Label("Tasks", systemImage: selectedTab == 2 ? "checkmark.circle.fill" : "checkmark.circle")
                 }
                 .tag(2)
 
@@ -39,11 +39,31 @@ struct MainTabView: View {
             ProfileView()
                 .environmentObject(authService)
                 .tabItem {
-                    Label("プロフィール", systemImage: selectedTab == 3 ? "person.fill" : "person")
+                    Label("Profile", systemImage: selectedTab == 3 ? "person.fill" : "person")
                 }
                 .tag(3)
         }
-        .accentColor(Constants.Colors.primaryBlue)
+        .accentColor(Constants.Colors.accentPink)
+        .onAppear {
+            let appearance = UITabBarAppearance()
+            appearance.configureWithOpaqueBackground()
+            appearance.backgroundColor = UIColor(Constants.Colors.cardDark)
+
+            // Unselected tab color
+            appearance.stackedLayoutAppearance.normal.iconColor = UIColor(Constants.Colors.textGray)
+            appearance.stackedLayoutAppearance.normal.titleTextAttributes = [
+                .foregroundColor: UIColor(Constants.Colors.textGray)
+            ]
+
+            // Selected tab color
+            appearance.stackedLayoutAppearance.selected.iconColor = UIColor(Constants.Colors.accentPink)
+            appearance.stackedLayoutAppearance.selected.titleTextAttributes = [
+                .foregroundColor: UIColor(Constants.Colors.accentPink)
+            ]
+
+            UITabBar.appearance().standardAppearance = appearance
+            UITabBar.appearance().scrollEdgeAppearance = appearance
+        }
     }
 }
 
@@ -53,19 +73,23 @@ struct VotesListView: View {
     var body: some View {
         NavigationView {
             VStack {
-                Image(systemName: "list.bullet.circle")
+                Image(systemName: "chart.bar")
                     .font(.system(size: 60))
-                    .foregroundColor(Constants.Colors.primaryBlue)
+                    .foregroundColor(Constants.Colors.accentPink)
 
-                Text("投票一覧")
+                Text("Votes")
                     .font(.system(size: Constants.Typography.titleSize, weight: .bold))
-                    .foregroundColor(Constants.Colors.textPrimary)
+                    .foregroundColor(Constants.Colors.textWhite)
 
-                Text("実装予定")
+                Text("Coming Soon")
                     .font(.system(size: Constants.Typography.bodySize))
-                    .foregroundColor(Constants.Colors.textSecondary)
+                    .foregroundColor(Constants.Colors.textGray)
             }
-            .navigationTitle("投票")
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Constants.Colors.backgroundDark)
+            .navigationTitle("Votes")
+            .toolbarBackground(Constants.Colors.backgroundDark, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
         }
     }
 }
@@ -76,17 +100,21 @@ struct TasksListView: View {
             VStack {
                 Image(systemName: "checkmark.circle")
                     .font(.system(size: 60))
-                    .foregroundColor(Constants.Colors.primaryBlue)
+                    .foregroundColor(Constants.Colors.accentPink)
 
-                Text("タスク管理")
+                Text("Tasks")
                     .font(.system(size: Constants.Typography.titleSize, weight: .bold))
-                    .foregroundColor(Constants.Colors.textPrimary)
+                    .foregroundColor(Constants.Colors.textWhite)
 
-                Text("実装予定")
+                Text("Coming Soon")
                     .font(.system(size: Constants.Typography.bodySize))
-                    .foregroundColor(Constants.Colors.textSecondary)
+                    .foregroundColor(Constants.Colors.textGray)
             }
-            .navigationTitle("タスク")
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Constants.Colors.backgroundDark)
+            .navigationTitle("Tasks")
+            .toolbarBackground(Constants.Colors.backgroundDark, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
         }
     }
 }
@@ -104,22 +132,22 @@ struct ProfileView: View {
                         // Profile Icon
                         Image(systemName: "person.circle.fill")
                             .font(.system(size: 80))
-                            .foregroundColor(Constants.Colors.primaryBlue)
+                            .foregroundColor(Constants.Colors.accentPink)
 
                         // User Email
                         if let email = authService.currentUser?.email {
                             Text(email)
                                 .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
-                                .foregroundColor(Constants.Colors.textPrimary)
+                                .foregroundColor(Constants.Colors.textWhite)
                         }
 
                         // Points Display
                         HStack {
                             Image(systemName: "star.fill")
                                 .foregroundColor(.yellow)
-                            Text("\(authService.currentUser?.points ?? 0) ポイント")
+                            Text("\(authService.currentUser?.points ?? 0) Points")
                                 .font(.system(size: Constants.Typography.bodySize, weight: .bold))
-                                .foregroundColor(Constants.Colors.textPrimary)
+                                .foregroundColor(Constants.Colors.textWhite)
                         }
                         .padding(.horizontal, 20)
                         .padding(.vertical, 10)
@@ -127,29 +155,29 @@ struct ProfileView: View {
                         .cornerRadius(20)
                     }
                     .padding()
-                    .background(Constants.Colors.cardBackground)
+                    .background(Constants.Colors.cardDark)
                     .cornerRadius(16)
-                    .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+                    .shadow(color: Color.black.opacity(0.3), radius: 4, x: 0, y: 2)
 
                     // Settings Section
                     VStack(alignment: .leading, spacing: Constants.Spacing.small) {
-                        Text("設定")
+                        Text("Settings")
                             .font(.system(size: Constants.Typography.titleSize, weight: .bold))
-                            .foregroundColor(Constants.Colors.textPrimary)
+                            .foregroundColor(Constants.Colors.textWhite)
                             .padding(.horizontal)
 
                         VStack(spacing: 0) {
-                            SettingsRow(icon: "person.fill", title: "アカウント設定", color: .blue)
-                            Divider().padding(.leading, 60)
-                            SettingsRow(icon: "bell.fill", title: "通知設定", color: .orange)
-                            Divider().padding(.leading, 60)
-                            SettingsRow(icon: "heart.fill", title: "推し管理", color: .pink)
-                            Divider().padding(.leading, 60)
-                            SettingsRow(icon: "info.circle.fill", title: "アプリ情報", color: .gray)
+                            SettingsRow(icon: "person.fill", title: "Account", color: Constants.Colors.accentBlue)
+                            Divider().padding(.leading, 60).background(Constants.Colors.textGray.opacity(0.3))
+                            SettingsRow(icon: "bell.fill", title: "Notifications", color: .orange)
+                            Divider().padding(.leading, 60).background(Constants.Colors.textGray.opacity(0.3))
+                            SettingsRow(icon: "heart.fill", title: "Favorites", color: Constants.Colors.accentPink)
+                            Divider().padding(.leading, 60).background(Constants.Colors.textGray.opacity(0.3))
+                            SettingsRow(icon: "info.circle.fill", title: "About", color: Constants.Colors.textGray)
                         }
-                        .background(Constants.Colors.cardBackground)
+                        .background(Constants.Colors.cardDark)
                         .cornerRadius(16)
-                        .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+                        .shadow(color: Color.black.opacity(0.3), radius: 4, x: 0, y: 2)
                     }
 
                     // Logout Button
@@ -170,8 +198,10 @@ struct ProfileView: View {
                 }
                 .padding()
             }
-            .background(Constants.Colors.background)
-            .navigationTitle("プロフィール")
+            .background(Constants.Colors.backgroundDark)
+            .navigationTitle("Profile")
+            .toolbarBackground(Constants.Colors.backgroundDark, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
             .alert("ログアウト確認", isPresented: $showLogoutConfirm) {
                 Button("キャンセル", role: .cancel) {}
                 Button("ログアウト", role: .destructive) {
@@ -203,13 +233,13 @@ struct SettingsRow: View {
 
             Text(title)
                 .font(.system(size: Constants.Typography.bodySize))
-                .foregroundColor(Constants.Colors.textPrimary)
+                .foregroundColor(Constants.Colors.textWhite)
 
             Spacer()
 
             Image(systemName: "chevron.right")
                 .font(.system(size: 14))
-                .foregroundColor(Constants.Colors.textSecondary)
+                .foregroundColor(Constants.Colors.textGray)
         }
         .padding()
         .background(Color.clear)

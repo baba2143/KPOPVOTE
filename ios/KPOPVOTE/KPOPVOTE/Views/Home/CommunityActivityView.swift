@@ -12,86 +12,127 @@ struct CommunityActivityView: View {
         VStack(alignment: .leading, spacing: Constants.Spacing.medium) {
             // Section Header
             HStack {
-                Image(systemName: "person.3.fill")
-                    .font(.system(size: 20))
-                    .foregroundColor(Constants.Colors.primaryBlue)
-                Text("コミュニティ活動")
+                Text("Community Activity")
                     .font(.system(size: Constants.Typography.titleSize, weight: .bold))
-                    .foregroundColor(Constants.Colors.textPrimary)
+                    .foregroundColor(Constants.Colors.textWhite)
                 Spacer()
+                Button(action: {
+                    // Navigate to full community activity
+                }) {
+                    Text("View All")
+                        .font(.system(size: Constants.Typography.captionSize, weight: .semibold))
+                        .foregroundColor(Constants.Colors.accentPink)
+                }
             }
 
-            // Activity Items
-            VStack(spacing: Constants.Spacing.small) {
-                ActivityItem(
-                    icon: "trophy.fill",
-                    iconColor: .orange,
-                    title: "今週のTOP投票者",
-                    subtitle: "3,421票を獲得"
+            // Activity Posts
+            VStack(spacing: Constants.Spacing.medium) {
+                ActivityPostItem(
+                    avatarColor: .pink,
+                    username: "K-Pop Fan",
+                    message: "Amazing performance today! Did everyone see the ",
+                    highlightedText: "new choreography",
+                    remainingText: " for the comeback stage? Absolutely breathtaking!",
+                    likes: 1200,
+                    comments: 345,
+                    timeAgo: "2 hours ago"
                 )
 
-                ActivityItem(
-                    icon: "flame.fill",
-                    iconColor: .red,
-                    title: "連続投票中",
-                    subtitle: "7日間継続中"
-                )
-
-                ActivityItem(
-                    icon: "chart.line.uptrend.xyaxis",
-                    iconColor: .green,
-                    title: "コミュニティ貢献度",
-                    subtitle: "レベル 12"
+                ActivityPostItem(
+                    avatarColor: .purple,
+                    username: "Vote Master",
+                    message: "Just a reminder to keep streaming the ",
+                    highlightedText: "new music video",
+                    remainingText: ". We're so close to our goal for the first 24 hours! Let's do this 💪",
+                    likes: 892,
+                    comments: 102,
+                    timeAgo: "5 hours ago"
                 )
             }
         }
         .padding(Constants.Spacing.medium)
-        .background(Constants.Colors.cardBackground)
+        .background(Constants.Colors.cardDark)
         .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
     }
 }
 
-// MARK: - Activity Item Component
-struct ActivityItem: View {
-    let icon: String
-    let iconColor: Color
-    let title: String
-    let subtitle: String
+// MARK: - Activity Post Item Component
+struct ActivityPostItem: View {
+    let avatarColor: Color
+    let username: String
+    let message: String
+    let highlightedText: String
+    let remainingText: String
+    let likes: Int
+    let comments: Int
+    let timeAgo: String
 
     var body: some View {
-        HStack(spacing: Constants.Spacing.small) {
-            // Icon
-            ZStack {
-                Circle()
-                    .fill(iconColor.opacity(0.2))
-                    .frame(width: 44, height: 44)
+        HStack(alignment: .top, spacing: Constants.Spacing.small) {
+            // Avatar
+            Circle()
+                .fill(avatarColor.opacity(0.3))
+                .frame(width: 44, height: 44)
+                .overlay(
+                    Image(systemName: "person.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(avatarColor)
+                )
 
-                Image(systemName: icon)
-                    .font(.system(size: 20))
-                    .foregroundColor(iconColor)
-            }
-
-            // Text Content
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
+            // Content
+            VStack(alignment: .leading, spacing: 6) {
+                // Username
+                Text(username)
                     .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
-                    .foregroundColor(Constants.Colors.textPrimary)
+                    .foregroundColor(Constants.Colors.textWhite)
 
-                Text(subtitle)
-                    .font(.system(size: Constants.Typography.captionSize))
-                    .foregroundColor(Constants.Colors.textSecondary)
+                // Message with highlighted text
+                Group {
+                    Text(message)
+                        .foregroundColor(Constants.Colors.textGray) +
+                    Text(highlightedText)
+                        .foregroundColor(Constants.Colors.accentPink)
+                        .bold() +
+                    Text(remainingText)
+                        .foregroundColor(Constants.Colors.textGray)
+                }
+                .font(.system(size: Constants.Typography.captionSize))
+                .lineSpacing(4)
+
+                // Engagement metrics
+                HStack(spacing: Constants.Spacing.medium) {
+                    // Likes
+                    HStack(spacing: 4) {
+                        Image(systemName: "heart")
+                            .font(.system(size: 12))
+                            .foregroundColor(Constants.Colors.textGray)
+                        Text("\(likes)")
+                            .font(.system(size: 12))
+                            .foregroundColor(Constants.Colors.textGray)
+                    }
+
+                    // Comments
+                    HStack(spacing: 4) {
+                        Image(systemName: "bubble.right")
+                            .font(.system(size: 12))
+                            .foregroundColor(Constants.Colors.textGray)
+                        Text("\(comments)")
+                            .font(.system(size: 12))
+                            .foregroundColor(Constants.Colors.textGray)
+                    }
+
+                    Spacer()
+
+                    // Time ago
+                    Text(timeAgo)
+                        .font(.system(size: 11))
+                        .foregroundColor(Constants.Colors.textGray)
+                }
+                .padding(.top, 4)
             }
-
-            Spacer()
-
-            // Chevron
-            Image(systemName: "chevron.right")
-                .font(.system(size: 14))
-                .foregroundColor(Constants.Colors.textSecondary)
         }
         .padding(Constants.Spacing.small)
-        .background(Color.white.opacity(0.5))
+        .background(Color.white.opacity(0.05))
         .cornerRadius(12)
     }
 }
@@ -104,5 +145,5 @@ struct ActivityItem: View {
 
         Spacer()
     }
-    .background(Constants.Colors.background)
+    .background(Constants.Colors.backgroundDark)
 }

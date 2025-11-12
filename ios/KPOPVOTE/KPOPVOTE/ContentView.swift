@@ -34,48 +34,12 @@ struct HomeView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: Constants.Spacing.large) {
-                    // User Header
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("こんにちは")
-                                .font(.system(size: Constants.Typography.captionSize))
-                                .foregroundColor(Constants.Colors.textSecondary)
-
-                            if let email = authService.currentUser?.email {
-                                Text(email.components(separatedBy: "@").first ?? email)
-                                    .font(.system(size: Constants.Typography.titleSize, weight: .bold))
-                                    .foregroundColor(Constants.Colors.textPrimary)
-                            }
-                        }
-
-                        Spacer()
-
-                        // Points Badge
-                        HStack(spacing: 4) {
-                            Image(systemName: "star.fill")
-                                .font(.system(size: 16))
-                                .foregroundColor(.yellow)
-                            Text("\(authService.currentUser?.points ?? 0)")
-                                .font(.system(size: Constants.Typography.bodySize, weight: .bold))
-                                .foregroundColor(Constants.Colors.textPrimary)
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(Color.yellow.opacity(0.2))
-                        .cornerRadius(20)
-                    }
-                    .padding(.horizontal)
-                    .padding(.top)
-
                     // Urgent Tasks Section
                     VStack(alignment: .leading, spacing: Constants.Spacing.small) {
                         HStack {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .font(.system(size: 20))
-                                .foregroundColor(.orange)
-                            Text("緊急VOTE")
+                            Text("Urgent VOTE Dashboard")
                                 .font(.system(size: Constants.Typography.titleSize, weight: .bold))
-                                .foregroundColor(Constants.Colors.textPrimary)
+                                .foregroundColor(Constants.Colors.textWhite)
                             Spacer()
                         }
                         .padding(.horizontal)
@@ -84,6 +48,7 @@ struct HomeView: View {
                             HStack {
                                 Spacer()
                                 ProgressView()
+                                    .tint(Constants.Colors.accentPink)
                                     .padding()
                                 Spacer()
                             }
@@ -94,7 +59,7 @@ struct HomeView: View {
                                     .foregroundColor(.green)
                                 Text("緊急タスクはありません")
                                     .font(.system(size: Constants.Typography.bodySize))
-                                    .foregroundColor(Constants.Colors.textSecondary)
+                                    .foregroundColor(Constants.Colors.textGray)
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 40)
@@ -107,11 +72,24 @@ struct HomeView: View {
                                                 await viewModel.completeTask(task)
                                             }
                                         }
-                                        .frame(width: 300)
+                                        .frame(width: 340)
                                     }
                                 }
                                 .padding(.horizontal)
                             }
+                        }
+
+                        // Tasks Pending Badge
+                        if !viewModel.urgentTasks.isEmpty {
+                            HStack(spacing: 4) {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(Constants.Colors.statusUrgent)
+                                Text("\(viewModel.urgentTasks.count) Tasks Pending")
+                                    .font(.system(size: Constants.Typography.captionSize, weight: .semibold))
+                                    .foregroundColor(Constants.Colors.statusUrgent)
+                            }
+                            .padding(.horizontal)
                         }
                     }
 
@@ -119,39 +97,44 @@ struct HomeView: View {
                     CommunityActivityView()
                         .padding(.horizontal)
 
-                    // Logout Button
-                    Button(action: {
-                        showLogoutConfirm = true
-                    }) {
-                        HStack {
-                            Image(systemName: "rectangle.portrait.and.arrow.right")
-                            Text("ログアウト")
-                        }
-                        .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.red.opacity(0.1))
-                        .foregroundColor(.red)
-                        .cornerRadius(10)
-                    }
-                    .padding(.horizontal)
-                    .padding(.bottom)
+                    // APP EXCLUSIVE VOTE Banner
+                    AppExclusiveVoteBanner()
+                        .padding(.horizontal)
+
+                    Spacer(minLength: 20)
                 }
+                .padding(.top)
             }
-            .background(Constants.Colors.background)
+            .background(Constants.Colors.backgroundDark)
             .navigationTitle("K-VOTE COLLECTOR")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("K-VOTE COLLECTOR")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(Constants.Colors.textWhite)
+                }
+
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
-                        Task {
-                            await viewModel.refresh()
-                        }
+                        // Navigate to notifications
                     }) {
-                        Image(systemName: "arrow.clockwise")
-                            .foregroundColor(Constants.Colors.primaryBlue)
+                        ZStack(alignment: .topTrailing) {
+                            Image(systemName: "bell.fill")
+                                .font(.system(size: 20))
+                                .foregroundColor(Constants.Colors.textWhite)
+
+                            // Notification badge
+                            Circle()
+                                .fill(Constants.Colors.statusUrgent)
+                                .frame(width: 8, height: 8)
+                                .offset(x: 4, y: -4)
+                        }
                     }
                 }
             }
+            .toolbarBackground(Constants.Colors.backgroundDark, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
             .task {
                 await viewModel.loadUrgentTasks()
             }
@@ -174,6 +157,72 @@ struct HomeView: View {
             } message: {
                 Text(viewModel.errorMessage ?? "エラーが発生しました")
             }
+        }
+    }
+}
+
+// MARK: - APP EXCLUSIVE VOTE Banner
+struct AppExclusiveVoteBanner: View {
+    var body: some View {
+        ZStack {
+            // Gradient background
+            LinearGradient(
+                colors: [
+                    Constants.Colors.gradientPurple,
+                    Constants.Colors.accentPink,
+                    Constants.Colors.accentBlue
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .frame(height: 180)
+            .cornerRadius(20)
+
+            // Abstract wave pattern overlay
+            GeometryReader { geometry in
+                Path { path in
+                    let width = geometry.size.width
+                    let height = geometry.size.height
+
+                    path.move(to: CGPoint(x: 0, y: height * 0.7))
+                    path.addQuadCurve(
+                        to: CGPoint(x: width, y: height * 0.5),
+                        control: CGPoint(x: width * 0.5, y: height * 0.3)
+                    )
+                    path.addLine(to: CGPoint(x: width, y: height))
+                    path.addLine(to: CGPoint(x: 0, y: height))
+                    path.closeSubpath()
+                }
+                .fill(Color.white.opacity(0.1))
+            }
+            .frame(height: 180)
+            .cornerRadius(20)
+
+            // Content
+            VStack(alignment: .leading, spacing: Constants.Spacing.small) {
+                Text("APP EXCLUSIVE VOTE")
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundColor(.white)
+
+                Text("Vote for the next chart-chosen song cover!")
+                    .font(.system(size: Constants.Typography.bodySize))
+                    .foregroundColor(.white.opacity(0.9))
+
+                Spacer()
+
+                HStack {
+                    Spacer()
+                    Image(systemName: "arrow.right.circle.fill")
+                        .font(.system(size: 32))
+                        .foregroundColor(.white)
+                }
+            }
+            .padding(Constants.Spacing.large)
+            .frame(height: 180, alignment: .topLeading)
+        }
+        .frame(height: 180)
+        .onTapGesture {
+            // Navigate to exclusive vote
         }
     }
 }

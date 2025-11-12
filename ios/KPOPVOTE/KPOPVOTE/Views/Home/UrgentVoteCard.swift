@@ -12,100 +12,116 @@ struct UrgentVoteCard: View {
     let onComplete: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Constants.Spacing.small) {
-            // Header with deadline badge
-            HStack {
-                // Deadline badge
-                HStack(spacing: 4) {
-                    Image(systemName: "clock.fill")
-                        .font(.system(size: 12))
-                    Text(task.timeRemaining)
-                        .font(.system(size: Constants.Typography.captionSize, weight: .bold))
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(task.isExpired ? Color.red : Constants.Colors.primaryBlue)
-                .foregroundColor(.white)
-                .cornerRadius(12)
-
-                Spacer()
-
-                // Complete button
-                Button(action: onComplete) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 24))
-                        .foregroundColor(.green)
-                }
-            }
-
-            // Task title
-            Text(task.title)
-                .font(.system(size: Constants.Typography.bodySize, weight: .bold))
-                .foregroundColor(Constants.Colors.textPrimary)
-                .lineLimit(2)
-
-            // Task URL
-            HStack(spacing: 4) {
-                Image(systemName: "link")
-                    .font(.system(size: 12))
-                    .foregroundColor(Constants.Colors.textSecondary)
-                Text(task.url)
-                    .font(.system(size: Constants.Typography.captionSize))
-                    .foregroundColor(Constants.Colors.textSecondary)
-                    .lineLimit(1)
-            }
-
-            // OGP Image if available
-            if let ogpImage = task.ogpImage, let imageUrl = URL(string: ogpImage) {
-                AsyncImage(url: imageUrl) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(height: 120)
-                        .clipped()
-                        .cornerRadius(8)
-                } placeholder: {
+        VStack(spacing: 0) {
+            // OGP Image with gradient overlay and content
+            ZStack(alignment: .topLeading) {
+                // Background Image
+                if let ogpImage = task.ogpImage, let imageUrl = URL(string: ogpImage) {
+                    AsyncImage(url: imageUrl) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(height: 220)
+                            .clipped()
+                    } placeholder: {
+                        Rectangle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [Constants.Colors.gradientBlue, Constants.Colors.gradientPurple],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(height: 220)
+                            .overlay(
+                                ProgressView()
+                                    .tint(.white)
+                            )
+                    }
+                } else {
+                    // Fallback gradient background
                     Rectangle()
-                        .fill(Color.gray.opacity(0.3))
-                        .frame(height: 120)
-                        .cornerRadius(8)
-                        .overlay(
-                            ProgressView()
+                        .fill(
+                            LinearGradient(
+                                colors: [Constants.Colors.gradientBlue, Constants.Colors.gradientPurple],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
                         )
+                        .frame(height: 220)
                 }
+
+                // Dark gradient overlay
+                LinearGradient(
+                    colors: [Color.black.opacity(0.6), Color.black.opacity(0.3), Color.clear],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 220)
+
+                // Content on top of image
+                VStack(alignment: .leading, spacing: Constants.Spacing.small) {
+                    // Urgent badge
+                    HStack(spacing: 4) {
+                        Text("Urgent:")
+                            .font(.system(size: 12, weight: .bold))
+                        Text(task.title)
+                            .font(.system(size: 14, weight: .bold))
+                            .lineLimit(1)
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Constants.Colors.statusUrgent)
+                    .cornerRadius(6)
+
+                    Spacer()
+
+                    // Time remaining badge
+                    HStack(spacing: 4) {
+                        Text("Ends in")
+                            .font(.system(size: 12, weight: .semibold))
+                        Text(task.timeRemaining)
+                            .font(.system(size: 12, weight: .bold))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Constants.Colors.statusUrgent)
+                    .cornerRadius(8)
+                }
+                .padding(Constants.Spacing.medium)
+                .frame(height: 220, alignment: .topLeading)
             }
 
-            // Deadline info
-            HStack {
-                Image(systemName: "calendar")
-                    .font(.system(size: 12))
-                    .foregroundColor(Constants.Colors.textSecondary)
-                Text(task.formattedDeadline)
-                    .font(.system(size: Constants.Typography.captionSize))
-                    .foregroundColor(Constants.Colors.textSecondary)
-
-                Spacer()
-
-                // Vote button
+            // Bottom section with Vote button
+            VStack(spacing: Constants.Spacing.small) {
+                // Vote Now button
                 Button(action: {
                     if let url = URL(string: task.url) {
                         UIApplication.shared.open(url)
                     }
                 }) {
-                    HStack(spacing: 4) {
-                        Text("投票する")
-                            .font(.system(size: Constants.Typography.captionSize, weight: .semibold))
-                        Image(systemName: "arrow.right.circle.fill")
-                            .font(.system(size: 14))
-                    }
-                    .foregroundColor(Constants.Colors.primaryBlue)
+                    Text("Vote Now")
+                        .font(.system(size: Constants.Typography.bodySize, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(
+                            LinearGradient(
+                                colors: [Constants.Colors.accentPink, Constants.Colors.gradientPink],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .cornerRadius(12)
                 }
             }
+            .padding(Constants.Spacing.medium)
+            .background(Constants.Colors.cardDark)
         }
-        .padding(Constants.Spacing.medium)
-        .background(Constants.Colors.cardBackground)
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+        .cornerRadius(20)
+        .shadow(color: Color.black.opacity(0.3), radius: 8, x: 0, y: 4)
     }
 }
 
