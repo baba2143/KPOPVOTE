@@ -69,14 +69,34 @@
 
 ## Month 3: 追加機能・仕上げ (Week 9-12)
 
-### Week 9-10: コミュニティ・独自投票
-**Day 41-50**: ソーシャル機能
-- コミュニティ画面
-- 投稿・いいね・コメント
-- 独自投票画面
-- 投票実行機能
+### Week 9-10: Votesタブ（Community/Discover）機能 🆕
+**Day 41-45**: コレクション発見機能
+- Votesタブ画面実装
+- トレンドコレクション一覧表示
+- 検索機能（タイトル、タグ、クリエイター）
+- コレクション詳細画面
+- 一括タスク追加機能
 
-**成果物**: コミュニティ・投票機能
+**Day 46-50**: マイコレクション作成機能
+- マイコレクション画面（作成済み/保存済み）
+- コレクション作成フォーム
+  - タイトル、説明入力
+  - タグ選択（最大10個）
+  - タスク選択（自分のタスクから）
+  - 公開範囲設定（public/followers/private）
+- コレクション保存機能
+- コレクション共有機能
+
+**API統合**:
+- `GET /api/collections` - コレクション一覧取得
+- `GET /api/collections/search` - 検索
+- `GET /api/collections/trending` - トレンド取得
+- `POST /api/collections` - コレクション作成
+- `POST /api/collections/:id/save` - 保存
+- `POST /api/collections/:id/add-to-tasks` - 一括タスク追加
+
+**成果物**: Votes/Community/Discover機能完成
+**詳細仕様**: `docs/votes-community-feature-spec.md` 参照
 
 ---
 
@@ -124,38 +144,61 @@ KVoteCollector/
 ├── Models/
 │   ├── User.swift
 │   ├── Task.swift
+│   ├── VoteCollection.swift         # 🆕 コレクションモデル
 │   ├── CommunityPost.swift
 │   └── Vote.swift
 ├── Views/
 │   ├── Auth/
 │   ├── Home/
+│   ├── Votes/                       # 🆕 Votesタブ
+│   │   ├── VotesListView.swift     # コレクション一覧
+│   │   ├── CollectionDetailView.swift
+│   │   ├── CreateCollectionView.swift
+│   │   └── MyCollectionsView.swift
 │   ├── Tasks/
 │   ├── Community/
 │   └── Profile/
 ├── ViewModels/
 │   ├── AuthViewModel.swift
 │   ├── TaskViewModel.swift
+│   ├── CollectionViewModel.swift    # 🆕 コレクション管理
 │   └── UserViewModel.swift
 └── Services/
     ├── FirebaseService.swift
     ├── AuthService.swift
-    └── TaskService.swift
+    ├── TaskService.swift
+    └── CollectionService.swift      # 🆕 コレクションAPI
 ```
 
 ---
 
 ## API統合チェックリスト
+
+### 認証・ユーザー管理
 - [ ] `/auth/register` - ユーザー登録
 - [ ] `/auth/login` - ログイン
 - [ ] `/user/setBias` - 推し設定
 - [ ] `/user/getBias` - 推し取得
+
+### タスク管理
 - [ ] `/task/register` - タスク登録
 - [ ] `/task/getUserTasks` - タスク取得
 - [ ] `/task/fetchOGP` - OGP取得
 - [ ] `/task/updateStatus` - ステータス更新
 
+### コレクション管理 🆕
+- [ ] `GET /api/collections` - コレクション一覧取得
+- [ ] `GET /api/collections/search` - 検索
+- [ ] `GET /api/collections/trending` - トレンド取得
+- [ ] `GET /api/collections/:id` - 詳細取得
+- [ ] `POST /api/collections` - 作成
+- [ ] `PUT /api/collections/:id` - 更新
+- [ ] `DELETE /api/collections/:id` - 削除
+- [ ] `POST /api/collections/:id/save` - 保存
+- [ ] `POST /api/collections/:id/add-to-tasks` - 一括タスク追加
+
 ---
 
-**最終更新**: 2025-11-11
+**最終更新**: 2025-01-13
 **作成者**: Claude Code
 **バージョン**: 1.0

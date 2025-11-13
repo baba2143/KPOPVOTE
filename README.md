@@ -61,6 +61,10 @@ KPOPVOTE/
 - SwiftUI実装
 - Firebase SDK統合
 - 全画面実装
+  - HOME: ダッシュボード・緊急タスク
+  - **Votes**: コミュニティ投票発見・共有プラットフォーム
+  - TASKS: マイタスク管理
+  - Profile: ユーザー設定
 - App Storeリリース
 
 ## セットアップ
@@ -144,11 +148,16 @@ firebase deploy
 
 ## ドキュメント
 
+### 設計・仕様
 - [プロジェクト仕様](./KPOP%20VOTE.md)
+- [Votesタブ（Community/Discover）機能仕様書](./docs/votes-community-feature-spec.md) ⭐ NEW
 - [データベース設計](./DBスキーマ設計案.txt)
+
+### 開発計画
 - [タスク管理計画](./タスク管理計画.md)
 - [実装ワークフロー](./implementation_workflow.md)
 - [Phase 0ワークフロー](./phase0_workflow.md)
+- [Phase 1ワークフロー](./phase1_workflow.md)
 
 ## ライセンス
 
@@ -160,4 +169,4 @@ K-VOTE COLLECTOR Development Team
 
 ---
 
-**最終更新**: 2025-11-11
+**最終更新**: 2025-01-13
