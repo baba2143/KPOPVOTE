@@ -22,15 +22,7 @@ export const listExternalApps = functions.https.onRequest(async (req, res) => {
   }
 
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      res.status(401).json({ success: false, error: "Unauthorized: No token provided" } as ApiResponse<null>);
-      return;
-    }
-
-    const token = authHeader.split("Bearer ")[1];
-    await admin.auth().verifyIdToken(token);
-
+    // No authentication required - external app masters are public configuration data
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
 
     const snapshot = await admin

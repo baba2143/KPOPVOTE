@@ -12,6 +12,7 @@ struct ExternalAppMaster: Identifiable, Codable {
     let appName: String
     let appUrl: String
     let iconUrl: String?
+    let defaultCoverImageUrl: String? // Recommended cover image for tasks
     let createdAt: Date?
     let updatedAt: Date?
 
@@ -20,6 +21,7 @@ struct ExternalAppMaster: Identifiable, Codable {
         case appName
         case appUrl
         case iconUrl
+        case defaultCoverImageUrl
         case createdAt
         case updatedAt
     }
@@ -38,6 +40,7 @@ extension ExternalAppMaster {
             appName: "IDOL CHAMP",
             appUrl: "https://www.idolchamp.com",
             iconUrl: "https://firebasestorage.googleapis.com/v0/b/kpopvote-9de2b.appspot.com/o/app-icons%2Fidol_champ.png?alt=media",
+            defaultCoverImageUrl: nil,
             createdAt: Date(),
             updatedAt: Date()
         ),
@@ -46,6 +49,7 @@ extension ExternalAppMaster {
             appName: "Mnet Plus",
             appUrl: "https://www.mnetplus.world",
             iconUrl: "https://firebasestorage.googleapis.com/v0/b/kpopvote-9de2b.appspot.com/o/app-icons%2Fmnet_plus.png?alt=media",
+            defaultCoverImageUrl: nil,
             createdAt: Date(),
             updatedAt: Date()
         ),
@@ -54,6 +58,7 @@ extension ExternalAppMaster {
             appName: "MUBEAT",
             appUrl: "https://www.mubeat.io",
             iconUrl: "https://firebasestorage.googleapis.com/v0/b/kpopvote-9de2b.appspot.com/o/app-icons%2Fmubeat.png?alt=media",
+            defaultCoverImageUrl: nil,
             createdAt: Date(),
             updatedAt: Date()
         )

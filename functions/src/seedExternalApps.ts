@@ -20,18 +20,21 @@ const externalAppsData = [
     appName: "IDOL CHAMP",
     appUrl: "https://www.idolchamp.com",
     iconUrl: `${STORAGE_BASE}idol_champ.png?alt=media`,
+    defaultCoverImageUrl: null, // To be set by admin later
   },
   {
     appId: "mnet-plus",
     appName: "Mnet Plus",
     appUrl: "https://www.mnetplus.world",
     iconUrl: `${STORAGE_BASE}mnet_plus.png?alt=media`,
+    defaultCoverImageUrl: null, // To be set by admin later
   },
   {
     appId: "mubeat",
     appName: "MUBEAT",
     appUrl: "https://www.mubeat.io",
     iconUrl: `${STORAGE_BASE}mubeat.png?alt=media`,
+    defaultCoverImageUrl: null, // To be set by admin later
   },
 ];
 
@@ -62,19 +65,23 @@ export const seedExternalApps = onRequest(
       for (const app of externalAppsData) {
         const { appId, ...appData } = app;
 
-        // Check if app already exists
         const docRef = db.collection("externalAppMasters").doc(appId);
         const doc = await docRef.get();
 
         if (doc.exists) {
-          logger.info(`External app "${app.appName}" (${appId}) already exists, skipping...`);
+          // Update existing document with new fields
+          await docRef.update({
+            ...appData,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+          logger.info(`Updated external app "${app.appName}" (${appId})`);
           results.push({
             appId,
             appName: app.appName,
-            status: "skipped",
-            reason: "already exists",
+            status: "updated",
           });
         } else {
+          // Create new document
           await docRef.set({
             ...appData,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),

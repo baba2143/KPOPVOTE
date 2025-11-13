@@ -7,6 +7,11 @@
 
 import Foundation
 
+enum CoverImageSource: String, Codable {
+    case externalApp = "external_app"
+    case userUpload = "user_upload"
+}
+
 struct VoteTask: Codable, Identifiable {
     let id: String
     let userId: String
@@ -18,9 +23,8 @@ struct VoteTask: Codable, Identifiable {
     var externalAppId: String?
     var externalAppName: String?
     var externalAppIconUrl: String?
-    var ogpImage: String?
-    var ogpTitle: String?
-    var ogpDescription: String?
+    var coverImage: String?
+    var coverImageSource: CoverImageSource?
     var createdAt: Date
     var updatedAt: Date
 
@@ -42,9 +46,8 @@ struct VoteTask: Codable, Identifiable {
         case externalAppId
         case externalAppName
         case externalAppIconUrl
-        case ogpImage
-        case ogpTitle
-        case ogpDescription
+        case coverImage
+        case coverImageSource
         case createdAt
         case updatedAt
     }
@@ -64,9 +67,8 @@ struct VoteTask: Codable, Identifiable {
         externalAppId = try container.decodeIfPresent(String.self, forKey: .externalAppId)
         externalAppName = try container.decodeIfPresent(String.self, forKey: .externalAppName)
         externalAppIconUrl = try container.decodeIfPresent(String.self, forKey: .externalAppIconUrl)
-        ogpImage = try container.decodeIfPresent(String.self, forKey: .ogpImage)
-        ogpTitle = try container.decodeIfPresent(String.self, forKey: .ogpTitle)
-        ogpDescription = try container.decodeIfPresent(String.self, forKey: .ogpDescription)
+        coverImage = try container.decodeIfPresent(String.self, forKey: .coverImage)
+        coverImageSource = try container.decodeIfPresent(CoverImageSource.self, forKey: .coverImageSource)
 
         // Handle Firestore Timestamp for deadline
         if let timestamp = try? container.decode(Double.self, forKey: .deadline) {
@@ -102,9 +104,8 @@ struct VoteTask: Codable, Identifiable {
         externalAppId: String? = nil,
         externalAppName: String? = nil,
         externalAppIconUrl: String? = nil,
-        ogpImage: String? = nil,
-        ogpTitle: String? = nil,
-        ogpDescription: String? = nil
+        coverImage: String? = nil,
+        coverImageSource: CoverImageSource? = nil
     ) {
         self.id = id
         self.userId = userId
@@ -116,9 +117,8 @@ struct VoteTask: Codable, Identifiable {
         self.externalAppId = externalAppId
         self.externalAppName = externalAppName
         self.externalAppIconUrl = externalAppIconUrl
-        self.ogpImage = ogpImage
-        self.ogpTitle = ogpTitle
-        self.ogpDescription = ogpDescription
+        self.coverImage = coverImage
+        self.coverImageSource = coverImageSource
         self.createdAt = Date()
         self.updatedAt = Date()
     }
