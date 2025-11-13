@@ -11,9 +11,11 @@
 
 import * as admin from "firebase-admin";
 
-// Initialize Firebase Admin
+// Initialize Firebase Admin with Application Default Credentials (ADC)
 if (!admin.apps.length) {
-  admin.initializeApp();
+  admin.initializeApp({
+    projectId: "kpopvote-9de2b",
+  });
 }
 
 const db = admin.firestore();

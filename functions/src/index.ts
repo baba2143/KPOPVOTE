@@ -46,6 +46,7 @@ export { createExternalApp } from "./master/createExternalApp";
 export { listExternalApps } from "./master/listExternalApps";
 export { updateExternalApp } from "./master/updateExternalApp";
 export { deleteExternalApp } from "./master/deleteExternalApp";
+export { seedExternalApps } from "./seedExternalApps";
 
 // Community functions (Phase 0+)
 export { getCommunityPosts } from "./community/getCommunityPosts";

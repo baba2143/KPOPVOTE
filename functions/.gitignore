@@ -23,6 +23,10 @@ firebase-debug.log*
 .env.local
 .runtimeconfig.json
 
+# Service Account Keys (NEVER commit these!)
+service-account-key.json
+*-firebase-adminsdk-*.json
+
 # IDE
 .idea/
 .vscode/
