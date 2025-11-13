@@ -70,7 +70,27 @@ class TaskService: ObservableObject {
         let voteTasks = result.data.tasks.map { task -> VoteTask in
             // ISO 8601文字列をDateに変換
             let isoFormatter = ISO8601DateFormatter()
-            let deadline = isoFormatter.date(from: task.deadline) ?? Date()
+            isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+
+            guard let deadline = isoFormatter.date(from: task.deadline) else {
+                print("❌ [TaskService] Failed to parse deadline: '\(task.deadline)'")
+                print("❌ [TaskService] Using Date() fallback, task will expire immediately")
+                return VoteTask(
+                    id: task.taskId,
+                    userId: Auth.auth().currentUser?.uid ?? "",
+                    title: task.title,
+                    url: task.url,
+                    deadline: Date(),
+                    status: .expired,
+                    biasIds: task.targetMembers,
+                    externalAppId: task.externalAppId,
+                    externalAppName: task.externalAppName,
+                    externalAppIconUrl: task.externalAppIconUrl,
+                    coverImage: task.coverImage,
+                    coverImageSource: task.coverImageSource.flatMap { CoverImageSource(rawValue: $0) }
+                )
+            }
+
             let _ = task.createdAt.flatMap { isoFormatter.date(from: $0) } ?? Date()
             let _ = task.updatedAt.flatMap { isoFormatter.date(from: $0) } ?? Date()
 
@@ -237,7 +257,7 @@ class TaskService: ObservableObject {
 
         // Convert deadline to ISO 8601 format
         let isoFormatter = ISO8601DateFormatter()
-        isoFormatter.formatOptions = [.withInternetDateTime]
+        isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         let deadlineString = isoFormatter.string(from: deadline)
 
         var body: [String: Any] = [
