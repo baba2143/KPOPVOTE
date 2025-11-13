@@ -71,8 +71,8 @@ class TaskService: ObservableObject {
             // ISO 8601文字列をDateに変換
             let isoFormatter = ISO8601DateFormatter()
             let deadline = isoFormatter.date(from: task.deadline) ?? Date()
-            let createdAt = task.createdAt.flatMap { isoFormatter.date(from: $0) } ?? Date()
-            let updatedAt = task.updatedAt.flatMap { isoFormatter.date(from: $0) } ?? Date()
+            let _ = task.createdAt.flatMap { isoFormatter.date(from: $0) } ?? Date()
+            let _ = task.updatedAt.flatMap { isoFormatter.date(from: $0) } ?? Date()
 
             // isCompletedからstatusを推測
             let status: VoteTask.TaskStatus = task.isCompleted ? .completed :

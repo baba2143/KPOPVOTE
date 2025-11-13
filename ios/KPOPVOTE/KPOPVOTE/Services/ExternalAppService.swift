@@ -62,6 +62,7 @@ class ExternalAppService {
                 appName: app.appName,
                 appUrl: app.appUrl,
                 iconUrl: app.iconUrl,
+                defaultCoverImageUrl: app.defaultCoverImageUrl,
                 createdAt: createdAt,
                 updatedAt: updatedAt
             )
@@ -110,6 +111,7 @@ struct ListExternalAppsResponse: Codable {
             let appName: String
             let appUrl: String
             let iconUrl: String?
+            let defaultCoverImageUrl: String?
             let createdAt: String?
             let updatedAt: String?
         }

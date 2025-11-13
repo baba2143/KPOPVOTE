@@ -66,8 +66,7 @@ struct ImagePicker: View {
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.blue.opacity(0.5), lineWidth: 2)
-                            .strokeBorder(style: StrokeStyle(lineWidth: 2, dash: [5]))
+                            .stroke(Color.blue.opacity(0.5), style: StrokeStyle(lineWidth: 2, dash: [5]))
                     )
                 }
             }

@@ -13,10 +13,10 @@ struct UrgentVoteCard: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // OGP Image with gradient overlay and content
+            // Cover Image with gradient overlay and content
             ZStack(alignment: .topLeading) {
                 // Background Image
-                if let ogpImage = task.ogpImage, let imageUrl = URL(string: ogpImage) {
+                if let coverImage = task.coverImage, let imageUrl = URL(string: coverImage) {
                     AsyncImage(url: imageUrl) { image in
                         image
                             .resizable()
