@@ -50,8 +50,8 @@ export interface Task {
   externalAppId?: string;
   isCompleted: boolean;
   completedAt?: Date;
-  ogpTitle?: string;
-  ogpImage?: string;
+  coverImage?: string;
+  coverImageSource?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -62,6 +62,8 @@ export interface TaskRegisterRequest {
   deadline: string; // ISO 8601 format
   targetMembers?: string[];
   externalAppId?: string;
+  coverImage?: string;
+  coverImageSource?: string;
 }
 
 export interface TaskUpdateStatusRequest {
@@ -86,8 +88,8 @@ export interface TaskRegisterResponse {
   externalAppId?: string | null;
   isCompleted: boolean;
   completedAt: null;
-  ogpTitle: null;
-  ogpImage: null;
+  coverImage: string | null;
+  coverImageSource: string | null;
 }
 
 export interface TaskData {
@@ -99,8 +101,8 @@ export interface TaskData {
   externalAppId?: string | null;
   isCompleted: boolean;
   completedAt: string | null;
-  ogpTitle: string | null;
-  ogpImage: string | null;
+  coverImage: string | null;
+  coverImageSource: string | null;
   createdAt: string | null;
   updatedAt: string | null;
 }

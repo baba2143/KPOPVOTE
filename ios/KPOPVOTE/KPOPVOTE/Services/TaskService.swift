@@ -7,6 +7,8 @@
 
 import Foundation
 import FirebaseAuth
+import FirebaseStorage
+import UIKit
 
 class TaskService: ObservableObject {
     @Published var tasks: [VoteTask] = []
@@ -78,6 +80,12 @@ class TaskService: ObservableObject {
 
             print("📋 [TaskService] Task: \(task.title), Deadline: \(task.deadline), Status: \(status)")
 
+            // Convert coverImageSource string to enum
+            let coverImageSource: CoverImageSource? = {
+                guard let sourceString = task.coverImageSource else { return nil }
+                return CoverImageSource(rawValue: sourceString)
+            }()
+
             return VoteTask(
                 id: task.taskId,
                 userId: userId,
@@ -89,9 +97,8 @@ class TaskService: ObservableObject {
                 externalAppId: task.externalAppId,
                 externalAppName: task.externalAppName,
                 externalAppIconUrl: task.externalAppIconUrl,
-                ogpImage: task.ogpImage,
-                ogpTitle: task.ogpTitle,
-                ogpDescription: nil
+                coverImage: task.coverImage,
+                coverImageSource: coverImageSource
             )
         }
 
@@ -162,8 +169,58 @@ class TaskService: ObservableObject {
         print("✅ [TaskService] Task marked as completed: \(taskId)")
     }
 
+    // MARK: - Upload Cover Image
+    func uploadCoverImage(_ image: UIImage) async throws -> String {
+        guard let userId = Auth.auth().currentUser?.uid else {
+            throw TaskError.notAuthenticated
+        }
+
+        // Compress and convert image to JPEG data
+        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+            throw TaskError.imageCompressionFailed
+        }
+
+        // Check file size (max 10MB)
+        let maxSize = 10 * 1024 * 1024 // 10MB
+        guard imageData.count <= maxSize else {
+            throw TaskError.imageTooLarge
+        }
+
+        // Create unique filename
+        let filename = "\(UUID().uuidString).jpg"
+        let storagePath = "task-cover-images/\(userId)/\(filename)"
+
+        // Get Firebase Storage reference
+        let storageRef = Storage.storage().reference()
+        let imageRef = storageRef.child(storagePath)
+
+        print("📤 [TaskService] Uploading cover image to: \(storagePath)")
+
+        // Upload image data
+        let metadata = StorageMetadata()
+        metadata.contentType = "image/jpeg"
+
+        let _ = try await imageRef.putDataAsync(imageData, metadata: metadata)
+
+        // Get download URL
+        let downloadURL = try await imageRef.downloadURL()
+        let downloadURLString = downloadURL.absoluteString
+
+        print("✅ [TaskService] Cover image uploaded: \(downloadURLString)")
+
+        return downloadURLString
+    }
+
     // MARK: - Register New Task
-    func registerTask(title: String, url: String, deadline: Date, biasIds: [String], externalAppId: String? = nil) async throws -> VoteTask {
+    func registerTask(
+        title: String,
+        url: String,
+        deadline: Date,
+        biasIds: [String],
+        externalAppId: String? = nil,
+        coverImage: String? = nil,
+        coverImageSource: CoverImageSource? = nil
+    ) async throws -> VoteTask {
         guard let token = try await Auth.auth().currentUser?.getIDToken() else {
             throw TaskError.notAuthenticated
         }
@@ -194,6 +251,17 @@ class TaskService: ObservableObject {
         if let externalAppId = externalAppId {
             body["externalAppId"] = externalAppId
         }
+
+        // Add coverImage if provided
+        if let coverImage = coverImage {
+            body["coverImage"] = coverImage
+        }
+
+        // Add coverImageSource if provided
+        if let coverImageSource = coverImageSource {
+            body["coverImageSource"] = coverImageSource.rawValue
+        }
+
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         print("📡 [TaskService] Registering new task: \(title)")
@@ -233,9 +301,8 @@ class TaskService: ObservableObject {
             externalAppId: result.data.externalAppId,
             externalAppName: nil,
             externalAppIconUrl: nil,
-            ogpImage: result.data.ogpImage,
-            ogpTitle: result.data.ogpTitle,
-            ogpDescription: nil
+            coverImage: result.data.coverImage,
+            coverImageSource: result.data.coverImageSource
         )
     }
 }
@@ -247,6 +314,8 @@ enum TaskError: LocalizedError {
     case invalidResponse
     case serverError(Int)
     case decodingError
+    case imageCompressionFailed
+    case imageTooLarge
 
     var errorDescription: String? {
         switch self {
@@ -260,6 +329,10 @@ enum TaskError: LocalizedError {
             return "サーバーエラーが発生しました (コード: \(code))"
         case .decodingError:
             return "データの解析に失敗しました"
+        case .imageCompressionFailed:
+            return "画像の圧縮に失敗しました"
+        case .imageTooLarge:
+            return "画像サイズが大きすぎます (最大10MB)"
         }
     }
 }
@@ -288,8 +361,8 @@ struct RegisterTaskSimpleResponse: Codable {
         let externalAppId: String?
         let isCompleted: Bool
         let completedAt: String?
-        let ogpTitle: String?
-        let ogpImage: String?
+        let coverImage: String?
+        let coverImageSource: CoverImageSource?
     }
 }
 
@@ -313,8 +386,8 @@ struct GetUserTasksResponse: Codable {
             let externalAppIconUrl: String?
             let isCompleted: Bool
             let completedAt: String?       // ISO 8601文字列
-            let ogpTitle: String?
-            let ogpImage: String?
+            let coverImage: String?
+            let coverImageSource: String?
             let createdAt: String?         // ISO 8601文字列
             let updatedAt: String?         // ISO 8601文字列
         }

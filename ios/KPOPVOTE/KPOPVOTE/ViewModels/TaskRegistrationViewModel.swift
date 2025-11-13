@@ -19,6 +19,12 @@ class TaskRegistrationViewModel: ObservableObject {
     @Published var externalApps: [ExternalAppMaster] = []
     @Published var selectedAppId: String? = nil
 
+    // Cover Image Selection
+    @Published var selectedCoverImage: UIImage? = nil
+    @Published var coverImageURL: String? = nil
+    @Published var coverImageSource: CoverImageSource? = nil
+    @Published var isUploadingImage = false
+
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var showError = false
@@ -37,6 +43,53 @@ class TaskRegistrationViewModel: ObservableObject {
             print("❌ [TaskRegistrationViewModel] Failed to load external apps: \(error.localizedDescription)")
             // Don't show error to user - external app selection is optional
         }
+    }
+
+    // MARK: - Handle External App Selection
+    func handleExternalAppSelection(_ appId: String?) {
+        selectedAppId = appId
+
+        // Auto-set cover image from external app's defaultCoverImageUrl
+        if let appId = appId,
+           let selectedApp = externalApps.first(where: { $0.id == appId }),
+           let defaultCoverImageUrl = selectedApp.defaultCoverImageUrl,
+           !defaultCoverImageUrl.isEmpty {
+            print("🖼️ [TaskRegistrationViewModel] Auto-setting cover image from external app: \(defaultCoverImageUrl)")
+            coverImageURL = defaultCoverImageUrl
+            coverImageSource = .externalApp
+            selectedCoverImage = nil // Clear user-selected image
+        } else if appId == nil {
+            // Clear cover image when no external app is selected
+            coverImageURL = nil
+            coverImageSource = nil
+            selectedCoverImage = nil
+        }
+    }
+
+    // MARK: - Upload Cover Image
+    func uploadCoverImage() async {
+        guard let image = selectedCoverImage else {
+            print("⚠️ [TaskRegistrationViewModel] No image selected")
+            return
+        }
+
+        isUploadingImage = true
+
+        do {
+            print("📤 [TaskRegistrationViewModel] Uploading cover image...")
+            let downloadURL = try await taskService.uploadCoverImage(image)
+            print("✅ [TaskRegistrationViewModel] Image uploaded: \(downloadURL)")
+
+            coverImageURL = downloadURL
+            coverImageSource = .userUpload
+
+        } catch {
+            print("❌ [TaskRegistrationViewModel] Failed to upload image: \(error.localizedDescription)")
+            errorMessage = "画像のアップロードに失敗しました: \(error.localizedDescription)"
+            showError = true
+        }
+
+        isUploadingImage = false
     }
 
     // MARK: - Validation
@@ -64,6 +117,20 @@ class TaskRegistrationViewModel: ObservableObject {
         errorMessage = nil
 
         do {
+            // Upload cover image if user selected one
+            if selectedCoverImage != nil && coverImageURL == nil {
+                print("📤 [TaskRegistrationViewModel] Uploading user-selected cover image...")
+                await uploadCoverImage()
+
+                // Check if upload failed
+                if coverImageURL == nil {
+                    errorMessage = "画像のアップロードに失敗しました"
+                    showError = true
+                    isLoading = false
+                    return
+                }
+            }
+
             // Parse bias IDs from comma-separated text
             let biasIds = biasIdsText
                 .split(separator: ",")
@@ -74,13 +141,19 @@ class TaskRegistrationViewModel: ObservableObject {
             if let appId = selectedAppId {
                 print("📱 [TaskRegistrationViewModel] Selected external app: \(appId)")
             }
+            if let coverImage = coverImageURL {
+                print("🖼️ [TaskRegistrationViewModel] Cover image: \(coverImage)")
+                print("📍 [TaskRegistrationViewModel] Cover image source: \(coverImageSource?.rawValue ?? "nil")")
+            }
 
             let task = try await taskService.registerTask(
                 title: title,
                 url: url,
                 deadline: deadline,
                 biasIds: biasIds,
-                externalAppId: selectedAppId
+                externalAppId: selectedAppId,
+                coverImage: coverImageURL,
+                coverImageSource: coverImageSource
             )
 
             print("✅ [TaskRegistrationViewModel] Task registered successfully: \(task.id)")
@@ -105,6 +178,9 @@ class TaskRegistrationViewModel: ObservableObject {
         deadline = Date().addingTimeInterval(86400)
         biasIdsText = ""
         selectedAppId = nil
+        selectedCoverImage = nil
+        coverImageURL = nil
+        coverImageSource = nil
     }
 
     // MARK: - Validation Error Messages

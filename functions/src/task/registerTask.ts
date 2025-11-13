@@ -49,7 +49,7 @@ export const registerTask = functions.https.onRequest(async (req, res) => {
     const uid = decodedToken.uid;
 
     // Get request body
-    const { title, url, deadline, targetMembers, externalAppId } =
+    const { title, url, deadline, targetMembers, externalAppId, coverImage, coverImageSource } =
       req.body as TaskRegisterRequest;
 
     // Validate required fields
@@ -105,8 +105,8 @@ export const registerTask = functions.https.onRequest(async (req, res) => {
       externalAppId: externalAppId || null,
       isCompleted: false,
       completedAt: null,
-      ogpTitle: null,
-      ogpImage: null,
+      coverImage: coverImage || null,
+      coverImageSource: coverImageSource || null,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
@@ -125,8 +125,8 @@ export const registerTask = functions.https.onRequest(async (req, res) => {
         externalAppId: taskData.externalAppId,
         isCompleted: taskData.isCompleted,
         completedAt: null,
-        ogpTitle: null,
-        ogpImage: null,
+        coverImage: taskData.coverImage,
+        coverImageSource: taskData.coverImageSource,
       },
     } as ApiResponse<TaskRegisterResponse>);
   } catch (error: unknown) {

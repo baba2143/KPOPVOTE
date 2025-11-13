@@ -83,8 +83,8 @@ export const getUserTasks = functions.https.onRequest(async (req, res) => {
         completedAt: data.completedAt ?
           data.completedAt.toDate().toISOString() :
           null,
-        ogpTitle: data.ogpTitle || null,
-        ogpImage: data.ogpImage || null,
+        coverImage: data.coverImage || null,
+        coverImageSource: data.coverImageSource || null,
         createdAt: data.createdAt ?
           data.createdAt.toDate().toISOString() :
           null,

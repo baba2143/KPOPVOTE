@@ -136,6 +136,9 @@ struct TaskRegistrationView: View {
                             RoundedRectangle(cornerRadius: 12)
                                 .stroke(Constants.Colors.accentBlue.opacity(0.3), lineWidth: 1)
                         )
+                        .onChange(of: viewModel.selectedAppId) { newValue in
+                            viewModel.handleExternalAppSelection(newValue)
+                        }
 
                         Text("投票サイトを選択すると、タスク一覧にアイコンが表示されます")
                             .font(.system(size: 12))
@@ -161,6 +164,72 @@ struct TaskRegistrationView: View {
                             )
 
                         Text("複数のメンバーを指定する場合はカンマで区切ってください")
+                            .font(.system(size: 12))
+                            .foregroundColor(Constants.Colors.textGray)
+                    }
+
+                    // Cover Image Section
+                    VStack(alignment: .leading, spacing: Constants.Spacing.small) {
+                        Text("カバー画像（任意）")
+                            .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
+                            .foregroundColor(Constants.Colors.textWhite)
+
+                        // Show default cover image from external app or user-selected image
+                        if let coverImageURL = viewModel.coverImageURL {
+                            // Display URL-based image (from external app or uploaded)
+                            AsyncImage(url: URL(string: coverImageURL)) { phase in
+                                switch phase {
+                                case .success(let image):
+                                    image
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(maxWidth: .infinity, maxHeight: 200)
+                                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(Constants.Colors.accentBlue.opacity(0.3), lineWidth: 1)
+                                        )
+                                case .failure(_):
+                                    Text("画像の読み込みに失敗しました")
+                                        .foregroundColor(.red)
+                                case .empty:
+                                    ProgressView()
+                                @unknown default:
+                                    EmptyView()
+                                }
+                            }
+
+                            HStack {
+                                if let source = viewModel.coverImageSource {
+                                    Text(source == .externalApp ? "推奨画像を使用" : "カスタム画像を使用")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(Constants.Colors.textGray)
+                                }
+                                Spacer()
+                                if viewModel.coverImageSource == .userUpload {
+                                    Button(action: {
+                                        viewModel.coverImageURL = nil
+                                        viewModel.coverImageSource = nil
+                                        viewModel.selectedCoverImage = nil
+                                    }) {
+                                        Text("削除")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(.red)
+                                    }
+                                }
+                            }
+                        } else {
+                            // Image Picker
+                            ImagePicker(
+                                selectedImage: $viewModel.selectedCoverImage,
+                                placeholder: "カバー画像を選択",
+                                maxHeight: 150
+                            )
+                        }
+
+                        Text(viewModel.selectedAppId != nil && viewModel.coverImageURL != nil && viewModel.coverImageSource == .externalApp
+                             ? "選択した投票サイトの推奨画像が使用されます"
+                             : "投票サイトを選択すると推奨画像が自動設定されます")
                             .font(.system(size: 12))
                             .foregroundColor(Constants.Colors.textGray)
                     }
