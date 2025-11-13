@@ -49,7 +49,7 @@ export const registerTask = functions.https.onRequest(async (req, res) => {
     const uid = decodedToken.uid;
 
     // Get request body
-    const { title, url, deadline, targetMembers } =
+    const { title, url, deadline, targetMembers, externalAppId } =
       req.body as TaskRegisterRequest;
 
     // Validate required fields
@@ -102,6 +102,7 @@ export const registerTask = functions.https.onRequest(async (req, res) => {
       url,
       deadline: admin.firestore.Timestamp.fromDate(new Date(deadline)),
       targetMembers: targetMembers || [],
+      externalAppId: externalAppId || null,
       isCompleted: false,
       completedAt: null,
       ogpTitle: null,
@@ -121,6 +122,7 @@ export const registerTask = functions.https.onRequest(async (req, res) => {
         url: taskData.url,
         deadline: deadline,
         targetMembers: taskData.targetMembers,
+        externalAppId: taskData.externalAppId,
         isCompleted: taskData.isCompleted,
         completedAt: null,
         ogpTitle: null,

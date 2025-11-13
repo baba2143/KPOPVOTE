@@ -47,6 +47,7 @@ export interface Task {
   url: string;
   deadline: Date;
   targetMembers: string[];
+  externalAppId?: string;
   isCompleted: boolean;
   completedAt?: Date;
   ogpTitle?: string;
@@ -60,6 +61,7 @@ export interface TaskRegisterRequest {
   url: string;
   deadline: string; // ISO 8601 format
   targetMembers?: string[];
+  externalAppId?: string;
 }
 
 export interface TaskUpdateStatusRequest {
@@ -81,6 +83,7 @@ export interface TaskRegisterResponse {
   url: string;
   deadline: string;
   targetMembers: string[];
+  externalAppId?: string | null;
   isCompleted: boolean;
   completedAt: null;
   ogpTitle: null;
@@ -93,6 +96,7 @@ export interface TaskData {
   url: string;
   deadline: string;
   targetMembers: string[];
+  externalAppId?: string | null;
   isCompleted: boolean;
   completedAt: string | null;
   ogpTitle: string | null;

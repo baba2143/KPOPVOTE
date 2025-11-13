@@ -78,6 +78,7 @@ export const getUserTasks = functions.https.onRequest(async (req, res) => {
         url: data.url,
         deadline: data.deadline.toDate().toISOString(),
         targetMembers: data.targetMembers || [],
+        externalAppId: data.externalAppId || null,
         isCompleted: data.isCompleted,
         completedAt: data.completedAt ?
           data.completedAt.toDate().toISOString() :
