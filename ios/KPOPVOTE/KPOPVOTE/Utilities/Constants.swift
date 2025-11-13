@@ -77,6 +77,9 @@ enum Constants {
         static let fetchTaskOGP = "\(apiBaseURL)/fetchTaskOGP"
         static let updateTaskStatus = "\(apiBaseURL)/updateTaskStatus"
 
+        // External App Master
+        static let listExternalApps = "\(apiBaseURL)/listExternalApps"
+
         // Vote (Optional)
         static let getVoteList = "\(apiBaseURL)/getVoteList"
         static let castVote = "\(apiBaseURL)/castVote"

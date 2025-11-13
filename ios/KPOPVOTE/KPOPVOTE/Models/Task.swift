@@ -15,6 +15,9 @@ struct VoteTask: Codable, Identifiable {
     var deadline: Date
     var status: TaskStatus
     var biasIds: [String]
+    var externalAppId: String?
+    var externalAppName: String?
+    var externalAppIconUrl: String?
     var ogpImage: String?
     var ogpTitle: String?
     var ogpDescription: String?
@@ -36,6 +39,9 @@ struct VoteTask: Codable, Identifiable {
         case deadline
         case status
         case biasIds
+        case externalAppId
+        case externalAppName
+        case externalAppIconUrl
         case ogpImage
         case ogpTitle
         case ogpDescription
@@ -55,6 +61,9 @@ struct VoteTask: Codable, Identifiable {
         status = TaskStatus(rawValue: statusString) ?? .pending
 
         biasIds = try container.decode([String].self, forKey: .biasIds)
+        externalAppId = try container.decodeIfPresent(String.self, forKey: .externalAppId)
+        externalAppName = try container.decodeIfPresent(String.self, forKey: .externalAppName)
+        externalAppIconUrl = try container.decodeIfPresent(String.self, forKey: .externalAppIconUrl)
         ogpImage = try container.decodeIfPresent(String.self, forKey: .ogpImage)
         ogpTitle = try container.decodeIfPresent(String.self, forKey: .ogpTitle)
         ogpDescription = try container.decodeIfPresent(String.self, forKey: .ogpDescription)
@@ -90,6 +99,9 @@ struct VoteTask: Codable, Identifiable {
         deadline: Date,
         status: TaskStatus = .pending,
         biasIds: [String] = [],
+        externalAppId: String? = nil,
+        externalAppName: String? = nil,
+        externalAppIconUrl: String? = nil,
         ogpImage: String? = nil,
         ogpTitle: String? = nil,
         ogpDescription: String? = nil
@@ -101,6 +113,9 @@ struct VoteTask: Codable, Identifiable {
         self.deadline = deadline
         self.status = status
         self.biasIds = biasIds
+        self.externalAppId = externalAppId
+        self.externalAppName = externalAppName
+        self.externalAppIconUrl = externalAppIconUrl
         self.ogpImage = ogpImage
         self.ogpTitle = ogpTitle
         self.ogpDescription = ogpDescription

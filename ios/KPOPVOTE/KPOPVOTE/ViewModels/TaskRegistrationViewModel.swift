@@ -15,12 +15,29 @@ class TaskRegistrationViewModel: ObservableObject {
     @Published var deadline: Date = Date().addingTimeInterval(86400) // Default: 24 hours from now
     @Published var biasIdsText: String = "" // Comma-separated bias IDs
 
+    // External App Selection
+    @Published var externalApps: [ExternalAppMaster] = []
+    @Published var selectedAppId: String? = nil
+
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var showError = false
     @Published var showSuccess = false
 
     private let taskService = TaskService()
+    private let externalAppService = ExternalAppService()
+
+    // MARK: - Load External Apps
+    func loadExternalApps() async {
+        do {
+            print("📡 [TaskRegistrationViewModel] Loading external apps...")
+            externalApps = try await externalAppService.getExternalApps()
+            print("✅ [TaskRegistrationViewModel] Loaded \(externalApps.count) external apps")
+        } catch {
+            print("❌ [TaskRegistrationViewModel] Failed to load external apps: \(error.localizedDescription)")
+            // Don't show error to user - external app selection is optional
+        }
+    }
 
     // MARK: - Validation
     var isFormValid: Bool {
@@ -54,12 +71,16 @@ class TaskRegistrationViewModel: ObservableObject {
                 .filter { !$0.isEmpty }
 
             print("📡 [TaskRegistrationViewModel] Registering task: \(title)")
+            if let appId = selectedAppId {
+                print("📱 [TaskRegistrationViewModel] Selected external app: \(appId)")
+            }
 
             let task = try await taskService.registerTask(
                 title: title,
                 url: url,
                 deadline: deadline,
-                biasIds: biasIds
+                biasIds: biasIds,
+                externalAppId: selectedAppId
             )
 
             print("✅ [TaskRegistrationViewModel] Task registered successfully: \(task.id)")
@@ -83,6 +104,7 @@ class TaskRegistrationViewModel: ObservableObject {
         url = ""
         deadline = Date().addingTimeInterval(86400)
         biasIdsText = ""
+        selectedAppId = nil
     }
 
     // MARK: - Validation Error Messages

@@ -96,6 +96,52 @@ struct TaskRegistrationView: View {
                         }
                     }
 
+                    // External App Picker
+                    VStack(alignment: .leading, spacing: Constants.Spacing.small) {
+                        Text("投票サイト（任意）")
+                            .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
+                            .foregroundColor(Constants.Colors.textWhite)
+
+                        Picker("投票サイトを選択", selection: $viewModel.selectedAppId) {
+                            Text("なし").tag(nil as String?)
+                            ForEach(viewModel.externalApps) { app in
+                                HStack {
+                                    if let iconUrl = app.iconUrl, let url = URL(string: iconUrl) {
+                                        AsyncImage(url: url) { phase in
+                                            switch phase {
+                                            case .success(let image):
+                                                image
+                                                    .resizable()
+                                                    .scaledToFit()
+                                                    .frame(width: 20, height: 20)
+                                            case .failure(_), .empty:
+                                                Image(systemName: "app.fill")
+                                                    .font(.system(size: 16))
+                                            @unknown default:
+                                                EmptyView()
+                                            }
+                                        }
+                                    }
+                                    Text(app.appName)
+                                }
+                                .tag(app.id as String?)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .padding()
+                        .background(Constants.Colors.cardDark)
+                        .foregroundColor(Constants.Colors.textWhite)
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Constants.Colors.accentBlue.opacity(0.3), lineWidth: 1)
+                        )
+
+                        Text("投票サイトを選択すると、タスク一覧にアイコンが表示されます")
+                            .font(.system(size: 12))
+                            .foregroundColor(Constants.Colors.textGray)
+                    }
+
                     // Bias IDs Input (Optional, MVP version)
                     VStack(alignment: .leading, spacing: Constants.Spacing.small) {
                         Text("対象メンバー（任意）")
@@ -201,6 +247,11 @@ struct TaskRegistrationView: View {
                 }
             } message: {
                 Text("タスクが正常に登録されました")
+            }
+            .onAppear {
+                Task {
+                    await viewModel.loadExternalApps()
+                }
             }
         }
     }

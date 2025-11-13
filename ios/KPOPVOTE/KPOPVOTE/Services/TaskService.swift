@@ -86,6 +86,9 @@ class TaskService: ObservableObject {
                 deadline: deadline,
                 status: status,
                 biasIds: task.targetMembers,
+                externalAppId: task.externalAppId,
+                externalAppName: task.externalAppName,
+                externalAppIconUrl: task.externalAppIconUrl,
                 ogpImage: task.ogpImage,
                 ogpTitle: task.ogpTitle,
                 ogpDescription: nil
@@ -160,7 +163,7 @@ class TaskService: ObservableObject {
     }
 
     // MARK: - Register New Task
-    func registerTask(title: String, url: String, deadline: Date, biasIds: [String]) async throws -> VoteTask {
+    func registerTask(title: String, url: String, deadline: Date, biasIds: [String], externalAppId: String? = nil) async throws -> VoteTask {
         guard let token = try await Auth.auth().currentUser?.getIDToken() else {
             throw TaskError.notAuthenticated
         }
@@ -180,12 +183,17 @@ class TaskService: ObservableObject {
         isoFormatter.formatOptions = [.withInternetDateTime]
         let deadlineString = isoFormatter.string(from: deadline)
 
-        let body: [String: Any] = [
+        var body: [String: Any] = [
             "title": title,
             "url": url,
             "deadline": deadlineString,
             "targetMembers": biasIds
         ]
+
+        // Add externalAppId if provided
+        if let externalAppId = externalAppId {
+            body["externalAppId"] = externalAppId
+        }
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         print("📡 [TaskService] Registering new task: \(title)")
@@ -222,6 +230,9 @@ class TaskService: ObservableObject {
             deadline: deadline,
             status: .pending,
             biasIds: result.data.targetMembers,
+            externalAppId: result.data.externalAppId,
+            externalAppName: nil,
+            externalAppIconUrl: nil,
             ogpImage: result.data.ogpImage,
             ogpTitle: result.data.ogpTitle,
             ogpDescription: nil
@@ -274,6 +285,7 @@ struct RegisterTaskSimpleResponse: Codable {
         let url: String
         let deadline: String
         let targetMembers: [String]
+        let externalAppId: String?
         let isCompleted: Bool
         let completedAt: String?
         let ogpTitle: String?
@@ -296,6 +308,9 @@ struct GetUserTasksResponse: Codable {
             let url: String
             let deadline: String           // ISO 8601文字列
             let targetMembers: [String]
+            let externalAppId: String?
+            let externalAppName: String?
+            let externalAppIconUrl: String?
             let isCompleted: Bool
             let completedAt: String?       // ISO 8601文字列
             let ogpTitle: String?

@@ -61,6 +61,38 @@ struct UrgentVoteCard: View {
 
                 // Content on top of image
                 VStack(alignment: .leading, spacing: Constants.Spacing.small) {
+                    // External App Badge
+                    if let iconUrl = task.externalAppIconUrl, let appName = task.externalAppName {
+                        HStack(spacing: 6) {
+                            if let url = URL(string: iconUrl) {
+                                AsyncImage(url: url) { phase in
+                                    switch phase {
+                                    case .success(let image):
+                                        image
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: 18, height: 18)
+                                            .cornerRadius(4)
+                                    case .failure(_), .empty:
+                                        Image(systemName: "app.fill")
+                                            .font(.system(size: 14))
+                                            .foregroundColor(.white)
+                                    @unknown default:
+                                        EmptyView()
+                                    }
+                                }
+                            }
+
+                            Text(appName)
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(.white)
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color.black.opacity(0.5))
+                        .cornerRadius(6)
+                    }
+
                     // Urgent badge
                     HStack(spacing: 4) {
                         Text("Urgent:")
