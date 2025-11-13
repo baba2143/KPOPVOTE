@@ -88,27 +88,193 @@ struct VotesListView: View {
 }
 
 struct TasksListView: View {
+    @StateObject private var viewModel = TasksListViewModel()
+    @State private var selectedTab = 0 // 0: Active, 1: Archived, 2: Completed
+
     var body: some View {
         NavigationView {
-            VStack {
-                Image(systemName: "checkmark.circle")
-                    .font(.system(size: 60))
-                    .foregroundColor(Constants.Colors.accentPink)
+            VStack(spacing: 0) {
+                // Tab Picker
+                Picker("Filter", selection: $selectedTab) {
+                    Text("Active").tag(0)
+                    Text("Archived").tag(1)
+                    Text("Completed").tag(2)
+                }
+                .pickerStyle(.segmented)
+                .padding()
+                .background(Constants.Colors.backgroundDark)
 
-                Text("Tasks")
-                    .font(.system(size: Constants.Typography.titleSize, weight: .bold))
-                    .foregroundColor(Constants.Colors.textWhite)
+                // Task List
+                if viewModel.isLoading {
+                    VStack {
+                        Spacer()
+                        ProgressView()
+                            .tint(Constants.Colors.accentPink)
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity)
+                } else {
+                    let tasks = selectedTab == 0 ? viewModel.activeTasks :
+                                selectedTab == 1 ? viewModel.archivedTasks :
+                                viewModel.completedTasks
 
-                Text("Coming Soon")
-                    .font(.system(size: Constants.Typography.bodySize))
-                    .foregroundColor(Constants.Colors.textGray)
+                    if tasks.isEmpty {
+                        VStack(spacing: Constants.Spacing.small) {
+                            Spacer()
+                            Image(systemName: selectedTab == 0 ? "checkmark.circle" :
+                                              selectedTab == 1 ? "archivebox" :
+                                              "checkmark.circle.fill")
+                                .font(.system(size: 60))
+                                .foregroundColor(Constants.Colors.textGray)
+
+                            Text(selectedTab == 0 ? "アクティブなタスクはありません" :
+                                 selectedTab == 1 ? "アーカイブされたタスクはありません" :
+                                 "完了したタスクはありません")
+                                .font(.system(size: Constants.Typography.bodySize))
+                                .foregroundColor(Constants.Colors.textGray)
+                            Spacer()
+                        }
+                        .frame(maxWidth: .infinity)
+                    } else {
+                        ScrollView {
+                            LazyVStack(spacing: Constants.Spacing.medium) {
+                                ForEach(tasks) { task in
+                                    TaskCard(task: task, showCompleteButton: selectedTab == 0) {
+                                        Task {
+                                            await viewModel.completeTask(task)
+                                        }
+                                    }
+                                    .padding(.horizontal)
+                                }
+                            }
+                            .padding(.vertical)
+                        }
+                        .refreshable {
+                            await viewModel.refresh()
+                        }
+                    }
+                }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Constants.Colors.backgroundDark)
             .navigationTitle("Tasks")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("Tasks")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(Constants.Colors.textWhite)
+                }
+            }
             .toolbarBackground(Constants.Colors.backgroundDark, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
+            .task {
+                await viewModel.loadAllTasks()
+            }
+            .alert("エラー", isPresented: $viewModel.showError) {
+                Button("OK") {
+                    viewModel.showError = false
+                }
+            } message: {
+                Text(viewModel.errorMessage ?? "エラーが発生しました")
+            }
         }
+    }
+}
+
+// MARK: - Task Card Component
+struct TaskCard: View {
+    let task: VoteTask
+    let showCompleteButton: Bool
+    let onComplete: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Constants.Spacing.small) {
+            // Title
+            Text(task.title)
+                .font(.system(size: Constants.Typography.bodySize, weight: .bold))
+                .foregroundColor(Constants.Colors.textWhite)
+                .lineLimit(2)
+
+            // URL
+            if let url = URL(string: task.url) {
+                Link(destination: url) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "link")
+                            .font(.system(size: 12))
+                        Text(task.url)
+                            .font(.system(size: 12))
+                            .lineLimit(1)
+                    }
+                    .foregroundColor(Constants.Colors.accentBlue)
+                }
+            }
+
+            // Deadline & Status
+            HStack(spacing: Constants.Spacing.small) {
+                HStack(spacing: 4) {
+                    Image(systemName: "clock")
+                        .font(.system(size: 12))
+                    Text(task.formattedDeadline)
+                        .font(.system(size: 12))
+                }
+                .foregroundColor(task.isExpired ? .red : Constants.Colors.textGray)
+
+                Spacer()
+
+                if task.isCompleted {
+                    Text("完了")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(.green)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.green.opacity(0.2))
+                        .cornerRadius(8)
+                } else if task.isArchived || task.isExpired {
+                    Text("アーカイブ")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(.gray)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.gray.opacity(0.2))
+                        .cornerRadius(8)
+                } else {
+                    Text(task.timeRemaining)
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(Constants.Colors.accentPink)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Constants.Colors.accentPink.opacity(0.2))
+                        .cornerRadius(8)
+                }
+            }
+
+            // Complete Button
+            if showCompleteButton && !task.isCompleted {
+                Button(action: onComplete) {
+                    HStack {
+                        Image(systemName: "checkmark.circle.fill")
+                        Text("完了にする")
+                    }
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(
+                        LinearGradient(
+                            colors: [Constants.Colors.accentPink, Constants.Colors.gradientPink],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .cornerRadius(10)
+                }
+                .padding(.top, 4)
+            }
+        }
+        .padding()
+        .background(Constants.Colors.cardDark)
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
     }
 }
 

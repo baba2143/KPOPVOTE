@@ -34,10 +34,10 @@ struct HomeView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: Constants.Spacing.large) {
-                    // Urgent Tasks Section
+                    // Active Tasks Section
                     VStack(alignment: .leading, spacing: Constants.Spacing.small) {
                         HStack {
-                            Text("Urgent VOTE Dashboard")
+                            Text("My VOTE Dashboard")
                                 .font(.system(size: Constants.Typography.titleSize, weight: .bold))
                                 .foregroundColor(Constants.Colors.textWhite)
                             Spacer()
@@ -52,12 +52,12 @@ struct HomeView: View {
                                     .padding()
                                 Spacer()
                             }
-                        } else if viewModel.urgentTasks.isEmpty {
+                        } else if viewModel.activeTasks.isEmpty {
                             VStack(spacing: Constants.Spacing.small) {
                                 Image(systemName: "checkmark.circle")
                                     .font(.system(size: 48))
                                     .foregroundColor(.green)
-                                Text("緊急タスクはありません")
+                                Text("進行中のタスクはありません")
                                     .font(.system(size: Constants.Typography.bodySize))
                                     .foregroundColor(Constants.Colors.textGray)
                             }
@@ -66,7 +66,7 @@ struct HomeView: View {
                         } else {
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: Constants.Spacing.medium) {
-                                    ForEach(viewModel.urgentTasks) { task in
+                                    ForEach(viewModel.activeTasks) { task in
                                         UrgentVoteCard(task: task) {
                                             Task {
                                                 await viewModel.completeTask(task)
@@ -80,12 +80,12 @@ struct HomeView: View {
                         }
 
                         // Tasks Pending Badge
-                        if !viewModel.urgentTasks.isEmpty {
+                        if !viewModel.activeTasks.isEmpty {
                             HStack(spacing: 4) {
                                 Image(systemName: "exclamationmark.triangle.fill")
                                     .font(.system(size: 12))
                                     .foregroundColor(Constants.Colors.statusUrgent)
-                                Text("\(viewModel.urgentTasks.count) Tasks Pending")
+                                Text("\(viewModel.activeTasks.count) Tasks Pending")
                                     .font(.system(size: Constants.Typography.captionSize, weight: .semibold))
                                     .foregroundColor(Constants.Colors.statusUrgent)
                             }
@@ -136,7 +136,7 @@ struct HomeView: View {
             .toolbarBackground(Constants.Colors.backgroundDark, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .task {
-                await viewModel.loadUrgentTasks()
+                await viewModel.loadActiveTasks()
             }
             .alert("ログアウト確認", isPresented: $showLogoutConfirm) {
                 Button("キャンセル", role: .cancel) {}

@@ -10,25 +10,25 @@ import SwiftUI
 
 @MainActor
 class HomeViewModel: ObservableObject {
-    @Published var urgentTasks: [VoteTask] = []
+    @Published var activeTasks: [VoteTask] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var showError = false
 
     private let taskService = TaskService()
 
-    // MARK: - Load Urgent Tasks
-    func loadUrgentTasks() async {
+    // MARK: - Load Active Tasks
+    func loadActiveTasks() async {
         isLoading = true
         errorMessage = nil
 
         do {
-            print("📡 [HomeViewModel] Loading urgent tasks...")
-            urgentTasks = try await taskService.getUrgentTasks()
-            print("✅ [HomeViewModel] Loaded \(urgentTasks.count) urgent tasks")
+            print("📡 [HomeViewModel] Loading active tasks...")
+            activeTasks = try await taskService.getActiveTasks()
+            print("✅ [HomeViewModel] Loaded \(activeTasks.count) active tasks")
         } catch {
-            print("❌ [HomeViewModel] Failed to load urgent tasks: \(error.localizedDescription)")
-            errorMessage = "緊急タスクの取得に失敗しました"
+            print("❌ [HomeViewModel] Failed to load active tasks: \(error.localizedDescription)")
+            errorMessage = "アクティブタスクの取得に失敗しました"
             showError = true
         }
 
@@ -41,8 +41,8 @@ class HomeViewModel: ObservableObject {
             print("📡 [HomeViewModel] Marking task as completed: \(task.id)")
             try await taskService.markTaskAsCompleted(taskId: task.id)
 
-            // Remove from urgent tasks
-            urgentTasks.removeAll { $0.id == task.id }
+            // Remove from active tasks
+            activeTasks.removeAll { $0.id == task.id }
             print("✅ [HomeViewModel] Task completed: \(task.id)")
         } catch {
             print("❌ [HomeViewModel] Failed to complete task: \(error.localizedDescription)")
@@ -53,6 +53,6 @@ class HomeViewModel: ObservableObject {
 
     // MARK: - Refresh
     func refresh() async {
-        await loadUrgentTasks()
+        await loadActiveTasks()
     }
 }

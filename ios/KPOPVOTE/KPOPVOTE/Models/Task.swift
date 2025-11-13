@@ -25,6 +25,7 @@ struct VoteTask: Codable, Identifiable {
         case pending = "pending"
         case completed = "completed"
         case expired = "expired"
+        case archived = "archived"
     }
 
     enum CodingKeys: String, CodingKey {
@@ -111,11 +112,15 @@ struct VoteTask: Codable, Identifiable {
 // MARK: - Task Extension
 extension VoteTask {
     var isExpired: Bool {
-        return deadline < Date() && status != .completed
+        return deadline < Date() && status != .completed && status != .archived
     }
 
     var isCompleted: Bool {
         return status == .completed
+    }
+
+    var isArchived: Bool {
+        return status == .archived
     }
 
     var timeRemaining: String {
@@ -147,6 +152,8 @@ extension VoteTask {
         case .completed:
             return "green"
         case .expired:
+            return "gray"
+        case .archived:
             return "gray"
         }
     }

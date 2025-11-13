@@ -49,25 +49,72 @@ class TaskService: ObservableObject {
             throw TaskError.serverError(httpResponse.statusCode)
         }
 
-        let result = try JSONDecoder().decode(TasksResponse.self, from: data)
-        print("✅ [TaskService] Fetched \(result.data.tasks.count) tasks")
-
-        return result.data.tasks
-    }
-
-    // MARK: - Get Urgent Tasks
-    func getUrgentTasks() async throws -> [VoteTask] {
-        let allTasks = try await getUserTasks(isCompleted: false)
-
-        // Filter urgent tasks (deadline within 24 hours)
-        let now = Date()
-        let urgentTasks = allTasks.filter { task in
-            let timeInterval = task.deadline.timeIntervalSince(now)
-            return timeInterval > 0 && timeInterval <= 86400 // 24 hours in seconds
+        // デバッグ: レスポンスの生データを確認
+        if let responseString = String(data: data, encoding: .utf8) {
+            print("📥 [TaskService] Response JSON: \(responseString)")
         }
 
-        print("⚠️ [TaskService] Found \(urgentTasks.count) urgent tasks")
-        return urgentTasks.sorted { $0.deadline < $1.deadline }
+        // Cloud Functionのレスポンスを直接デコード
+        let result = try JSONDecoder().decode(GetUserTasksResponse.self, from: data)
+        print("✅ [TaskService] Fetched \(result.data.tasks.count) tasks")
+        print("📊 [TaskService] Task count from API: \(result.data.count)")
+
+        // 現在のユーザーIDを取得
+        guard let userId = Auth.auth().currentUser?.uid else {
+            throw TaskError.notAuthenticated
+        }
+
+        // VoteTaskオブジェクトの配列を構築
+        let voteTasks = result.data.tasks.map { task -> VoteTask in
+            // ISO 8601文字列をDateに変換
+            let isoFormatter = ISO8601DateFormatter()
+            let deadline = isoFormatter.date(from: task.deadline) ?? Date()
+            let createdAt = task.createdAt.flatMap { isoFormatter.date(from: $0) } ?? Date()
+            let updatedAt = task.updatedAt.flatMap { isoFormatter.date(from: $0) } ?? Date()
+
+            // isCompletedからstatusを推測
+            let status: VoteTask.TaskStatus = task.isCompleted ? .completed :
+                                              (deadline < Date() ? .expired : .pending)
+
+            print("📋 [TaskService] Task: \(task.title), Deadline: \(task.deadline), Status: \(status)")
+
+            return VoteTask(
+                id: task.taskId,
+                userId: userId,
+                title: task.title,
+                url: task.url,
+                deadline: deadline,
+                status: status,
+                biasIds: task.targetMembers,
+                ogpImage: task.ogpImage,
+                ogpTitle: task.ogpTitle,
+                ogpDescription: nil
+            )
+        }
+
+        print("✅ [TaskService] Converted \(voteTasks.count) VoteTasks")
+        return voteTasks
+    }
+
+    // MARK: - Get Active Tasks
+    func getActiveTasks() async throws -> [VoteTask] {
+        let allTasks = try await getUserTasks(isCompleted: false)
+        print("📊 [TaskService] Total tasks retrieved: \(allTasks.count)")
+
+        // Filter active tasks (deadline in future and not archived)
+        let now = Date()
+        print("🕐 [TaskService] Current time: \(now)")
+
+        let activeTasks = allTasks.filter { task in
+            let timeInterval = task.deadline.timeIntervalSince(now)
+            let hours = timeInterval / 3600
+            let isActive = timeInterval > 0 && !task.isArchived
+            print("📋 [TaskService] Task '\(task.title)': deadline in \(hours) hours, archived: \(task.isArchived), active: \(isActive)")
+            return isActive
+        }
+
+        print("✅ [TaskService] Found \(activeTasks.count) active tasks out of \(allTasks.count) total")
+        return activeTasks.sorted { $0.deadline < $1.deadline }
     }
 
     // MARK: - Mark Task as Completed
@@ -128,11 +175,16 @@ class TaskService: ObservableObject {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
+        // Convert deadline to ISO 8601 format
+        let isoFormatter = ISO8601DateFormatter()
+        isoFormatter.formatOptions = [.withInternetDateTime]
+        let deadlineString = isoFormatter.string(from: deadline)
+
         let body: [String: Any] = [
             "title": title,
             "url": url,
-            "deadline": deadline.timeIntervalSince1970,
-            "biasIds": biasIds
+            "deadline": deadlineString,
+            "targetMembers": biasIds
         ]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
@@ -153,10 +205,27 @@ class TaskService: ObservableObject {
             throw TaskError.serverError(httpResponse.statusCode)
         }
 
-        let result = try JSONDecoder().decode(RegisterTaskResponse.self, from: data)
-        print("✅ [TaskService] Task registered: \(result.data.task.id)")
+        // Cloud Functionのレスポンスを直接デコード
+        let result = try JSONDecoder().decode(RegisterTaskSimpleResponse.self, from: data)
+        print("✅ [TaskService] Task registered: \(result.data.taskId)")
 
-        return result.data.task
+        // VoteTaskオブジェクトを構築して返す
+        guard let userId = Auth.auth().currentUser?.uid else {
+            throw TaskError.notAuthenticated
+        }
+
+        return VoteTask(
+            id: result.data.taskId,
+            userId: userId,
+            title: result.data.title,
+            url: result.data.url,
+            deadline: deadline,
+            status: .pending,
+            biasIds: result.data.targetMembers,
+            ogpImage: result.data.ogpImage,
+            ogpTitle: result.data.ogpTitle,
+            ogpDescription: nil
+        )
     }
 }
 
@@ -194,11 +263,45 @@ struct TasksResponse: Codable {
     }
 }
 
-struct RegisterTaskResponse: Codable {
+// Cloud Functionのシンプルなレスポンス構造
+struct RegisterTaskSimpleResponse: Codable {
     let success: Bool
-    let data: RegisterTaskData
+    let data: RegisterTaskSimpleData
 
-    struct RegisterTaskData: Codable {
-        let task: VoteTask
+    struct RegisterTaskSimpleData: Codable {
+        let taskId: String
+        let title: String
+        let url: String
+        let deadline: String
+        let targetMembers: [String]
+        let isCompleted: Bool
+        let completedAt: String?
+        let ogpTitle: String?
+        let ogpImage: String?
+    }
+}
+
+// getUserTasks Cloud Functionのレスポンス構造
+struct GetUserTasksResponse: Codable {
+    let success: Bool
+    let data: GetUserTasksData
+
+    struct GetUserTasksData: Codable {
+        let tasks: [TaskItem]
+        let count: Int
+
+        struct TaskItem: Codable {
+            let taskId: String
+            let title: String
+            let url: String
+            let deadline: String           // ISO 8601文字列
+            let targetMembers: [String]
+            let isCompleted: Bool
+            let completedAt: String?       // ISO 8601文字列
+            let ogpTitle: String?
+            let ogpImage: String?
+            let createdAt: String?         // ISO 8601文字列
+            let updatedAt: String?         // ISO 8601文字列
+        }
     }
 }

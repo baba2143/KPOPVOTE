@@ -80,8 +80,9 @@ struct TaskRegistrationView: View {
                         .datePickerStyle(.compact)
                         .labelsHidden()
                         .tint(Constants.Colors.accentPink)
+                        .colorScheme(.dark)
                         .padding()
-                        .background(Constants.Colors.backgroundDark)
+                        .background(Constants.Colors.cardDark)
                         .cornerRadius(12)
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
