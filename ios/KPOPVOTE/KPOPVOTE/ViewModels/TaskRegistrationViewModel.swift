@@ -158,6 +158,9 @@ class TaskRegistrationViewModel: ObservableObject {
 
             print("✅ [TaskRegistrationViewModel] Task registered successfully: \(task.id)")
 
+            // Notify HomeView to refresh
+            NotificationCenter.default.post(name: NSNotification.Name("taskRegisteredNotification"), object: nil)
+
             // Show success and reset form
             showSuccess = true
             resetForm()

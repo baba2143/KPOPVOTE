@@ -105,6 +105,9 @@ struct HomeView: View {
                 }
                 .padding(.top)
             }
+            .refreshable {
+                await viewModel.loadActiveTasks()
+            }
             .background(Constants.Colors.backgroundDark)
             .navigationTitle("K-VOTE COLLECTOR")
             .navigationBarTitleDisplayMode(.inline)
@@ -137,6 +140,11 @@ struct HomeView: View {
             .toolbarBackground(.visible, for: .navigationBar)
             .task {
                 await viewModel.loadActiveTasks()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("taskRegisteredNotification"))) { _ in
+                Task {
+                    await viewModel.loadActiveTasks()
+                }
             }
             .alert("ログアウト確認", isPresented: $showLogoutConfirm) {
                 Button("キャンセル", role: .cancel) {}
