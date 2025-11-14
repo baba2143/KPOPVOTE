@@ -7,6 +7,8 @@ import { DashboardPage } from './pages/DashboardPage';
 import { VoteListPage } from './pages/VoteListPage';
 import { VoteDetailPage } from './pages/VoteDetailPage';
 import { IdolListPage } from './pages/IdolListPage';
+import { ExternalAppListPage } from './pages/ExternalAppListPage';
+import { CommunityMonitorPage } from './pages/CommunityMonitorPage';
 import { UserListPage } from './pages/UserListPage';
 import { AdminLogPage } from './pages/AdminLogPage';
 import { AppLayout } from './components/layout/AppLayout';
@@ -83,7 +85,7 @@ function AppRoutes() {
         element={
           <PrivateRoute>
             <AppLayout>
-              <div>外部アプリ管理 (Week 2 Day 9-10で実装予定)</div>
+              <ExternalAppListPage />
             </AppLayout>
           </PrivateRoute>
         }
@@ -93,7 +95,7 @@ function AppRoutes() {
         element={
           <PrivateRoute>
             <AppLayout>
-              <div>コミュニティ監視 (Week 3 Day 11-12で実装予定)</div>
+              <CommunityMonitorPage />
             </AppLayout>
           </PrivateRoute>
         }
