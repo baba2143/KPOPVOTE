@@ -86,7 +86,7 @@ export const listExternalApps = async (): Promise<ExternalAppMaster[]> => {
       throw new Error(data.error || 'Failed to fetch external apps');
     }
 
-    return data.data.externalApps;
+    return data.data.apps;
   } catch (error) {
     console.error('Error fetching external apps:', error);
     throw error;
