@@ -19,121 +19,142 @@ struct VoteDetailView: View {
     }
 
     var body: some View {
-        NavigationView {
-            ZStack {
-                Constants.Colors.backgroundDark
-                    .ignoresSafeArea()
+        ZStack {
+            Constants.Colors.backgroundDark
+                .ignoresSafeArea()
 
-                if viewModel.isLoading {
-                    ProgressView("読み込み中...")
-                        .progressViewStyle(CircularProgressViewStyle(tint: Constants.Colors.accentPink))
-                        .foregroundColor(Constants.Colors.textWhite)
-                } else if let errorMessage = viewModel.errorMessage {
-                    ErrorDetailView(message: errorMessage) {
-                        Task {
-                            await viewModel.loadDetail()
-                        }
+            if viewModel.isLoading {
+                ProgressView("読み込み中...")
+                    .progressViewStyle(CircularProgressViewStyle(tint: Constants.Colors.accentPink))
+                    .foregroundColor(Constants.Colors.textWhite)
+                    .onAppear {
+                        print("📍 [VoteDetailView] Showing loading state")
                     }
-                } else if let vote = viewModel.vote {
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 24) {
-                            // Vote Header
-                            VoteHeaderView(vote: vote)
+            } else if let errorMessage = viewModel.errorMessage {
+                ErrorDetailView(message: errorMessage) {
+                    Task {
+                        await viewModel.loadDetail()
+                    }
+                }
+                .onAppear {
+                    print("📍 [VoteDetailView] Showing error state: \(errorMessage)")
+                }
+            } else if let vote = viewModel.vote {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        // Vote Header
+                        VoteHeaderView(vote: vote)
 
-                            // Choices Section
-                            if !viewModel.hasVoted && vote.isActive {
-                                VStack(alignment: .leading, spacing: 12) {
-                                    Text("投票先を選択")
-                                        .font(.system(size: 18, weight: .bold))
-                                        .foregroundColor(Constants.Colors.textWhite)
+                        // Choices Section
+                        if !viewModel.hasVoted && vote.isActive {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("投票先を選択")
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundColor(Constants.Colors.textWhite)
 
-                                    VStack(spacing: 12) {
-                                        ForEach(vote.choices) { choice in
-                                            ChoiceButton(
-                                                choice: choice,
-                                                isSelected: viewModel.selectedChoiceId == choice.id,
-                                                onTap: {
-                                                    viewModel.selectChoice(choice.id)
-                                                }
-                                            )
-                                        }
+                                VStack(spacing: 12) {
+                                    ForEach(vote.choices) { choice in
+                                        ChoiceButton(
+                                            choice: choice,
+                                            isSelected: viewModel.selectedChoiceId == choice.id,
+                                            onTap: {
+                                                viewModel.selectChoice(choice.id)
+                                            }
+                                        )
                                     }
+                                }
+                            }
+                            .padding()
+                            .background(Constants.Colors.cardDark)
+                            .cornerRadius(12)
+                        }
+
+                        // Ranking Section
+                        if let ranking = viewModel.ranking {
+                            RankingView(ranking: ranking)
+                        }
+
+                        // Vote Button
+                        if !viewModel.hasVoted && vote.isActive {
+                            VoteButton(
+                                canVote: viewModel.canVote,
+                                isExecuting: viewModel.isExecuting,
+                                requiredPoints: vote.requiredPoints,
+                                onVote: {
+                                    Task {
+                                        await viewModel.executeVote()
+                                    }
+                                }
+                            )
+                        }
+
+                        // Success/Already Voted Message
+                        if viewModel.hasVoted {
+                            VStack(spacing: 12) {
+                                HStack {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .font(.system(size: 24))
+                                        .foregroundColor(.green)
+
+                                    Text(viewModel.successMessage ?? "投票完了")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(Constants.Colors.textWhite)
                                 }
                                 .padding()
-                                .background(Constants.Colors.cardDark)
+                                .frame(maxWidth: .infinity)
+                                .background(Color.green.opacity(0.2))
                                 .cornerRadius(12)
                             }
-
-                            // Ranking Section
-                            if let ranking = viewModel.ranking {
-                                RankingView(ranking: ranking)
-                            }
-
-                            // Vote Button
-                            if !viewModel.hasVoted && vote.isActive {
-                                VoteButton(
-                                    canVote: viewModel.canVote,
-                                    isExecuting: viewModel.isExecuting,
-                                    requiredPoints: vote.requiredPoints,
-                                    onVote: {
-                                        Task {
-                                            await viewModel.executeVote()
-                                        }
-                                    }
-                                )
-                            }
-
-                            // Success/Already Voted Message
-                            if viewModel.hasVoted {
-                                VStack(spacing: 12) {
-                                    HStack {
-                                        Image(systemName: "checkmark.circle.fill")
-                                            .font(.system(size: 24))
-                                            .foregroundColor(.green)
-
-                                        Text(viewModel.successMessage ?? "投票完了")
-                                            .font(.system(size: 16, weight: .semibold))
-                                            .foregroundColor(Constants.Colors.textWhite)
-                                    }
-                                    .padding()
-                                    .frame(maxWidth: .infinity)
-                                    .background(Color.green.opacity(0.2))
-                                    .cornerRadius(12)
-                                }
-                            }
                         }
-                        .padding()
                     }
-                    .refreshable {
-                        await viewModel.refresh()
-                    }
+                    .padding()
                 }
+                .onAppear {
+                    print("📍 [VoteDetailView] Showing vote content for: \(vote.title)")
+                }
+                .refreshable {
+                    await viewModel.refresh()
+                }
+            } else {
+                Text("No content")
+                    .foregroundColor(.white)
+                    .onAppear {
+                        print("⚠️ [VoteDetailView] Showing fallback 'No content' state")
+                    }
             }
-            .navigationTitle("投票詳細")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "xmark")
-                            .foregroundColor(Constants.Colors.textWhite)
-                    }
-                }
-            }
-            .alert("エラー", isPresented: .constant(viewModel.errorMessage != nil && !viewModel.isLoading)) {
-                Button("OK") {
-                    viewModel.clearError()
-                }
-            } message: {
-                if let errorMessage = viewModel.errorMessage {
-                    Text(errorMessage)
+        }
+        .navigationTitle("投票詳細")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    print("❌ [VoteDetailView] Close button tapped")
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark")
+                        .foregroundColor(Constants.Colors.textWhite)
                 }
             }
         }
-        .navigationViewStyle(.stack)
+        .alert("エラー", isPresented: .constant(viewModel.errorMessage != nil && !viewModel.isLoading)) {
+            Button("OK") {
+                viewModel.clearError()
+            }
+        } message: {
+            if let errorMessage = viewModel.errorMessage {
+                Text(errorMessage)
+            }
+        }
         .task {
+            print("🚀 [VoteDetailView] Task started - loading detail for voteId: \(voteId)")
             await viewModel.loadDetail()
+            print("✅ [VoteDetailView] Task completed - vote loaded: \(viewModel.vote != nil)")
+        }
+        .onAppear {
+            print("👀 [VoteDetailView] View appeared")
+        }
+        .onDisappear {
+            print("👋 [VoteDetailView] View disappeared")
         }
     }
 }
@@ -144,6 +165,28 @@ struct VoteHeaderView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
+            // Cover Image
+            if let coverImageUrl = vote.coverImageUrl,
+               let url = URL(string: coverImageUrl) {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(height: 200)
+                            .clipped()
+                            .cornerRadius(16)
+                    case .failure(_), .empty:
+                        DefaultCoverImage()
+                    @unknown default:
+                        DefaultCoverImage()
+                    }
+                }
+            } else {
+                DefaultCoverImage()
+            }
+
             // Title and Status
             HStack(alignment: .top) {
                 Text(vote.title)
@@ -197,6 +240,28 @@ struct VoteHeaderView: View {
         .padding()
         .background(Constants.Colors.cardDark)
         .cornerRadius(12)
+    }
+}
+
+// MARK: - Default Cover Image
+struct DefaultCoverImage: View {
+    var body: some View {
+        ZStack {
+            LinearGradient(
+                colors: [
+                    Constants.Colors.gradientPurple,
+                    Constants.Colors.accentPink,
+                    Constants.Colors.accentBlue
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            Image(systemName: "music.note.list")
+                .font(.system(size: 60))
+                .foregroundColor(.white.opacity(0.6))
+        }
+        .frame(height: 200)
+        .cornerRadius(16)
     }
 }
 
