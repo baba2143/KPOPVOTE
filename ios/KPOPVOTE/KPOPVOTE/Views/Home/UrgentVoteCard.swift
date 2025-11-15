@@ -95,7 +95,7 @@ struct UrgentVoteCard: View {
 
                     // Urgent badge
                     HStack(spacing: 4) {
-                        Text("Urgent:")
+                        Text("投票タイトル：")
                             .font(.system(size: 12, weight: .bold))
                         Text(task.title)
                             .font(.system(size: 14, weight: .bold))
@@ -111,7 +111,7 @@ struct UrgentVoteCard: View {
 
                     // Time remaining badge
                     HStack(spacing: 4) {
-                        Text("Ends in")
+                        Text("終了まで")
                             .font(.system(size: 12, weight: .semibold))
                         Text(task.timeRemaining)
                             .font(.system(size: 12, weight: .bold))

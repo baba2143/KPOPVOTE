@@ -29,6 +29,8 @@ struct HomeView: View {
     @EnvironmentObject var authService: AuthService
     @StateObject private var viewModel = HomeViewModel()
     @State private var showLogoutConfirm = false
+    @State private var selectedVoteId: String?
+    @State private var showVoteDetail = false
 
     var body: some View {
         NavigationView {
@@ -37,7 +39,7 @@ struct HomeView: View {
                     // Active Tasks Section
                     VStack(alignment: .leading, spacing: Constants.Spacing.small) {
                         HStack {
-                            Text("My VOTE Dashboard")
+                            Text("開催中の推し投票")
                                 .font(.system(size: Constants.Typography.titleSize, weight: .bold))
                                 .foregroundColor(Constants.Colors.textWhite)
                             Spacer()
@@ -93,12 +95,33 @@ struct HomeView: View {
                         }
                     }
 
+                    // Featured Votes Slider
+                    if viewModel.isLoadingVotes {
+                        HStack {
+                            Spacer()
+                            ProgressView()
+                                .tint(Constants.Colors.accentPink)
+                                .padding()
+                            Spacer()
+                        }
+                        .frame(height: 180)
+                    } else if !viewModel.featuredVotes.isEmpty {
+                        FeaturedVoteSlider(votes: viewModel.featuredVotes) { vote in
+                            print("🎯 [ContentView] FeaturedVoteSlider callback - vote.id: \(vote.id)")
+                            selectedVoteId = vote.id
+                            print("🎯 [ContentView] Set selectedVoteId: \(vote.id)")
+                            showVoteDetail = true
+                            print("🎯 [ContentView] Set showVoteDetail: true")
+                        }
+                        .padding(.horizontal)
+                    } else {
+                        // Fallback to static banner if no featured votes
+                        AppExclusiveVoteBanner()
+                            .padding(.horizontal)
+                    }
+
                     // Community Activity Section
                     CommunityActivityView()
-                        .padding(.horizontal)
-
-                    // APP EXCLUSIVE VOTE Banner
-                    AppExclusiveVoteBanner()
                         .padding(.horizontal)
 
                     Spacer(minLength: 20)
@@ -106,16 +129,16 @@ struct HomeView: View {
                 .padding(.top)
             }
             .refreshable {
-                await viewModel.loadActiveTasks()
+                await viewModel.refresh()
             }
             .background(Constants.Colors.backgroundDark)
-            .navigationTitle("K-VOTE COLLECTOR")
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .principal) {
+                ToolbarItem(placement: .navigationBarLeading) {
                     Text("K-VOTE COLLECTOR")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(Constants.Colors.textWhite)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.white)
                 }
 
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -140,6 +163,25 @@ struct HomeView: View {
             .toolbarBackground(.visible, for: .navigationBar)
             .task {
                 await viewModel.loadActiveTasks()
+                await viewModel.loadFeaturedVotes()
+            }
+            .sheet(isPresented: $showVoteDetail) {
+                if let voteId = selectedVoteId {
+                    VoteDetailView(voteId: voteId)
+                }
+            }
+            .onChange(of: showVoteDetail) { newValue in
+                print("📱 [ContentView] showVoteDetail changed to: \(newValue), selectedVoteId: \(selectedVoteId ?? "nil")")
+                if newValue {
+                    if let voteId = selectedVoteId {
+                        print("📱 [ContentView] Sheet will present VoteDetailView with voteId: \(voteId)")
+                    } else {
+                        print("⚠️ [ContentView] showVoteDetail is true but selectedVoteId is nil!")
+                    }
+                }
+            }
+            .onChange(of: selectedVoteId) { newValue in
+                print("📱 [ContentView] selectedVoteId changed to: \(newValue ?? "nil")")
             }
             .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("taskRegisteredNotification"))) { _ in
                 Task {
@@ -171,6 +213,8 @@ struct HomeView: View {
 
 // MARK: - APP EXCLUSIVE VOTE Banner
 struct AppExclusiveVoteBanner: View {
+    @State private var showVoteList = false
+
     var body: some View {
         ZStack {
             // Gradient background
@@ -230,7 +274,10 @@ struct AppExclusiveVoteBanner: View {
         }
         .frame(height: 180)
         .onTapGesture {
-            // Navigate to exclusive vote
+            showVoteList = true
+        }
+        .sheet(isPresented: $showVoteList) {
+            VoteListView()
         }
     }
 }

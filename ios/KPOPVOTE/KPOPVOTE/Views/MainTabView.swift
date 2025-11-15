@@ -22,8 +22,8 @@ struct MainTabView: View {
                     .tag(0)
                     .toolbar(.hidden, for: .tabBar)
 
-                // Votes Tab (Placeholder)
-                VotesListView()
+                // Votes Tab
+                VoteListView()
                     .tag(1)
                     .toolbar(.hidden, for: .tabBar)
 
@@ -60,32 +60,7 @@ struct MainTabView: View {
     }
 }
 
-// MARK: - Placeholder Views (実装予定)
-
-struct VotesListView: View {
-    var body: some View {
-        NavigationView {
-            VStack {
-                Image(systemName: "chart.bar")
-                    .font(.system(size: 60))
-                    .foregroundColor(Constants.Colors.accentPink)
-
-                Text("Votes")
-                    .font(.system(size: Constants.Typography.titleSize, weight: .bold))
-                    .foregroundColor(Constants.Colors.textWhite)
-
-                Text("Coming Soon")
-                    .font(.system(size: Constants.Typography.bodySize))
-                    .foregroundColor(Constants.Colors.textGray)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Constants.Colors.backgroundDark)
-            .navigationTitle("Votes")
-            .toolbarBackground(Constants.Colors.backgroundDark, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
-        }
-    }
-}
+// MARK: - Tasks List View
 
 struct TasksListView: View {
     @StateObject private var viewModel = TasksListViewModel()
@@ -313,6 +288,7 @@ struct TaskCard: View {
 struct ProfileView: View {
     @EnvironmentObject var authService: AuthService
     @State private var showLogoutConfirm = false
+    @State private var showBiasSettings = false
 
     var body: some View {
         NavigationView {
@@ -358,11 +334,20 @@ struct ProfileView: View {
                             .padding(.horizontal)
 
                         VStack(spacing: 0) {
+                            // Bias Settings Button
+                            Button {
+                                showBiasSettings = true
+                            } label: {
+                                SettingsRow(icon: "heart.fill", title: "推し設定", color: Constants.Colors.accentPink)
+                            }
+                            .buttonStyle(.plain)
+
+                            Divider().padding(.leading, 60).background(Constants.Colors.textGray.opacity(0.3))
                             SettingsRow(icon: "person.fill", title: "Account", color: Constants.Colors.accentBlue)
                             Divider().padding(.leading, 60).background(Constants.Colors.textGray.opacity(0.3))
                             SettingsRow(icon: "bell.fill", title: "Notifications", color: .orange)
                             Divider().padding(.leading, 60).background(Constants.Colors.textGray.opacity(0.3))
-                            SettingsRow(icon: "heart.fill", title: "Favorites", color: Constants.Colors.accentPink)
+                            SettingsRow(icon: "star.fill", title: "Favorites", color: .yellow)
                             Divider().padding(.leading, 60).background(Constants.Colors.textGray.opacity(0.3))
                             SettingsRow(icon: "info.circle.fill", title: "About", color: Constants.Colors.textGray)
                         }
@@ -404,6 +389,9 @@ struct ProfileView: View {
                 }
             } message: {
                 Text("ログアウトしますか？")
+            }
+            .sheet(isPresented: $showBiasSettings) {
+                BiasSettingsView()
             }
         }
     }

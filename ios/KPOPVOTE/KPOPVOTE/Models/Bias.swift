@@ -46,7 +46,7 @@ extension Bias {
     }
 }
 
-// MARK: - User Bias Settings
+// MARK: - User Bias Settings (Legacy)
 struct UserBiasSettings: Codable {
     var biases: [Bias]
     var updatedAt: Date
@@ -54,5 +54,31 @@ struct UserBiasSettings: Codable {
     init(biases: [Bias] = []) {
         self.biases = biases
         self.updatedAt = Date()
+    }
+}
+
+// MARK: - Bias Settings (API Model)
+struct BiasSettings: Codable, Hashable {
+    let artistId: String
+    let artistName: String
+    let memberIds: [String]
+    let memberNames: [String]
+
+    init(artistId: String, artistName: String, memberIds: [String], memberNames: [String]) {
+        self.artistId = artistId
+        self.artistName = artistName
+        self.memberIds = memberIds
+        self.memberNames = memberNames
+    }
+}
+
+// MARK: - BiasSettings Extension
+extension BiasSettings {
+    var displayMembers: String {
+        memberNames.joined(separator: ", ")
+    }
+
+    var memberCount: Int {
+        memberNames.count
     }
 }

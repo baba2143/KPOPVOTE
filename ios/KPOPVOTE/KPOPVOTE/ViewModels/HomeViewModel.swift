@@ -11,11 +11,14 @@ import SwiftUI
 @MainActor
 class HomeViewModel: ObservableObject {
     @Published var activeTasks: [VoteTask] = []
+    @Published var featuredVotes: [InAppVote] = []
     @Published var isLoading = false
+    @Published var isLoadingVotes = false
     @Published var errorMessage: String?
     @Published var showError = false
 
     private let taskService = TaskService()
+    private let voteService = VoteService.shared
 
     // MARK: - Load Active Tasks
     func loadActiveTasks() async {
@@ -51,8 +54,25 @@ class HomeViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Load Featured Votes
+    func loadFeaturedVotes() async {
+        isLoadingVotes = true
+
+        do {
+            print("📡 [HomeViewModel] Loading featured votes...")
+            featuredVotes = try await voteService.fetchFeaturedVotes()
+            print("✅ [HomeViewModel] Loaded \(featuredVotes.count) featured votes")
+        } catch {
+            print("❌ [HomeViewModel] Failed to load featured votes: \(error.localizedDescription)")
+            // Don't show error for featured votes failure
+        }
+
+        isLoadingVotes = false
+    }
+
     // MARK: - Refresh
     func refresh() async {
         await loadActiveTasks()
+        await loadFeaturedVotes()
     }
 }

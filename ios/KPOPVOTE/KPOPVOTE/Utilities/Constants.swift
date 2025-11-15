@@ -80,9 +80,14 @@ enum Constants {
         // External App Master
         static let listExternalApps = "\(apiBaseURL)/listExternalApps"
 
-        // Vote (Optional)
-        static let getVoteList = "\(apiBaseURL)/getVoteList"
-        static let castVote = "\(apiBaseURL)/castVote"
+        // Idol Master
+        static let listIdols = "\(apiBaseURL)/listIdols"
+
+        // In-App Vote
+        static let listInAppVotes = "\(apiBaseURL)/listInAppVotes"
+        static let getInAppVoteDetail = "\(apiBaseURL)/getInAppVoteDetail"
+        static let executeVote = "\(apiBaseURL)/executeVote"
+        static let getRanking = "\(apiBaseURL)/getRanking"
     }
 
     // MARK: - UserDefaults Keys
