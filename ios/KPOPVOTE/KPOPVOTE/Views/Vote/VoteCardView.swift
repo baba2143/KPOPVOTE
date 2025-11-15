@@ -10,10 +10,11 @@ import SwiftUI
 struct VoteCardView: View {
     let vote: InAppVote
     let onTap: () -> Void
+    @State private var isPressed = false
 
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: 12) {
+            HStack(spacing: 16) {
                 // Cover Image Thumbnail
                 if let coverImageUrl = vote.coverImageUrl,
                    let url = URL(string: coverImageUrl) {
@@ -23,8 +24,8 @@ struct VoteCardView: View {
                             image
                                 .resizable()
                                 .aspectRatio(contentMode: .fill)
-                                .frame(width: 80, height: 80)
-                                .cornerRadius(8)
+                                .frame(width: 100, height: 100)
+                                .cornerRadius(12)
                                 .clipped()
                         case .failure(_), .empty:
                             DefaultThumbnail()
@@ -37,11 +38,11 @@ struct VoteCardView: View {
                 }
 
                 // Content
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 10) {
                     // Title and Status Badge
-                    HStack(alignment: .top) {
+                    HStack(alignment: .top, spacing: 8) {
                         Text(vote.title)
-                            .font(.system(size: 18, weight: .bold))
+                            .font(.system(size: 16, weight: .bold))
                             .foregroundColor(Constants.Colors.textWhite)
                             .lineLimit(2)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -51,27 +52,27 @@ struct VoteCardView: View {
 
                     // Description
                     Text(vote.description)
-                        .font(.system(size: 14))
+                        .font(.system(size: 13))
                         .foregroundColor(Constants.Colors.textGray)
                         .lineLimit(2)
 
                     // Info row
-                    HStack(spacing: 16) {
+                    HStack(spacing: 12) {
                         // Period
                         HStack(spacing: 4) {
                             Image(systemName: "calendar")
-                                .font(.system(size: 12))
+                                .font(.system(size: 11))
                             Text(vote.formattedPeriod)
-                                .font(.system(size: 12))
+                                .font(.system(size: 11))
                         }
-                        .foregroundColor(Constants.Colors.textGray)
+                        .foregroundColor(Constants.Colors.accentBlue)
 
                         // Required points
                         HStack(spacing: 4) {
                             Image(systemName: "star.fill")
-                                .font(.system(size: 12))
+                                .font(.system(size: 11))
                             Text("\(vote.requiredPoints)pt")
-                                .font(.system(size: 12, weight: .semibold))
+                                .font(.system(size: 11, weight: .semibold))
                         }
                         .foregroundColor(.yellow)
 
@@ -80,21 +81,42 @@ struct VoteCardView: View {
                         // Total votes
                         HStack(spacing: 4) {
                             Image(systemName: "chart.bar.fill")
-                                .font(.system(size: 12))
+                                .font(.system(size: 11))
                             Text("\(vote.totalVotes)票")
-                                .font(.system(size: 12))
+                                .font(.system(size: 11, weight: .semibold))
                         }
                         .foregroundColor(Constants.Colors.accentPink)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding()
+            .padding(Constants.Spacing.medium)
             .background(Constants.Colors.cardDark)
-            .cornerRadius(12)
-            .shadow(color: Color.black.opacity(0.3), radius: 4, x: 0, y: 2)
+            .cornerRadius(16)
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(
+                        LinearGradient(
+                            colors: [
+                                Constants.Colors.accentPink.opacity(0.3),
+                                Constants.Colors.accentBlue.opacity(0.3)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1
+                    )
+            )
+            .shadow(color: Color.black.opacity(0.4), radius: 8, x: 0, y: 4)
+            .scaleEffect(isPressed ? 0.98 : 1.0)
         }
         .buttonStyle(.plain)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in isPressed = true }
+                .onEnded { _ in isPressed = false }
+        )
+        .animation(.easeInOut(duration: 0.15), value: isPressed)
     }
 }
 
@@ -105,17 +127,18 @@ struct DefaultThumbnail: View {
             LinearGradient(
                 colors: [
                     Constants.Colors.gradientPurple,
-                    Constants.Colors.accentPink
+                    Constants.Colors.accentPink,
+                    Constants.Colors.accentBlue
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
-            Image(systemName: "music.note")
-                .font(.system(size: 32))
-                .foregroundColor(.white.opacity(0.5))
+            Image(systemName: "music.note.list")
+                .font(.system(size: 40))
+                .foregroundColor(.white.opacity(0.6))
         }
-        .frame(width: 80, height: 80)
-        .cornerRadius(8)
+        .frame(width: 100, height: 100)
+        .cornerRadius(12)
     }
 }
 
