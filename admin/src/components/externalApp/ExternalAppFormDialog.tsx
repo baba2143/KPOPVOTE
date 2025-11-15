@@ -46,8 +46,8 @@ function TabPanel(props: TabPanelProps) {
     <div
       role="tabpanel"
       hidden={value !== index}
-      id={`icon-tabpanel-${index}`}
-      aria-labelledby={`icon-tab-${index}`}
+      id={`cover-tabpanel-${index}`}
+      aria-labelledby={`cover-tab-${index}`}
       {...other}
     >
       {value === index && <Box sx={{ py: 2 }}>{children}</Box>}
@@ -142,7 +142,7 @@ export const ExternalAppFormDialog: React.FC<ExternalAppFormDialogProps> = ({
           finalIconUrl = await uploadAppIcon(selectedFile);
         } catch (uploadError) {
           console.error('Upload error:', uploadError);
-          setError('アイコンのアップロードに失敗しました');
+          setError('カバー画像のアップロードに失敗しました');
           setUploading(false);
           setLoading(false);
           return;
@@ -233,33 +233,36 @@ export const ExternalAppFormDialog: React.FC<ExternalAppFormDialogProps> = ({
 
           <Box>
             <Typography variant="subtitle2" sx={{ mb: 1 }}>
-              アイコン画像（オプション）
+              デフォルトカバー画像（オプション）
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+              ユーザーが投票タスク作成時に自動適用される画像。ユーザーは変更可能です。
             </Typography>
             <Tabs
               value={tabValue}
               onChange={handleTabChange}
-              aria-label="icon input method"
+              aria-label="cover image input method"
             >
-              <Tab label="URL入力" id="icon-tab-0" />
-              <Tab label="ファイルアップロード" id="icon-tab-1" />
+              <Tab label="URL入力" id="cover-tab-0" />
+              <Tab label="ファイルアップロード" id="cover-tab-1" />
             </Tabs>
 
             <TabPanel value={tabValue} index={0}>
               <TextField
-                id="icon-url"
-                name="iconUrl"
-                label="アイコンURL"
+                id="cover-image-url"
+                name="coverImageUrl"
+                label="カバー画像URL"
                 fullWidth
                 value={iconUrl}
                 onChange={(e) => setIconUrl(e.target.value)}
-                placeholder="https://example.com/icon.png"
+                placeholder="https://example.com/cover.jpg"
               />
               {iconUrl && (
                 <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
                   <Avatar
                     src={iconUrl}
-                    alt="Icon Preview"
-                    sx={{ width: 80, height: 80 }}
+                    alt="Cover Image Preview"
+                    sx={{ width: 160, height: 120 }}
                     variant="rounded"
                   />
                 </Box>
@@ -290,8 +293,8 @@ export const ExternalAppFormDialog: React.FC<ExternalAppFormDialogProps> = ({
                     <Box sx={{ mt: 1, display: 'flex', justifyContent: 'center' }}>
                       <Avatar
                         src={previewUrl}
-                        alt="Icon Preview"
-                        sx={{ width: 80, height: 80 }}
+                        alt="Cover Image Preview"
+                        sx={{ width: 160, height: 120 }}
                         variant="rounded"
                       />
                     </Box>
@@ -303,7 +306,7 @@ export const ExternalAppFormDialog: React.FC<ExternalAppFormDialogProps> = ({
                 color="text.secondary"
                 sx={{ mt: 1, display: 'block' }}
               >
-                対応形式: JPEG, PNG, WebP, SVG（最大2MB）
+                対応形式: JPEG, PNG, WebP, SVG（最大10MB）
               </Typography>
             </TabPanel>
           </Box>

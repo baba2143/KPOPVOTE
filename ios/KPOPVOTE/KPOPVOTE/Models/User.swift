@@ -11,7 +11,13 @@ struct User: Codable, Identifiable {
     let id: String // Firebase UID
     let email: String
     var displayName: String?
+    var photoURL: String?
     var points: Int
+    var biasIds: [String]
+    var followingCount: Int
+    var followersCount: Int
+    var postsCount: Int
+    var isPrivate: Bool
     var isSuspended: Bool
     var createdAt: Date
     var updatedAt: Date
@@ -20,7 +26,13 @@ struct User: Codable, Identifiable {
         case id = "uid"
         case email
         case displayName
+        case photoURL
         case points
+        case biasIds
+        case followingCount
+        case followersCount
+        case postsCount
+        case isPrivate
         case isSuspended
         case createdAt
         case updatedAt
@@ -32,7 +44,13 @@ struct User: Codable, Identifiable {
         id = try container.decode(String.self, forKey: .id)
         email = try container.decode(String.self, forKey: .email)
         displayName = try container.decodeIfPresent(String.self, forKey: .displayName)
+        photoURL = try container.decodeIfPresent(String.self, forKey: .photoURL)
         points = try container.decode(Int.self, forKey: .points)
+        biasIds = try container.decodeIfPresent([String].self, forKey: .biasIds) ?? []
+        followingCount = try container.decodeIfPresent(Int.self, forKey: .followingCount) ?? 0
+        followersCount = try container.decodeIfPresent(Int.self, forKey: .followersCount) ?? 0
+        postsCount = try container.decodeIfPresent(Int.self, forKey: .postsCount) ?? 0
+        isPrivate = try container.decodeIfPresent(Bool.self, forKey: .isPrivate) ?? false
         isSuspended = try container.decode(Bool.self, forKey: .isSuspended)
 
         // Handle Firestore Timestamp
@@ -50,11 +68,17 @@ struct User: Codable, Identifiable {
     }
 
     // Default initializer
-    init(id: String, email: String, displayName: String? = nil, points: Int = 0, isSuspended: Bool = false) {
+    init(id: String, email: String, displayName: String? = nil, photoURL: String? = nil, points: Int = 0, biasIds: [String] = [], followingCount: Int = 0, followersCount: Int = 0, postsCount: Int = 0, isPrivate: Bool = false, isSuspended: Bool = false) {
         self.id = id
         self.email = email
         self.displayName = displayName
+        self.photoURL = photoURL
         self.points = points
+        self.biasIds = biasIds
+        self.followingCount = followingCount
+        self.followersCount = followersCount
+        self.postsCount = postsCount
+        self.isPrivate = isPrivate
         self.isSuspended = isSuspended
         self.createdAt = Date()
         self.updatedAt = Date()

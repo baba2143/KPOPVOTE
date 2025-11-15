@@ -13,7 +13,10 @@ struct VoteCardView: View {
     @State private var isPressed = false
 
     var body: some View {
-        Button(action: onTap) {
+        Button(action: {
+            print("🔘 [VoteCardView] Button tapped for vote: \(vote.id) - \(vote.title)")
+            onTap()
+        }) {
             HStack(spacing: 16) {
                 // Cover Image Thumbnail
                 if let coverImageUrl = vote.coverImageUrl,
@@ -111,11 +114,11 @@ struct VoteCardView: View {
             .scaleEffect(isPressed ? 0.98 : 1.0)
         }
         .buttonStyle(.plain)
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in isPressed = true }
-                .onEnded { _ in isPressed = false }
-        )
+        .onLongPressGesture(minimumDuration: 0.0, maximumDistance: .infinity, pressing: { pressing in
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isPressed = pressing
+            }
+        }, perform: {})
         .animation(.easeInOut(duration: 0.15), value: isPressed)
     }
 }

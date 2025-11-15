@@ -1,0 +1,189 @@
+//
+//  CommunityPost.swift
+//  KPOPVOTE
+//
+//  K-VOTE COLLECTOR - Community Post Model
+//
+
+import Foundation
+
+// MARK: - Post Type
+enum PostType: String, Codable {
+    case voteShare = "vote_share"
+    case image = "image"
+    case myVotes = "my_votes"
+
+    var displayName: String {
+        switch self {
+        case .voteShare:
+            return "投票共有"
+        case .image:
+            return "画像投稿"
+        case .myVotes:
+            return "マイ投票"
+        }
+    }
+}
+
+// MARK: - Post Content
+struct PostContent: Codable {
+    var text: String?
+    var images: [String]?
+    var voteId: String?
+    var voteSnapshot: InAppVote?
+    var myVotes: [MyVoteItem]?
+
+    init(text: String? = nil, images: [String]? = nil, voteId: String? = nil, voteSnapshot: InAppVote? = nil, myVotes: [MyVoteItem]? = nil) {
+        self.text = text
+        self.images = images
+        self.voteId = voteId
+        self.voteSnapshot = voteSnapshot
+        self.myVotes = myVotes
+    }
+}
+
+// MARK: - My Vote Item
+struct MyVoteItem: Codable, Identifiable {
+    let id: String
+    let voteId: String
+    let title: String
+    let selectedChoiceId: String?
+    let selectedChoiceLabel: String?
+    let pointsUsed: Int
+    let votedAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case voteId
+        case title
+        case selectedChoiceId
+        case selectedChoiceLabel
+        case pointsUsed
+        case votedAt
+    }
+
+    init(id: String = UUID().uuidString, voteId: String, title: String, selectedChoiceId: String? = nil, selectedChoiceLabel: String? = nil, pointsUsed: Int, votedAt: Date) {
+        self.id = id
+        self.voteId = voteId
+        self.title = title
+        self.selectedChoiceId = selectedChoiceId
+        self.selectedChoiceLabel = selectedChoiceLabel
+        self.pointsUsed = pointsUsed
+        self.votedAt = votedAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decodeIfPresent(String.self, forKey: .id) ?? UUID().uuidString
+        voteId = try container.decode(String.self, forKey: .voteId)
+        title = try container.decode(String.self, forKey: .title)
+        selectedChoiceId = try container.decodeIfPresent(String.self, forKey: .selectedChoiceId)
+        selectedChoiceLabel = try container.decodeIfPresent(String.self, forKey: .selectedChoiceLabel)
+        pointsUsed = try container.decode(Int.self, forKey: .pointsUsed)
+
+        if let timestamp = try? container.decode(Double.self, forKey: .votedAt) {
+            votedAt = Date(timeIntervalSince1970: timestamp)
+        } else {
+            votedAt = Date()
+        }
+    }
+}
+
+// MARK: - Community Post
+struct CommunityPost: Codable, Identifiable {
+    let id: String
+    let userId: String
+    let type: PostType
+    var content: PostContent
+    var biasIds: [String]
+    var likesCount: Int
+    var commentsCount: Int
+    var sharesCount: Int
+    var isReported: Bool
+    var reportCount: Int
+    var createdAt: Date
+    var updatedAt: Date
+
+    // Client-side properties (not in Firestore)
+    var isLikedByCurrentUser: Bool?
+    var userDisplayName: String?
+    var userPhotoURL: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case userId
+        case type
+        case content
+        case biasIds
+        case likesCount
+        case commentsCount
+        case sharesCount
+        case isReported
+        case reportCount
+        case createdAt
+        case updatedAt
+    }
+
+    init(id: String = UUID().uuidString, userId: String, type: PostType, content: PostContent, biasIds: [String], likesCount: Int = 0, commentsCount: Int = 0, sharesCount: Int = 0, isReported: Bool = false, reportCount: Int = 0) {
+        self.id = id
+        self.userId = userId
+        self.type = type
+        self.content = content
+        self.biasIds = biasIds
+        self.likesCount = likesCount
+        self.commentsCount = commentsCount
+        self.sharesCount = sharesCount
+        self.isReported = isReported
+        self.reportCount = reportCount
+        self.createdAt = Date()
+        self.updatedAt = Date()
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        userId = try container.decode(String.self, forKey: .userId)
+        type = try container.decode(PostType.self, forKey: .type)
+        content = try container.decode(PostContent.self, forKey: .content)
+        biasIds = try container.decodeIfPresent([String].self, forKey: .biasIds) ?? []
+        likesCount = try container.decodeIfPresent(Int.self, forKey: .likesCount) ?? 0
+        commentsCount = try container.decodeIfPresent(Int.self, forKey: .commentsCount) ?? 0
+        sharesCount = try container.decodeIfPresent(Int.self, forKey: .sharesCount) ?? 0
+        isReported = try container.decodeIfPresent(Bool.self, forKey: .isReported) ?? false
+        reportCount = try container.decodeIfPresent(Int.self, forKey: .reportCount) ?? 0
+
+        if let timestamp = try? container.decode(Double.self, forKey: .createdAt) {
+            createdAt = Date(timeIntervalSince1970: timestamp)
+        } else {
+            createdAt = Date()
+        }
+
+        if let timestamp = try? container.decode(Double.self, forKey: .updatedAt) {
+            updatedAt = Date(timeIntervalSince1970: timestamp)
+        } else {
+            updatedAt = Date()
+        }
+    }
+}
+
+// MARK: - Community Post Extension
+extension CommunityPost {
+    var formattedCreatedAt: String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .short
+        formatter.locale = Locale(identifier: "ja_JP")
+        return formatter.localizedString(for: createdAt, relativeTo: Date())
+    }
+
+    var hasImages: Bool {
+        return content.images?.isEmpty == false
+    }
+
+    var hasVote: Bool {
+        return content.voteId != nil && content.voteSnapshot != nil
+    }
+
+    var hasMyVotes: Bool {
+        return content.myVotes?.isEmpty == false
+    }
+}

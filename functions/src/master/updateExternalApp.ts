@@ -9,7 +9,7 @@ import { verifyToken, verifyAdmin, AuthenticatedRequest } from "../middleware/au
 
 export const updateExternalApp = functions.https.onRequest(async (req, res) => {
   res.set("Access-Control-Allow-Origin", "*");
-  res.set("Access-Control-Allow-Methods", "PATCH");
+  res.set("Access-Control-Allow-Methods", "PATCH, OPTIONS");
   res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
   if (req.method === "OPTIONS") {

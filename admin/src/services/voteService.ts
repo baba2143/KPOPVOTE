@@ -3,7 +3,8 @@
  * Communicates with Firebase Cloud Functions
  */
 
-import { auth } from '../config/firebase';
+import { auth, storage } from '../config/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
   InAppVote,
   InAppVoteCreateRequest,
@@ -25,6 +26,43 @@ const getAuthToken = async (): Promise<string> => {
     throw new Error('User not authenticated');
   }
   return await user.getIdToken();
+};
+
+/**
+ * Upload vote cover image to Firebase Storage
+ * @param file Image file to upload
+ * @returns Download URL of uploaded image
+ */
+export const uploadVoteCoverImage = async (file: File): Promise<string> => {
+  try {
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      throw new Error('Invalid file type. Only JPEG, PNG, and WebP are allowed.');
+    }
+
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    if (file.size > maxSize) {
+      throw new Error('File size exceeds 5MB limit.');
+    }
+
+    // Create unique filename with timestamp
+    const timestamp = Date.now();
+    const filename = `${timestamp}_${file.name}`;
+    const storageRef = ref(storage, `vote-covers/${filename}`);
+
+    // Upload file
+    const snapshot = await uploadBytes(storageRef, file);
+
+    // Get download URL
+    const downloadURL = await getDownloadURL(snapshot.ref);
+
+    return downloadURL;
+  } catch (error) {
+    console.error('Error uploading vote cover image:', error);
+    throw error;
+  }
 };
 
 /**
@@ -129,7 +167,7 @@ export const updateVote = async (
   const token = await getAuthToken();
 
   const response = await fetch(`${FUNCTIONS_BASE_URL}/updateInAppVote`, {
-    method: 'POST',
+    method: 'PATCH',
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
@@ -155,21 +193,22 @@ export const updateVote = async (
  */
 export const deleteVote = async (voteId: string): Promise<void> => {
   const token = await getAuthToken();
+  const url = new URL(`${FUNCTIONS_BASE_URL}/deleteInAppVote`);
+  url.searchParams.append('voteId', voteId);
 
-  const response = await fetch(`${FUNCTIONS_BASE_URL}/deleteInAppVote`, {
-    method: 'POST',
+  const response = await fetch(url.toString(), {
+    method: 'DELETE',
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ voteId }),
   });
 
   if (!response.ok) {
     throw new Error(`Failed to delete vote: ${response.statusText}`);
   }
 
-  const result: ApiResponse<{ message: string }> = await response.json();
+  const result: ApiResponse<{ voteId: string; deleted: boolean }> = await response.json();
 
   if (!result.success) {
     throw new Error(result.error || 'Failed to delete vote');

@@ -31,7 +31,16 @@ export const updateInAppVote = functions.https.onRequest(async (req, res) => {
   });
 
   try {
-    const { voteId, title, description, startDate, endDate, requiredPoints } = req.body as InAppVoteUpdateRequest;
+    const {
+      voteId,
+      title,
+      description,
+      startDate,
+      endDate,
+      requiredPoints,
+      coverImageUrl,
+      isFeatured,
+    } = req.body as InAppVoteUpdateRequest;
 
     if (!voteId) {
       res.status(400).json({ success: false, error: "voteId is required" } as ApiResponse<null>);
@@ -55,6 +64,8 @@ export const updateInAppVote = functions.https.onRequest(async (req, res) => {
     if (startDate) updateData.startDate = admin.firestore.Timestamp.fromDate(new Date(startDate));
     if (endDate) updateData.endDate = admin.firestore.Timestamp.fromDate(new Date(endDate));
     if (typeof requiredPoints === "number") updateData.requiredPoints = requiredPoints;
+    if (coverImageUrl !== undefined) updateData.coverImageUrl = coverImageUrl;
+    if (isFeatured !== undefined) updateData.isFeatured = isFeatured;
 
     await voteRef.update(updateData);
 

@@ -36,10 +36,10 @@ export const uploadAppIcon = async (file: File): Promise<string> => {
       throw new Error('Invalid file type. Only JPEG, PNG, WebP, and SVG are allowed.');
     }
 
-    // Validate file size (max 2MB for icons)
-    const maxSize = 2 * 1024 * 1024; // 2MB in bytes
+    // Validate file size (max 10MB for cover images)
+    const maxSize = 10 * 1024 * 1024; // 10MB in bytes
     if (file.size > maxSize) {
-      throw new Error('File size exceeds 2MB limit.');
+      throw new Error('File size exceeds 10MB limit.');
     }
 
     // Create unique filename with timestamp

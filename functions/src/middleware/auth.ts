@@ -31,6 +31,7 @@ export const verifyToken = async (
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      res.set("Access-Control-Allow-Origin", "*");
       res.status(401).json({
         success: false,
         error: "Unauthorized: No token provided",
@@ -52,6 +53,7 @@ export const verifyToken = async (
     next();
   } catch (error) {
     console.error("Token verification error:", error);
+    res.set("Access-Control-Allow-Origin", "*");
     res.status(401).json({
       success: false,
       error: "Unauthorized: Invalid token",
@@ -72,6 +74,7 @@ export const verifyAdmin = async (
 ) => {
   try {
     if (!req.user) {
+      res.set("Access-Control-Allow-Origin", "*");
       res.status(401).json({
         success: false,
         error: "Unauthorized: User not authenticated",
@@ -84,6 +87,7 @@ export const verifyAdmin = async (
     const isAdmin = userRecord.customClaims?.admin === true;
 
     if (!isAdmin) {
+      res.set("Access-Control-Allow-Origin", "*");
       res.status(403).json({
         success: false,
         error: "Forbidden: Admin access required",
@@ -94,6 +98,7 @@ export const verifyAdmin = async (
     next();
   } catch (error) {
     console.error("Admin verification error:", error);
+    res.set("Access-Control-Allow-Origin", "*");
     res.status(403).json({
       success: false,
       error: "Forbidden: Admin verification failed",

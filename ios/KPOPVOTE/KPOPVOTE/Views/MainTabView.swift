@@ -23,9 +23,11 @@ struct MainTabView: View {
                     .toolbar(.hidden, for: .tabBar)
 
                 // Votes Tab
-                VoteListView()
-                    .tag(1)
-                    .toolbar(.hidden, for: .tabBar)
+                NavigationView {
+                    VoteListView()
+                }
+                .tag(1)
+                .toolbar(.hidden, for: .tabBar)
 
                 // Center Button Placeholder (Empty, handled by custom tab bar)
                 Color.clear

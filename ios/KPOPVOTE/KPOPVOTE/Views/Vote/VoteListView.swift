@@ -13,68 +13,85 @@ struct VoteListView: View {
     @State private var showVoteDetail = false
 
     var body: some View {
-        NavigationView {
-            ZStack {
-                Constants.Colors.backgroundDark
-                    .ignoresSafeArea()
+        ZStack {
+            Constants.Colors.backgroundDark
+                .ignoresSafeArea()
 
-                VStack(spacing: 0) {
-                    // Status Filter Segment
-                    StatusFilterView(
-                        selectedStatus: viewModel.selectedStatus,
-                        onStatusChange: { status in
-                            Task {
-                                await viewModel.changeStatusFilter(status)
-                            }
+            VStack(spacing: 0) {
+                // Status Filter Segment
+                StatusFilterView(
+                    selectedStatus: viewModel.selectedStatus,
+                    onStatusChange: { status in
+                        Task {
+                            await viewModel.changeStatusFilter(status)
                         }
-                    )
-                    .padding(.horizontal)
-                    .padding(.vertical, 12)
+                    }
+                )
+                .padding(.horizontal)
+                .padding(.vertical, 12)
 
-                    // Content
-                    if viewModel.isLoading {
-                        Spacer()
-                        ProgressView("読み込み中...")
-                            .progressViewStyle(CircularProgressViewStyle(tint: Constants.Colors.accentPink))
-                            .foregroundColor(Constants.Colors.textWhite)
-                        Spacer()
-                    } else if let errorMessage = viewModel.errorMessage {
-                        Spacer()
-                        ErrorView(message: errorMessage) {
-                            Task {
-                                await viewModel.refresh()
-                            }
-                        }
-                        Spacer()
-                    } else if viewModel.votes.isEmpty {
-                        Spacer()
-                        EmptyStateView(status: viewModel.selectedStatus)
-                        Spacer()
-                    } else {
-                        ScrollView {
-                            LazyVStack(spacing: 16) {
-                                ForEach(viewModel.votes) { vote in
-                                    VoteCardView(vote: vote) {
-                                        selectedVoteId = vote.id
-                                        showVoteDetail = true
-                                    }
-                                }
-                            }
-                            .padding()
-                        }
-                        .refreshable {
+                // Content
+                if viewModel.isLoading {
+                    Spacer()
+                    ProgressView("読み込み中...")
+                        .progressViewStyle(CircularProgressViewStyle(tint: Constants.Colors.accentPink))
+                        .foregroundColor(Constants.Colors.textWhite)
+                    Spacer()
+                } else if let errorMessage = viewModel.errorMessage {
+                    Spacer()
+                    ErrorView(message: errorMessage) {
+                        Task {
                             await viewModel.refresh()
                         }
                     }
+                    Spacer()
+                } else if viewModel.votes.isEmpty {
+                    Spacer()
+                    EmptyStateView(status: viewModel.selectedStatus)
+                    Spacer()
+                } else {
+                    ScrollView {
+                        LazyVStack(spacing: 16) {
+                            ForEach(viewModel.votes) { vote in
+                                VoteCardView(vote: vote) {
+                                    print("🎯 [VoteListView] VoteCard callback - vote.id: \(vote.id)")
+                                    selectedVoteId = vote.id
+                                    print("🎯 [VoteListView] Set selectedVoteId: \(String(describing: selectedVoteId))")
+                                    showVoteDetail = true
+                                    print("🎯 [VoteListView] Set showVoteDetail: \(showVoteDetail)")
+                                }
+                            }
+                        }
+                        .padding()
+                    }
+                    .refreshable {
+                        await viewModel.refresh()
+                    }
                 }
             }
-            .navigationTitle("投票")
-            .navigationBarTitleDisplayMode(.large)
-            .sheet(isPresented: $showVoteDetail) {
-                if let voteId = selectedVoteId {
+        }
+        .navigationTitle("投票")
+        .navigationBarTitleDisplayMode(.large)
+        .sheet(isPresented: $showVoteDetail) {
+            if let voteId = selectedVoteId {
+                NavigationView {
                     VoteDetailView(voteId: voteId)
+                        .onAppear {
+                            print("📱 [VoteListView] Sheet presenting with voteId: \(voteId)")
+                        }
                 }
+            } else {
+                Text("エラー")
+                    .onAppear {
+                        print("⚠️ [VoteListView] Sheet triggered but selectedVoteId is nil!")
+                    }
             }
+        }
+        .onChange(of: showVoteDetail) { newValue in
+            print("📱 [VoteListView] showVoteDetail changed to: \(newValue), selectedVoteId: \(String(describing: selectedVoteId))")
+        }
+        .onChange(of: selectedVoteId) { newValue in
+            print("📱 [VoteListView] selectedVoteId changed to: \(String(describing: newValue))")
         }
         .task {
             await viewModel.loadVotes()

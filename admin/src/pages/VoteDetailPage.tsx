@@ -25,6 +25,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import { getVoteDetail, getRanking, deleteVote } from '../services/voteService';
 import { InAppVote, RankingResponse } from '../types/vote';
+import { VoteFormDialog } from '../components/vote/VoteFormDialog';
 
 export const VoteDetailPage: React.FC = () => {
   const navigate = useNavigate();
@@ -33,6 +34,7 @@ export const VoteDetailPage: React.FC = () => {
   const [ranking, setRanking] = useState<RankingResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const loadData = async () => {
     if (!voteId) return;
@@ -73,6 +75,15 @@ export const VoteDetailPage: React.FC = () => {
 
   const handleBack = () => {
     navigate('/votes');
+  };
+
+  const handleEditClick = () => {
+    setEditDialogOpen(true);
+  };
+
+  const handleEditSuccess = () => {
+    setEditDialogOpen(false);
+    loadData(); // Reload data after successful update
   };
 
   const handleDelete = async () => {
@@ -154,8 +165,8 @@ export const VoteDetailPage: React.FC = () => {
           戻る
         </Button>
         <Box sx={{ flexGrow: 1 }} />
-        <Button startIcon={<EditIcon />} variant="outlined" disabled>
-          編集（未実装）
+        <Button startIcon={<EditIcon />} variant="outlined" onClick={handleEditClick}>
+          編集
         </Button>
         <Button
           startIcon={<DeleteIcon />}
@@ -178,6 +189,31 @@ export const VoteDetailPage: React.FC = () => {
             color={getStatusColor(vote.status)}
           />
         </Box>
+
+        {/* Cover Image */}
+        {vote.coverImageUrl && (
+          <Box
+            sx={{
+              width: '100%',
+              maxWidth: 600,
+              mb: 2,
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: 1,
+              overflow: 'hidden',
+            }}
+          >
+            <img
+              src={vote.coverImageUrl}
+              alt={vote.title}
+              style={{
+                width: '100%',
+                height: 'auto',
+                display: 'block',
+              }}
+            />
+          </Box>
+        )}
 
         <Typography variant="body1" color="text.secondary" paragraph>
           {vote.description}
@@ -272,6 +308,17 @@ export const VoteDetailPage: React.FC = () => {
           </Table>
         </TableContainer>
       </Paper>
+
+      {/* Edit Dialog */}
+      {vote && (
+        <VoteFormDialog
+          open={editDialogOpen}
+          onClose={() => setEditDialogOpen(false)}
+          onSuccess={handleEditSuccess}
+          mode="edit"
+          initialVote={vote}
+        />
+      )}
     </Box>
   );
 };

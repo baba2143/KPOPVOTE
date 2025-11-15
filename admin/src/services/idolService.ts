@@ -4,7 +4,7 @@
 
 import { auth, storage } from '../config/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { IdolMaster, IdolCreateRequest } from '../types/idol';
+import { IdolMaster, IdolCreateRequest, IdolUpdateRequest } from '../types/idol';
 
 const FUNCTIONS_BASE_URL = 'https://us-central1-kpopvote-9de2b.cloudfunctions.net';
 
@@ -125,6 +125,77 @@ export const createIdol = async (idol: IdolCreateRequest): Promise<IdolMaster> =
     return data.data;
   } catch (error) {
     console.error('Error creating idol:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update idol
+ * @param idolId Idol ID
+ * @param idol Idol data to update
+ * @returns Updated idol
+ */
+export const updateIdol = async (
+  idolId: string,
+  idol: Omit<IdolUpdateRequest, 'idolId'>
+): Promise<IdolMaster> => {
+  try {
+    const token = await getAuthToken();
+
+    const response = await fetch(`${FUNCTIONS_BASE_URL}/updateIdol`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ idolId, ...idol }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to update idol: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to update idol');
+    }
+
+    return data.data;
+  } catch (error) {
+    console.error('Error updating idol:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete idol
+ * @param idolId Idol ID
+ */
+export const deleteIdol = async (idolId: string): Promise<void> => {
+  try {
+    const token = await getAuthToken();
+
+    const response = await fetch(`${FUNCTIONS_BASE_URL}/deleteIdol`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ idolId }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to delete idol: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to delete idol');
+    }
+  } catch (error) {
+    console.error('Error deleting idol:', error);
     throw error;
   }
 };

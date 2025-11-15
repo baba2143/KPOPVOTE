@@ -56,6 +56,8 @@ export const createInAppVote = functions.https.onRequest(async (req, res) => {
       startDate,
       endDate,
       requiredPoints,
+      coverImageUrl,
+      isFeatured,
     } = req.body as InAppVoteCreateRequest;
 
     // Validate required fields
@@ -147,6 +149,8 @@ export const createInAppVote = functions.https.onRequest(async (req, res) => {
       requiredPoints,
       status,
       totalVotes: 0,
+      ...(coverImageUrl && { coverImageUrl }),
+      ...(isFeatured !== undefined && { isFeatured }),
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };

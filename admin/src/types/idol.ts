@@ -16,3 +16,10 @@ export interface IdolCreateRequest {
   groupName: string;
   imageUrl?: string;
 }
+
+export interface IdolUpdateRequest {
+  idolId: string;
+  name?: string;
+  groupName?: string;
+  imageUrl?: string;
+}

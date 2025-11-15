@@ -142,6 +142,8 @@ export interface InAppVote {
   requiredPoints: number;
   status: "upcoming" | "active" | "ended";
   totalVotes: number;
+  coverImageUrl?: string;
+  isFeatured?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -159,6 +161,8 @@ export interface InAppVoteCreateRequest {
   startDate: string; // ISO 8601
   endDate: string; // ISO 8601
   requiredPoints: number;
+  coverImageUrl?: string;
+  isFeatured?: boolean;
 }
 
 export interface InAppVoteUpdateRequest {
@@ -168,6 +172,8 @@ export interface InAppVoteUpdateRequest {
   startDate?: string;
   endDate?: string;
   requiredPoints?: number;
+  coverImageUrl?: string;
+  isFeatured?: boolean;
 }
 
 export interface VoteExecuteRequest {
