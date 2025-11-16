@@ -112,6 +112,20 @@ export const executeVote = functions.https.onRequest(async (req, res) => {
         choiceId,
         votedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
+
+      // Create vote history record
+      const voteHistoryRef = db.collection("voteHistory").doc();
+      transaction.set(voteHistoryRef, {
+        id: voteHistoryRef.id,
+        userId: uid,
+        voteId,
+        voteTitle: voteData.title,
+        voteCoverImageUrl: voteData.coverImageUrl || null,
+        selectedChoiceId: choiceId,
+        selectedChoiceLabel: choices[choiceIndex].label,
+        pointsUsed: voteData.requiredPoints,
+        votedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
     });
 
     res.status(200).json({

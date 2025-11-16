@@ -93,6 +93,7 @@ struct MyVoteItem: Codable, Identifiable {
 struct CommunityPost: Codable, Identifiable {
     let id: String
     let userId: String
+    var user: User
     let type: PostType
     var content: PostContent
     var biasIds: [String]
@@ -105,6 +106,7 @@ struct CommunityPost: Codable, Identifiable {
     var updatedAt: Date
 
     // Client-side properties (not in Firestore)
+    var isLiked: Bool = false
     var isLikedByCurrentUser: Bool?
     var userDisplayName: String?
     var userPhotoURL: String?
@@ -112,6 +114,7 @@ struct CommunityPost: Codable, Identifiable {
     enum CodingKeys: String, CodingKey {
         case id
         case userId
+        case user
         case type
         case content
         case biasIds
@@ -122,11 +125,13 @@ struct CommunityPost: Codable, Identifiable {
         case reportCount
         case createdAt
         case updatedAt
+        case isLiked
     }
 
-    init(id: String = UUID().uuidString, userId: String, type: PostType, content: PostContent, biasIds: [String], likesCount: Int = 0, commentsCount: Int = 0, sharesCount: Int = 0, isReported: Bool = false, reportCount: Int = 0) {
+    init(id: String = UUID().uuidString, userId: String, user: User, type: PostType, content: PostContent, biasIds: [String], likesCount: Int = 0, commentsCount: Int = 0, sharesCount: Int = 0, isReported: Bool = false, reportCount: Int = 0, isLiked: Bool = false) {
         self.id = id
         self.userId = userId
+        self.user = user
         self.type = type
         self.content = content
         self.biasIds = biasIds
@@ -137,12 +142,14 @@ struct CommunityPost: Codable, Identifiable {
         self.reportCount = reportCount
         self.createdAt = Date()
         self.updatedAt = Date()
+        self.isLiked = isLiked
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(String.self, forKey: .id)
         userId = try container.decode(String.self, forKey: .userId)
+        user = try container.decode(User.self, forKey: .user)
         type = try container.decode(PostType.self, forKey: .type)
         content = try container.decode(PostContent.self, forKey: .content)
         biasIds = try container.decodeIfPresent([String].self, forKey: .biasIds) ?? []
@@ -151,6 +158,7 @@ struct CommunityPost: Codable, Identifiable {
         sharesCount = try container.decodeIfPresent(Int.self, forKey: .sharesCount) ?? 0
         isReported = try container.decodeIfPresent(Bool.self, forKey: .isReported) ?? false
         reportCount = try container.decodeIfPresent(Int.self, forKey: .reportCount) ?? 0
+        isLiked = try container.decodeIfPresent(Bool.self, forKey: .isLiked) ?? false
 
         if let timestamp = try? container.decode(Double.self, forKey: .createdAt) {
             createdAt = Date(timeIntervalSince1970: timestamp)

@@ -47,12 +47,30 @@ export { listExternalApps } from "./master/listExternalApps";
 export { updateExternalApp } from "./master/updateExternalApp";
 export { deleteExternalApp } from "./master/deleteExternalApp";
 export { seedExternalApps } from "./seedExternalApps";
+export { seedCommunityData } from "./community/seedCommunityData";
 
 // Community functions (Phase 0+)
 export { getCommunityPosts } from "./community/getCommunityPosts";
 export { getReportedPosts } from "./community/getReportedPosts";
 export { deleteCommunityPost } from "./community/deleteCommunityPost";
 export { getCommunityStats } from "./community/getCommunityStats";
+
+// Community functions (Phase 1 - Week 2 - Phase 2A)
+export { createPost } from "./community/createPost";
+export { getPost } from "./community/getPost";
+export { getPosts } from "./community/getPosts";
+export { followUser } from "./community/followUser";
+export { unfollowUser } from "./community/unfollowUser";
+
+// Community functions (Phase 1 - Week 2 - Phase 2B)
+export { likePost } from "./community/likePost";
+export { deletePost } from "./community/deletePost";
+export { getFollowing } from "./community/getFollowing";
+export { getFollowers } from "./community/getFollowers";
+export { getRecommendedUsers } from "./community/getRecommendedUsers";
+export { getNotifications } from "./community/getNotifications";
+export { markNotificationAsRead } from "./community/markNotificationAsRead";
+export { getMyVotes } from "./community/getMyVotes";
 
 // Placeholder function for testing
 import * as functions from "firebase-functions";

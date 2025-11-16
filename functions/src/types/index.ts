@@ -307,3 +307,107 @@ export interface AdminAuthResponse {
   uid: string;
   isAdmin: boolean;
 }
+
+// Community Post related types (Phase 1 - Week 2)
+export interface PostContent {
+  text?: string;
+  images?: string[];
+  voteId?: string;
+  voteSnapshot?: InAppVote;
+  myVotes?: MyVoteItem[];
+}
+
+export interface MyVoteItem {
+  id: string;
+  voteId: string;
+  title: string;
+  selectedChoiceId?: string;
+  selectedChoiceLabel?: string;
+  pointsUsed: number;
+  votedAt: Date;
+}
+
+export interface Post {
+  id: string;
+  userId: string;
+  type: "vote_share" | "image" | "my_votes";
+  content: PostContent;
+  biasIds: string[];
+  likesCount: number;
+  commentsCount: number;
+  sharesCount: number;
+  isReported: boolean;
+  reportCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreatePostRequest {
+  type: "vote_share" | "image" | "my_votes";
+  content: PostContent;
+  biasIds: string[];
+}
+
+export interface GetPostsRequest {
+  type: "bias" | "following";
+  biasId?: string;
+  limit?: number;
+  lastPostId?: string;
+}
+
+// Follow related types (Phase 1 - Week 2)
+export interface Follow {
+  id: string;
+  followerId: string;
+  followingId: string;
+  createdAt: Date;
+}
+
+export interface FollowRequest {
+  userId: string; // User to follow/unfollow
+}
+
+// Notification related types (Phase 1 - Week 2)
+export interface Notification {
+  id: string;
+  userId: string;
+  type: "follow" | "like" | "comment" | "mention" | "vote" | "system";
+  title: string;
+  body: string;
+  isRead: boolean;
+  actionUserId?: string;
+  actionUserDisplayName?: string;
+  actionUserPhotoURL?: string;
+  relatedPostId?: string;
+  relatedVoteId?: string;
+  relatedCommentId?: string;
+  createdAt: Date;
+}
+
+export interface GetNotificationsRequest {
+  unreadOnly?: boolean;
+  limit?: number;
+}
+
+// Vote History related types (Phase 1 - Week 2)
+export interface VoteHistory {
+  id: string;
+  userId: string;
+  voteId: string;
+  voteTitle: string;
+  voteCoverImageUrl?: string;
+  selectedChoiceId?: string;
+  selectedChoiceLabel?: string;
+  pointsUsed: number;
+  votedAt: Date;
+}
+
+export interface GetMyVotesRequest {
+  status: "all" | "active" | "ended";
+  sort: "date" | "points";
+}
+
+export interface ShareMyVotesRequest {
+  voteIds: string[];
+  message?: string;
+}

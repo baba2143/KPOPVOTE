@@ -64,10 +64,10 @@ struct CustomTabBar: View {
                 .offset(y: -20) // Float above tab bar
             }
 
-            // Tasks Tab
+            // Community Tab
             TabBarItem(
-                iconName: selectedTab == 3 ? "checkmark.circle.fill" : "checkmark.circle",
-                title: "Tasks",
+                iconName: selectedTab == 3 ? "bubble.left.and.bubble.right.fill" : "bubble.left.and.bubble.right",
+                title: "Community",
                 isSelected: selectedTab == 3
             ) {
                 selectedTab = 3

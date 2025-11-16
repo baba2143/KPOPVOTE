@@ -88,6 +88,27 @@ enum Constants {
         static let getInAppVoteDetail = "\(apiBaseURL)/getInAppVoteDetail"
         static let executeVote = "\(apiBaseURL)/executeVote"
         static let getRanking = "\(apiBaseURL)/getRanking"
+
+        // Community - Posts
+        static let createPost = "\(apiBaseURL)/createPost"
+        static let getPost = "\(apiBaseURL)/getPost"
+        static let getPosts = "\(apiBaseURL)/getPosts"
+        static let likePost = "\(apiBaseURL)/likePost"
+        static let deletePost = "\(apiBaseURL)/deletePost"
+
+        // Community - Follow
+        static let followUser = "\(apiBaseURL)/followUser"
+        static let unfollowUser = "\(apiBaseURL)/unfollowUser"
+        static let getFollowing = "\(apiBaseURL)/getFollowing"
+        static let getFollowers = "\(apiBaseURL)/getFollowers"
+        static let getRecommendedUsers = "\(apiBaseURL)/getRecommendedUsers"
+
+        // Community - Notifications
+        static let getNotifications = "\(apiBaseURL)/getNotifications"
+        static let markNotificationAsRead = "\(apiBaseURL)/markNotificationAsRead"
+
+        // Community - My Votes
+        static let getMyVotes = "\(apiBaseURL)/getMyVotes"
     }
 
     // MARK: - UserDefaults Keys

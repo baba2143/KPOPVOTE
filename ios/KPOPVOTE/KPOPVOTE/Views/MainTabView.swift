@@ -34,8 +34,8 @@ struct MainTabView: View {
                     .tag(2)
                     .toolbar(.hidden, for: .tabBar)
 
-                // Tasks Tab (Placeholder)
-                TasksListView()
+                // Community Tab
+                CommunityView()
                     .tag(3)
                     .toolbar(.hidden, for: .tabBar)
 
