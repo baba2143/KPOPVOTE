@@ -138,6 +138,8 @@ struct PostDetailView: View {
                 imageContent(post: post)
             case .myVotes:
                 myVotesContent(post: post)
+            case .goodsTrade:
+                goodsTradeContent(post: post)
             }
         }
     }
@@ -286,6 +288,180 @@ struct PostDetailView: View {
                     .cornerRadius(12)
                 }
             }
+        }
+    }
+
+    // MARK: - Goods Trade Content
+    @ViewBuilder
+    private func goodsTradeContent(post: CommunityPost) -> some View {
+        if let goodsTrade = post.content.goodsTrade {
+            VStack(alignment: .leading, spacing: Constants.Spacing.medium) {
+                // Trade Type and Status Badges
+                HStack(spacing: 8) {
+                    // Trade Type Badge
+                    HStack(spacing: 4) {
+                        Image(systemName: goodsTrade.tradeType == "want" ? "hand.raised.fill" : "hand.thumbsup.fill")
+                            .font(.system(size: 14))
+                        Text(goodsTrade.tradeType == "want" ? "求む" : "譲ります")
+                            .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(goodsTrade.tradeType == "want" ? Constants.Colors.accentPink : Constants.Colors.accentBlue)
+                    .cornerRadius(20)
+
+                    // Status Badge
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(statusColor(goodsTrade.status))
+                            .frame(width: 8, height: 8)
+                        Text(statusText(goodsTrade.status))
+                            .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
+                    }
+                    .foregroundColor(Constants.Colors.textWhite)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color.white.opacity(0.15))
+                    .cornerRadius(20)
+
+                    Spacer()
+                }
+
+                // Goods Image
+                if let url = URL(string: goodsTrade.goodsImageUrl) {
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .cornerRadius(16)
+                        case .failure(_), .empty:
+                            Rectangle()
+                                .fill(Constants.Colors.backgroundDark)
+                                .frame(height: 300)
+                                .cornerRadius(16)
+                                .overlay(
+                                    Image(systemName: "photo")
+                                        .font(.system(size: 60))
+                                        .foregroundColor(Constants.Colors.textGray)
+                                )
+                        @unknown default:
+                            EmptyView()
+                        }
+                    }
+                }
+
+                // Goods Info
+                VStack(alignment: .leading, spacing: 12) {
+                    // Goods Name
+                    Text(goodsTrade.goodsName)
+                        .font(.system(size: Constants.Typography.titleSize, weight: .bold))
+                        .foregroundColor(Constants.Colors.textWhite)
+
+                    // Idol Info
+                    if !goodsTrade.idolName.isEmpty {
+                        HStack(spacing: 6) {
+                            Image(systemName: "person.fill")
+                                .font(.system(size: 14))
+                            Text(goodsTrade.idolName)
+                            if !goodsTrade.groupName.isEmpty {
+                                Text("(\(goodsTrade.groupName))")
+                            }
+                        }
+                        .font(.system(size: Constants.Typography.bodySize))
+                        .foregroundColor(Constants.Colors.textGray)
+                    }
+
+                    // Condition
+                    if let condition = goodsTrade.condition {
+                        HStack(spacing: 6) {
+                            Image(systemName: "checkmark.seal.fill")
+                                .font(.system(size: 14))
+                            Text("状態: \(conditionText(condition))")
+                        }
+                        .font(.system(size: Constants.Typography.bodySize))
+                        .foregroundColor(Constants.Colors.textWhite)
+                    }
+
+                    // Tags
+                    if !goodsTrade.goodsTags.isEmpty {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(goodsTrade.goodsTags, id: \.self) { tag in
+                                    Text("#\(tag)")
+                                        .font(.system(size: Constants.Typography.bodySize))
+                                        .foregroundColor(Constants.Colors.accentPink)
+                                        .padding(.horizontal, 14)
+                                        .padding(.vertical, 6)
+                                        .background(Constants.Colors.accentPink.opacity(0.2))
+                                        .cornerRadius(16)
+                                }
+                            }
+                        }
+                    }
+
+                    // Description
+                    if let description = goodsTrade.description, !description.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("説明")
+                                .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
+                                .foregroundColor(Constants.Colors.textGray)
+
+                            Text(description)
+                                .font(.system(size: Constants.Typography.bodySize))
+                                .foregroundColor(Constants.Colors.textWhite)
+                                .lineSpacing(6)
+                        }
+                        .padding()
+                        .background(Color.white.opacity(0.05))
+                        .cornerRadius(12)
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Helper Functions for Goods Trade
+    private func statusColor(_ status: String) -> Color {
+        switch status {
+        case "available":
+            return .green
+        case "reserved":
+            return .orange
+        case "completed":
+            return .gray
+        default:
+            return .gray
+        }
+    }
+
+    private func statusText(_ status: String) -> String {
+        switch status {
+        case "available":
+            return "募集中"
+        case "reserved":
+            return "予約済"
+        case "completed":
+            return "完了"
+        default:
+            return status
+        }
+    }
+
+    private func conditionText(_ condition: String) -> String {
+        switch condition {
+        case "new":
+            return "新品・未開封"
+        case "excellent":
+            return "美品"
+        case "good":
+            return "良好"
+        case "fair":
+            return "やや傷あり"
+        default:
+            return condition
         }
     }
 

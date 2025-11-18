@@ -109,6 +109,9 @@ enum Constants {
 
         // Community - My Votes
         static let getMyVotes = "\(apiBaseURL)/getMyVotes"
+
+        // Image Upload
+        static let uploadGoodsImage = "\(apiBaseURL)/uploadGoodsImage"
     }
 
     // MARK: - UserDefaults Keys

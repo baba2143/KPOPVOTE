@@ -51,21 +51,84 @@ struct VoteListView: View {
                     Spacer()
                 } else {
                     ScrollView {
-                        LazyVStack(spacing: 16) {
-                            ForEach(viewModel.votes) { vote in
-                                VoteCardView(vote: vote) {
-                                    print("🎯 [VoteListView] VoteCard callback - vote.id: \(vote.id)")
-                                    selectedVoteId = vote.id
-                                    print("🎯 [VoteListView] Set selectedVoteId: \(String(describing: selectedVoteId))")
-                                    showVoteDetail = true
-                                    print("🎯 [VoteListView] Set showVoteDetail: \(showVoteDetail)")
+                        LazyVStack(spacing: 24) {
+                            // App Votes Section
+                            if !viewModel.votes.isEmpty {
+                                VStack(alignment: .leading, spacing: 16) {
+                                    Text("アプリ内投票")
+                                        .font(.system(size: 18, weight: .bold))
+                                        .foregroundColor(Constants.Colors.textWhite)
+                                        .padding(.horizontal)
+
+                                    LazyVStack(spacing: 16) {
+                                        ForEach(viewModel.votes) { vote in
+                                            VoteCardView(vote: vote) {
+                                                print("🎯 [VoteListView] VoteCard callback - vote.id: \(vote.id)")
+                                                selectedVoteId = vote.id
+                                                print("🎯 [VoteListView] Set selectedVoteId: \(String(describing: selectedVoteId))")
+                                                showVoteDetail = true
+                                                print("🎯 [VoteListView] Set showVoteDetail: \(showVoteDetail)")
+                                            }
+                                        }
+                                    }
+                                    .padding(.horizontal)
+                                }
+                            }
+
+                            // User Tasks Section
+                            VStack(alignment: .leading, spacing: 16) {
+                                Text("登録したタスク")
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundColor(Constants.Colors.textWhite)
+                                    .padding(.horizontal)
+
+                                // Task Filter
+                                TaskFilterView(
+                                    selectedFilter: viewModel.selectedTaskFilter,
+                                    onFilterChange: { filter in
+                                        viewModel.changeTaskFilter(filter)
+                                    }
+                                )
+                                .padding(.horizontal)
+
+                                // Task List
+                                if viewModel.isLoadingTasks {
+                                    HStack {
+                                        Spacer()
+                                        ProgressView()
+                                            .tint(Constants.Colors.accentPink)
+                                            .padding()
+                                        Spacer()
+                                    }
+                                } else if viewModel.filteredTasks.isEmpty {
+                                    VStack(spacing: 12) {
+                                        Image(systemName: "checkmark.circle")
+                                            .font(.system(size: 40))
+                                            .foregroundColor(Constants.Colors.textGray)
+                                        Text(emptyTaskMessage)
+                                            .font(.system(size: 14))
+                                            .foregroundColor(Constants.Colors.textGray)
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 32)
+                                } else {
+                                    LazyVStack(spacing: 16) {
+                                        ForEach(viewModel.filteredTasks) { task in
+                                            TaskCard(task: task, showCompleteButton: viewModel.selectedTaskFilter == .active) {
+                                                Task {
+                                                    await viewModel.completeTask(task)
+                                                }
+                                            }
+                                        }
+                                    }
+                                    .padding(.horizontal)
                                 }
                             }
                         }
-                        .padding()
+                        .padding(.vertical)
                     }
                     .refreshable {
-                        await viewModel.refresh()
+                        await viewModel.refreshAll()
                     }
                 }
             }
@@ -95,6 +158,23 @@ struct VoteListView: View {
         }
         .task {
             await viewModel.loadVotes()
+            await viewModel.loadUserTasks()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("taskRegisteredNotification"))) { _ in
+            Task {
+                await viewModel.loadUserTasks()
+            }
+        }
+    }
+
+    private var emptyTaskMessage: String {
+        switch viewModel.selectedTaskFilter {
+        case .active:
+            return "アクティブなタスクはありません"
+        case .archived:
+            return "アーカイブされたタスクはありません"
+        case .completed:
+            return "完了したタスクはありません"
         }
     }
 }
@@ -319,6 +399,88 @@ struct EmptyStateView: View {
         case nil:
             return "投票が作成されていません\nしばらくお待ちください"
         }
+    }
+}
+
+// MARK: - Task Filter View
+struct TaskFilterView: View {
+    let selectedFilter: VoteListViewModel.TaskFilter
+    let onFilterChange: (VoteListViewModel.TaskFilter) -> Void
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                TaskFilterButton(
+                    icon: "play.circle.fill",
+                    title: "アクティブ",
+                    isSelected: selectedFilter == .active,
+                    action: { onFilterChange(.active) }
+                )
+
+                TaskFilterButton(
+                    icon: "archivebox.fill",
+                    title: "アーカイブ",
+                    isSelected: selectedFilter == .archived,
+                    action: { onFilterChange(.archived) }
+                )
+
+                TaskFilterButton(
+                    icon: "checkmark.circle.fill",
+                    title: "完了",
+                    isSelected: selectedFilter == .completed,
+                    action: { onFilterChange(.completed) }
+                )
+            }
+        }
+    }
+}
+
+// MARK: - Task Filter Button
+struct TaskFilterButton: View {
+    let icon: String
+    let title: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 12, weight: isSelected ? .semibold : .regular))
+
+                Text(title)
+                    .font(.system(size: 14, weight: isSelected ? .semibold : .regular))
+            }
+            .foregroundColor(isSelected ? .white : Constants.Colors.textGray)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(
+                Group {
+                    if isSelected {
+                        LinearGradient(
+                            colors: [Constants.Colors.accentPink, Constants.Colors.gradientPink],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    } else {
+                        LinearGradient(
+                            colors: [Color.white.opacity(0.1), Color.white.opacity(0.05)],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    }
+                }
+            )
+            .cornerRadius(20)
+            .shadow(
+                color: isSelected ? Constants.Colors.accentPink.opacity(0.3) : Color.clear,
+                radius: isSelected ? 8 : 0,
+                x: 0,
+                y: isSelected ? 4 : 0
+            )
+        }
+        .buttonStyle(.plain)
+        .animation(.easeInOut(duration: 0.2), value: isSelected)
     }
 }
 

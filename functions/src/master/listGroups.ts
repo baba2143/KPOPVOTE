@@ -1,12 +1,12 @@
 /**
- * List idol masters
+ * List group masters
  */
 
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { ApiResponse } from "../types";
 
-export const listIdols = functions.https.onRequest(async (req, res) => {
+export const listGroups = functions.https.onRequest(async (req, res) => {
   res.set("Access-Control-Allow-Origin", "*");
   res.set("Access-Control-Allow-Methods", "GET");
   res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
@@ -31,23 +31,17 @@ export const listIdols = functions.https.onRequest(async (req, res) => {
     const token = authHeader.split("Bearer ")[1];
     await admin.auth().verifyIdToken(token);
 
-    const limit = req.query.limit ? parseInt(req.query.limit as string) : 10000;
-    const groupName = req.query.groupName as string | undefined;
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
 
-    let query = admin.firestore().collection("idolMasters").orderBy("name", "asc").limit(limit);
-
-    if (groupName) {
-      query = query.where("groupName", "==", groupName) as admin.firestore.Query<admin.firestore.DocumentData>;
-    }
+    const query = admin.firestore().collection("groupMasters").orderBy("name", "asc").limit(limit);
 
     const snapshot = await query.get();
 
-    const idols = snapshot.docs.map((doc) => {
+    const groups = snapshot.docs.map((doc) => {
       const data = doc.data();
       return {
-        idolId: doc.id,
+        groupId: doc.id,
         name: data.name,
-        groupName: data.groupName,
         imageUrl: data.imageUrl,
         createdAt: data.createdAt?.toDate().toISOString() || null,
         updatedAt: data.updatedAt?.toDate().toISOString() || null,
@@ -56,10 +50,10 @@ export const listIdols = functions.https.onRequest(async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: { idols, count: idols.length },
+      data: { groups, count: groups.length },
     } as ApiResponse<unknown>);
   } catch (error: unknown) {
-    console.error("List idols error:", error);
+    console.error("List groups error:", error);
     res.status(500).json({ success: false, error: "Internal server error" } as ApiResponse<null>);
   }
 });

@@ -9,8 +9,16 @@ import {
   ExternalAppCreateRequest,
   ExternalAppUpdateRequest,
 } from '../types/externalApp';
+import { parseCSV, arrayToCSV, downloadBlob, getTimestampedFilename, ParseError } from '../utils/csvUtils';
 
 const FUNCTIONS_BASE_URL = 'https://us-central1-kpopvote-9de2b.cloudfunctions.net';
+
+export interface ImportResult {
+  success: boolean;
+  created: number;
+  updated: number;
+  errors: ParseError[];
+}
 
 /**
  * Get auth token
@@ -197,6 +205,132 @@ export const deleteExternalApp = async (appId: string): Promise<void> => {
     }
   } catch (error) {
     console.error('Error deleting external app:', error);
+    throw error;
+  }
+};
+
+/**
+ * Export external apps to CSV
+ * Downloads CSV file with all external apps
+ */
+export const exportExternalAppsToCSV = async (): Promise<void> => {
+  try {
+    const apps = await listExternalApps();
+
+    const csvData = apps.map((app) => ({
+      appName: app.appName,
+      appUrl: app.appUrl || '',
+    }));
+
+    const blob = arrayToCSV(csvData, ['appName', 'appUrl']);
+    const filename = getTimestampedFilename('external_apps');
+
+    downloadBlob(blob, filename);
+  } catch (error) {
+    console.error('Error exporting external apps to CSV:', error);
+    throw error;
+  }
+};
+
+/**
+ * Import external apps from CSV
+ * @param file CSV file
+ * @returns Import result with created/updated counts and errors
+ */
+export const importExternalAppsFromCSV = async (file: File): Promise<ImportResult> => {
+  try {
+    // Validate file type
+    if (!file.name.endsWith('.csv')) {
+      throw new Error('CSVファイルを選択してください');
+    }
+
+    // Parse CSV
+    const parseResult = await parseCSV<ExternalAppCreateRequest>(
+      file,
+      ['appName', 'appUrl'],
+      (row, lineNumber) => {
+        // Validate appName
+        if (!row.appName || row.appName.trim().length === 0) {
+          return {
+            valid: false,
+            error: 'アプリ名は必須です',
+          };
+        }
+        if (row.appName.length > 100) {
+          return {
+            valid: false,
+            error: 'アプリ名は100文字以内で入力してください',
+          };
+        }
+
+        // Validate appUrl (optional but must be valid if provided)
+        const appUrl = row.appUrl?.trim();
+        if (appUrl && appUrl.length > 0) {
+          try {
+            new URL(appUrl);
+          } catch {
+            return {
+              valid: false,
+              error: '有効なURL形式で入力してください',
+            };
+          }
+        }
+
+        return {
+          valid: true,
+          data: {
+            appName: row.appName.trim(),
+            appUrl: appUrl && appUrl.length > 0 ? appUrl : undefined,
+          },
+        };
+      }
+    );
+
+    // If there are errors, return immediately without creating/updating
+    if (parseResult.errors.length > 0) {
+      return {
+        success: false,
+        created: 0,
+        updated: 0,
+        errors: parseResult.errors,
+      };
+    }
+
+    // Get existing apps to check for duplicates
+    const existingApps = await listExternalApps();
+    const existingAppMap = new Map(
+      existingApps.map((app) => [app.appName.toLowerCase(), app])
+    );
+
+    let created = 0;
+    let updated = 0;
+
+    // Create or update external apps
+    for (const appData of parseResult.data) {
+      const key = appData.appName.toLowerCase();
+      const existingApp = existingAppMap.get(key);
+
+      if (existingApp) {
+        // Update existing app if URL changed
+        if (appData.appUrl !== existingApp.appUrl) {
+          await updateExternalApp(existingApp.appId, { appUrl: appData.appUrl });
+        }
+        updated++;
+      } else {
+        // Create new external app
+        await createExternalApp(appData);
+        created++;
+      }
+    }
+
+    return {
+      success: true,
+      created,
+      updated,
+      errors: [],
+    };
+  } catch (error) {
+    console.error('Error importing external apps from CSV:', error);
     throw error;
   }
 };

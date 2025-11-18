@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import UIKit
 import Combine
 
 @MainActor
@@ -22,6 +23,14 @@ class CreatePostViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var isSuccess = false
 
+    // Goods Trade Properties
+    @Published var selectedGoodsImage: UIImage?
+    @Published var goodsName: String = ""
+    @Published var goodsTags: [String] = []
+    @Published var tradeType: String = "want" // "want" or "offer"
+    @Published var condition: String? // "new", "excellent", "good", "fair"
+    @Published var goodsDescription: String = ""
+
     // MARK: - Validation
     /// Check if current post can be submitted
     var canSubmit: Bool {
@@ -32,6 +41,11 @@ class CreatePostViewModel: ObservableObject {
             return !textContent.isEmpty && !selectedBiasIds.isEmpty
         case .myVotes:
             return !selectedMyVotes.isEmpty && !selectedBiasIds.isEmpty
+        case .goodsTrade:
+            return selectedGoodsImage != nil &&
+                   !goodsName.isEmpty &&
+                   !goodsTags.isEmpty &&
+                   !selectedBiasIds.isEmpty
         }
     }
 
@@ -62,6 +76,40 @@ class CreatePostViewModel: ObservableObject {
                 if !textContent.isEmpty {
                     content.text = textContent
                 }
+            case .goodsTrade:
+                // Upload goods image first
+                guard let image = selectedGoodsImage else {
+                    errorMessage = "画像を選択してください"
+                    isSubmitting = false
+                    return
+                }
+
+                print("📤 [CreatePostViewModel] Uploading goods image...")
+                let imageUrl = try await ImageUploadService.shared.uploadGoodsImage(image)
+                print("✅ [CreatePostViewModel] Image uploaded: \(imageUrl)")
+
+                // Get idol info from first selected bias
+                guard let firstBiasId = selectedBiasIds.first else {
+                    errorMessage = "アイドルを選択してください"
+                    isSubmitting = false
+                    return
+                }
+
+                // Need to get idol info - assuming we have access to BiasViewModel or similar
+                // For now, we'll use placeholder values
+                let goodsTrade = GoodsTradeContent(
+                    idolId: firstBiasId,
+                    idolName: "", // Will be filled from biasViewModel
+                    groupName: "", // Will be filled from biasViewModel
+                    goodsImageUrl: imageUrl,
+                    goodsTags: goodsTags,
+                    goodsName: goodsName,
+                    tradeType: tradeType,
+                    condition: condition,
+                    description: goodsDescription.isEmpty ? nil : goodsDescription,
+                    status: "available"
+                )
+                content.goodsTrade = goodsTrade
             }
 
             print("📤 [CreatePostViewModel] Creating post: type=\(selectedType.rawValue)")
@@ -110,6 +158,12 @@ class CreatePostViewModel: ObservableObject {
         selectedVoteSnapshot = nil
         selectedMyVotes = []
         selectedBiasIds = []
+        selectedGoodsImage = nil
+        goodsName = ""
+        goodsTags = []
+        tradeType = "want"
+        condition = nil
+        goodsDescription = ""
         isSubmitting = false
         errorMessage = nil
         isSuccess = false

@@ -17,17 +17,46 @@ class BiasViewModel: ObservableObject {
     @Published var isSaving = false
     @Published var errorMessage: String?
     @Published var successMessage: String?
+    @Published var selectedChar: String = "ALL" // Selected alphabet filter
 
     // MARK: - Computed Properties
 
-    /// Group idols by groupName
+    /// Alphabet options for filtering
+    let ALPHABET = ["ALL"] + (65...90).map { String(UnicodeScalar($0)!) } + ["#"]
+
+    /// Get first character of name for indexing
+    func getFirstChar(_ name: String) -> String {
+        guard let firstChar = name.first?.uppercased() else { return "#" }
+        return firstChar.rangeOfCharacter(from: .letters) != nil ? firstChar : "#"
+    }
+
+    /// Filtered idols by selected alphabet
+    var filteredIdols: [IdolMaster] {
+        if selectedChar == "ALL" {
+            return allIdols
+        } else {
+            return allIdols.filter { getFirstChar($0.name) == selectedChar }
+        }
+    }
+
+    /// Group idols by groupName (from filtered idols)
     var groupedIdols: [String: [IdolMaster]] {
-        Dictionary(grouping: allIdols, by: { $0.groupName })
+        Dictionary(grouping: filteredIdols, by: { $0.groupName })
     }
 
     /// Sorted group names
     var groupNames: [String] {
         groupedIdols.keys.sorted()
+    }
+
+    /// Count of idols per alphabet character
+    var alphabetCounts: [String: Int] {
+        var counts: [String: Int] = [:]
+        for idol in allIdols {
+            let char = getFirstChar(idol.name)
+            counts[char, default: 0] += 1
+        }
+        return counts
     }
 
     /// Selected idol objects

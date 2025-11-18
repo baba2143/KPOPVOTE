@@ -26,13 +26,14 @@ class IdolService {
         var urlComponents = URLComponents(string: Constants.API.listIdols)!
         var queryItems: [URLQueryItem] = []
 
+        // Always request all idols (no limit)
+        queryItems.append(URLQueryItem(name: "limit", value: "10000"))
+
         if let groupName = groupName {
             queryItems.append(URLQueryItem(name: "groupName", value: groupName))
         }
 
-        if !queryItems.isEmpty {
-            urlComponents.queryItems = queryItems
-        }
+        urlComponents.queryItems = queryItems
 
         // Create request
         var request = URLRequest(url: urlComponents.url!)

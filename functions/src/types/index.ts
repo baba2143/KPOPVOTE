@@ -200,6 +200,7 @@ export interface IdolMaster {
   idolId: string;
   name: string;
   groupName: string;
+  groupId?: string;
   imageUrl?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -208,6 +209,7 @@ export interface IdolMaster {
 export interface IdolCreateRequest {
   name: string;
   groupName: string;
+  groupId?: string;
   imageUrl?: string;
 }
 
@@ -215,6 +217,7 @@ export interface IdolUpdateRequest {
   idolId: string;
   name?: string;
   groupName?: string;
+  groupId?: string;
   imageUrl?: string;
 }
 
@@ -238,6 +241,25 @@ export interface ExternalAppUpdateRequest {
   appName?: string;
   appUrl?: string;
   iconUrl?: string;
+}
+
+export interface GroupMaster {
+  groupId: string;
+  name: string;
+  imageUrl?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface GroupCreateRequest {
+  name: string;
+  imageUrl?: string;
+}
+
+export interface GroupUpdateRequest {
+  groupId: string;
+  name?: string;
+  imageUrl?: string;
 }
 
 // Community related types (Phase 0+)
@@ -308,6 +330,20 @@ export interface AdminAuthResponse {
   isAdmin: boolean;
 }
 
+// Goods Trade related types
+export interface GoodsTradeContent {
+  idolId: string;
+  idolName: string;
+  groupName: string;
+  goodsImageUrl: string;
+  goodsTags: string[];
+  goodsName: string;
+  tradeType: "want" | "offer";
+  condition?: "new" | "excellent" | "good" | "fair";
+  description?: string;
+  status: "available" | "reserved" | "completed";
+}
+
 // Community Post related types (Phase 1 - Week 2)
 export interface PostContent {
   text?: string;
@@ -315,6 +351,7 @@ export interface PostContent {
   voteId?: string;
   voteSnapshot?: InAppVote;
   myVotes?: MyVoteItem[];
+  goodsTrade?: GoodsTradeContent;
 }
 
 export interface MyVoteItem {
@@ -330,7 +367,7 @@ export interface MyVoteItem {
 export interface Post {
   id: string;
   userId: string;
-  type: "vote_share" | "image" | "my_votes";
+  type: "vote_share" | "image" | "my_votes" | "goods_trade";
   content: PostContent;
   biasIds: string[];
   likesCount: number;
@@ -343,7 +380,7 @@ export interface Post {
 }
 
 export interface CreatePostRequest {
-  type: "vote_share" | "image" | "my_votes";
+  type: "vote_share" | "image" | "my_votes" | "goods_trade";
   content: PostContent;
   biasIds: string[];
 }

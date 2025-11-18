@@ -12,6 +12,7 @@ enum PostType: String, Codable {
     case voteShare = "vote_share"
     case image = "image"
     case myVotes = "my_votes"
+    case goodsTrade = "goods_trade"
 
     var displayName: String {
         switch self {
@@ -21,7 +22,36 @@ enum PostType: String, Codable {
             return "画像投稿"
         case .myVotes:
             return "マイ投票"
+        case .goodsTrade:
+            return "グッズ交換"
         }
+    }
+}
+
+// MARK: - Goods Trade Content
+struct GoodsTradeContent: Codable {
+    var idolId: String
+    var idolName: String
+    var groupName: String
+    var goodsImageUrl: String
+    var goodsTags: [String]
+    var goodsName: String
+    var tradeType: String // "want" or "offer"
+    var condition: String? // "new", "excellent", "good", "fair"
+    var description: String?
+    var status: String // "available", "reserved", "completed"
+
+    init(idolId: String, idolName: String, groupName: String, goodsImageUrl: String, goodsTags: [String], goodsName: String, tradeType: String, condition: String? = nil, description: String? = nil, status: String = "available") {
+        self.idolId = idolId
+        self.idolName = idolName
+        self.groupName = groupName
+        self.goodsImageUrl = goodsImageUrl
+        self.goodsTags = goodsTags
+        self.goodsName = goodsName
+        self.tradeType = tradeType
+        self.condition = condition
+        self.description = description
+        self.status = status
     }
 }
 
@@ -32,13 +62,15 @@ struct PostContent: Codable {
     var voteId: String?
     var voteSnapshot: InAppVote?
     var myVotes: [MyVoteItem]?
+    var goodsTrade: GoodsTradeContent?
 
-    init(text: String? = nil, images: [String]? = nil, voteId: String? = nil, voteSnapshot: InAppVote? = nil, myVotes: [MyVoteItem]? = nil) {
+    init(text: String? = nil, images: [String]? = nil, voteId: String? = nil, voteSnapshot: InAppVote? = nil, myVotes: [MyVoteItem]? = nil, goodsTrade: GoodsTradeContent? = nil) {
         self.text = text
         self.images = images
         self.voteId = voteId
         self.voteSnapshot = voteSnapshot
         self.myVotes = myVotes
+        self.goodsTrade = goodsTrade
     }
 }
 

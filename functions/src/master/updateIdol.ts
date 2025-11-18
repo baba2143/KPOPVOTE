@@ -31,7 +31,7 @@ export const updateIdol = functions.https.onRequest(async (req, res) => {
   });
 
   try {
-    const { idolId, name, groupName, imageUrl } = req.body as IdolUpdateRequest;
+    const { idolId, name, groupName, groupId, imageUrl } = req.body as IdolUpdateRequest;
 
     if (!idolId) {
       res.status(400).json({ success: false, error: "idolId is required" } as ApiResponse<null>);
@@ -52,6 +52,7 @@ export const updateIdol = functions.https.onRequest(async (req, res) => {
 
     if (name) updateData.name = name.trim();
     if (groupName) updateData.groupName = groupName.trim();
+    if (groupId !== undefined) updateData.groupId = groupId;
     if (imageUrl !== undefined) updateData.imageUrl = imageUrl;
 
     await idolRef.update(updateData);

@@ -11,6 +11,7 @@ struct CreatePostView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel = CreatePostViewModel()
     @StateObject private var biasViewModel = BiasViewModel()
+    @State private var showImagePicker = false
 
     var body: some View {
         ZStack {
@@ -30,6 +31,8 @@ struct CreatePostView: View {
                         imageInput
                     case .myVotes:
                         myVotesInput
+                    case .goodsTrade:
+                        goodsTradeInput
                     }
 
                     // Bias Selection
@@ -79,27 +82,36 @@ struct CreatePostView: View {
                 .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
                 .foregroundColor(Constants.Colors.textWhite)
 
-            HStack(spacing: 12) {
-                PostTypeButton(
-                    icon: "photo",
-                    title: "画像",
-                    isSelected: viewModel.selectedType == .image,
-                    action: { viewModel.selectedType = .image }
-                )
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    PostTypeButton(
+                        icon: "photo",
+                        title: "画像",
+                        isSelected: viewModel.selectedType == .image,
+                        action: { viewModel.selectedType = .image }
+                    )
 
-                PostTypeButton(
-                    icon: "chart.bar",
-                    title: "投票シェア",
-                    isSelected: viewModel.selectedType == .voteShare,
-                    action: { viewModel.selectedType = .voteShare }
-                )
+                    PostTypeButton(
+                        icon: "chart.bar",
+                        title: "投票シェア",
+                        isSelected: viewModel.selectedType == .voteShare,
+                        action: { viewModel.selectedType = .voteShare }
+                    )
 
-                PostTypeButton(
-                    icon: "list.bullet",
-                    title: "My投票",
-                    isSelected: viewModel.selectedType == .myVotes,
-                    action: { viewModel.selectedType = .myVotes }
-                )
+                    PostTypeButton(
+                        icon: "list.bullet",
+                        title: "My投票",
+                        isSelected: viewModel.selectedType == .myVotes,
+                        action: { viewModel.selectedType = .myVotes }
+                    )
+
+                    PostTypeButton(
+                        icon: "gift",
+                        title: "グッズ交換",
+                        isSelected: viewModel.selectedType == .goodsTrade,
+                        action: { viewModel.selectedType = .goodsTrade }
+                    )
+                }
             }
         }
     }
@@ -266,6 +278,172 @@ struct CreatePostView: View {
         }
     }
 
+    // MARK: - Goods Trade Input
+    @ViewBuilder
+    private var goodsTradeInput: some View {
+        VStack(alignment: .leading, spacing: Constants.Spacing.large) {
+            // Trade Type Selection
+            VStack(alignment: .leading, spacing: Constants.Spacing.small) {
+                Text("取引タイプ *")
+                    .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
+                    .foregroundColor(Constants.Colors.textWhite)
+
+                HStack(spacing: 12) {
+                    TradeTypeButton(
+                        title: "求む",
+                        icon: "hand.raised.fill",
+                        isSelected: viewModel.tradeType == "want",
+                        action: { viewModel.tradeType = "want" }
+                    )
+
+                    TradeTypeButton(
+                        title: "譲ります",
+                        icon: "hand.thumbsup.fill",
+                        isSelected: viewModel.tradeType == "offer",
+                        action: { viewModel.tradeType = "offer" }
+                    )
+                }
+            }
+
+            // Goods Image Upload
+            VStack(alignment: .leading, spacing: Constants.Spacing.small) {
+                Text("グッズ画像 *")
+                    .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
+                    .foregroundColor(Constants.Colors.textWhite)
+
+                if let image = viewModel.selectedGoodsImage {
+                    // Image Preview with Change Button
+                    VStack(spacing: 8) {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxHeight: 200)
+                            .cornerRadius(12)
+
+                        Button(action: {
+                            showImagePicker = true
+                        }) {
+                            HStack {
+                                Image(systemName: "photo")
+                                Text("画像を変更")
+                            }
+                            .font(.system(size: Constants.Typography.captionSize, weight: .semibold))
+                            .foregroundColor(Constants.Colors.accentBlue)
+                        }
+                    }
+                } else {
+                    // Upload Button
+                    Button(action: {
+                        showImagePicker = true
+                    }) {
+                        HStack {
+                            Image(systemName: "photo.badge.plus")
+                            Text("画像を追加")
+                        }
+                        .font(.system(size: Constants.Typography.bodySize))
+                        .foregroundColor(Constants.Colors.accentBlue)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.white.opacity(0.05))
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Constants.Colors.accentBlue.opacity(0.3), lineWidth: 1)
+                        )
+                    }
+                }
+            }
+
+            // Goods Name
+            VStack(alignment: .leading, spacing: Constants.Spacing.small) {
+                Text("グッズ名 *")
+                    .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
+                    .foregroundColor(Constants.Colors.textWhite)
+
+                TextField("例: うちわ、トレカ、ペンライト", text: $viewModel.goodsName)
+                    .font(.system(size: Constants.Typography.bodySize))
+                    .foregroundColor(Constants.Colors.textWhite)
+                    .padding(12)
+                    .background(Color.white.opacity(0.05))
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Constants.Colors.accentPink.opacity(0.3), lineWidth: 1)
+                    )
+            }
+
+            // Tags
+            VStack(alignment: .leading, spacing: Constants.Spacing.small) {
+                Text("タグ *")
+                    .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
+                    .foregroundColor(Constants.Colors.textWhite)
+
+                TagInputView(tags: $viewModel.goodsTags)
+            }
+
+            // Condition
+            VStack(alignment: .leading, spacing: Constants.Spacing.small) {
+                Text("状態")
+                    .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
+                    .foregroundColor(Constants.Colors.textWhite)
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ConditionChip(
+                            title: "新品・未開封",
+                            value: "new",
+                            isSelected: viewModel.condition == "new",
+                            action: { viewModel.condition = "new" }
+                        )
+
+                        ConditionChip(
+                            title: "美品",
+                            value: "excellent",
+                            isSelected: viewModel.condition == "excellent",
+                            action: { viewModel.condition = "excellent" }
+                        )
+
+                        ConditionChip(
+                            title: "良好",
+                            value: "good",
+                            isSelected: viewModel.condition == "good",
+                            action: { viewModel.condition = "good" }
+                        )
+
+                        ConditionChip(
+                            title: "やや傷あり",
+                            value: "fair",
+                            isSelected: viewModel.condition == "fair",
+                            action: { viewModel.condition = "fair" }
+                        )
+                    }
+                }
+            }
+
+            // Description
+            VStack(alignment: .leading, spacing: Constants.Spacing.small) {
+                Text("説明 (オプション)")
+                    .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
+                    .foregroundColor(Constants.Colors.textWhite)
+
+                TextEditor(text: $viewModel.goodsDescription)
+                    .font(.system(size: Constants.Typography.bodySize))
+                    .foregroundColor(Constants.Colors.textWhite)
+                    .padding(8)
+                    .frame(minHeight: 80)
+                    .background(Color.white.opacity(0.05))
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Constants.Colors.accentPink.opacity(0.3), lineWidth: 1)
+                    )
+            }
+        }
+        .sheet(isPresented: $showImagePicker) {
+            ImagePicker(selectedImage: $viewModel.selectedGoodsImage)
+        }
+    }
+
     // MARK: - Bias Selection
     @ViewBuilder
     private var biasSelection: some View {
@@ -372,6 +550,50 @@ struct BiasChipToggle: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
                 .background(isSelected ? Constants.Colors.accentPink : Color.white.opacity(0.1))
+                .cornerRadius(20)
+        }
+    }
+}
+
+// MARK: - Trade Type Button Component
+struct TradeTypeButton: View {
+    let title: String
+    let icon: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.system(size: 20))
+                Text(title)
+                    .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
+            }
+            .foregroundColor(isSelected ? .white : Constants.Colors.textGray)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(isSelected ? Constants.Colors.accentPink : Color.white.opacity(0.05))
+            .cornerRadius(12)
+        }
+    }
+}
+
+// MARK: - Condition Chip Component
+struct ConditionChip: View {
+    let title: String
+    let value: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: Constants.Typography.captionSize, weight: .semibold))
+                .foregroundColor(isSelected ? .white : Constants.Colors.textGray)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(isSelected ? Constants.Colors.accentBlue : Color.white.opacity(0.1))
                 .cornerRadius(20)
         }
     }

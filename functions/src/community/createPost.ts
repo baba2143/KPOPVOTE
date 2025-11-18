@@ -41,7 +41,7 @@ export const createPost = functions.https.onRequest(async (req, res) => {
       return;
     }
 
-    if (!["vote_share", "image", "my_votes"].includes(type)) {
+    if (!["vote_share", "image", "my_votes", "goods_trade"].includes(type)) {
       res.status(400).json({ success: false, error: "Invalid post type" } as ApiResponse<null>);
       return;
     }
@@ -76,6 +76,38 @@ export const createPost = functions.https.onRequest(async (req, res) => {
     if (type === "my_votes") {
       if (!content.myVotes || content.myVotes.length === 0) {
         res.status(400).json({ success: false, error: "myVotes required for my_votes posts" } as ApiResponse<null>);
+        return;
+      }
+    }
+
+    if (type === "goods_trade") {
+      if (!content.goodsTrade) {
+        res.status(400).json({
+          success: false,
+          error: "goodsTrade required for goods_trade posts",
+        } as ApiResponse<null>);
+        return;
+      }
+      const gt = content.goodsTrade;
+      if (
+        !gt.idolId ||
+        !gt.goodsImageUrl ||
+        !gt.goodsName ||
+        !gt.tradeType ||
+        !gt.goodsTags ||
+        gt.goodsTags.length === 0
+      ) {
+        res.status(400).json({
+          success: false,
+          error: "goodsTrade requires: idolId, goodsImageUrl, goodsName, tradeType, and goodsTags",
+        } as ApiResponse<null>);
+        return;
+      }
+      if (!["want", "offer"].includes(gt.tradeType)) {
+        res.status(400).json({
+          success: false,
+          error: "Invalid tradeType. Must be 'want' or 'offer'",
+        } as ApiResponse<null>);
         return;
       }
     }

@@ -46,6 +46,10 @@ export { createExternalApp } from "./master/createExternalApp";
 export { listExternalApps } from "./master/listExternalApps";
 export { updateExternalApp } from "./master/updateExternalApp";
 export { deleteExternalApp } from "./master/deleteExternalApp";
+export { createGroup } from "./master/createGroup";
+export { listGroups } from "./master/listGroups";
+export { updateGroup } from "./master/updateGroup";
+export { deleteGroup } from "./master/deleteGroup";
 export { seedExternalApps } from "./seedExternalApps";
 export { seedCommunityData } from "./community/seedCommunityData";
 
@@ -71,6 +75,9 @@ export { getRecommendedUsers } from "./community/getRecommendedUsers";
 export { getNotifications } from "./community/getNotifications";
 export { markNotificationAsRead } from "./community/markNotificationAsRead";
 export { getMyVotes } from "./community/getMyVotes";
+
+// Storage functions (Goods Trade)
+export { uploadGoodsImage } from "./storage/uploadGoodsImage";
 
 // Placeholder function for testing
 import * as functions from "firebase-functions";

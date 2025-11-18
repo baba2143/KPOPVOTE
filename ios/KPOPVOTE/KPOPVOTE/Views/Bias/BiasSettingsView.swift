@@ -25,9 +25,30 @@ struct BiasSettingsView: View {
                     }
                 } else {
                     // Main content
-                    List {
-                        // Selected idols section
-                        if viewModel.selectedCount > 0 {
+                    VStack(spacing: 0) {
+                        // Alphabet filter tabs
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(viewModel.ALPHABET, id: \.self) { char in
+                                    AlphabetTabView(
+                                        char: char,
+                                        count: char == "ALL" ? viewModel.allIdols.count : (viewModel.alphabetCounts[char] ?? 0),
+                                        isSelected: viewModel.selectedChar == char,
+                                        onTap: {
+                                            viewModel.selectedChar = char
+                                        }
+                                    )
+                                }
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                        }
+                        .background(Color(.systemGroupedBackground))
+
+                        // Idol list
+                        List {
+                            // Selected idols section
+                            if viewModel.selectedCount > 0 {
                             Section {
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text("選択中 (\(viewModel.selectedCount))")
@@ -60,9 +81,10 @@ struct BiasSettingsView: View {
                             } header: {
                                 Text("\(groupName) (\(viewModel.groupedIdols[groupName]?.count ?? 0))")
                             }
+                            }
                         }
+                        .listStyle(.insetGrouped)
                     }
-                    .listStyle(.insetGrouped)
                 }
             }
             .navigationTitle("推し設定")
@@ -118,6 +140,43 @@ struct BiasSettingsView: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Alphabet Tab View
+struct AlphabetTabView: View {
+    let char: String
+    let count: Int
+    let isSelected: Bool
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            VStack(spacing: 2) {
+                Text(char)
+                    .font(.system(size: 14, weight: isSelected ? .bold : .regular))
+                    .foregroundColor(isSelected ? .white : (count > 0 ? .blue : .gray))
+
+                if count > 0 && !isSelected {
+                    Text("\(count)")
+                        .font(.system(size: 10))
+                        .foregroundColor(.secondary)
+                }
+            }
+            .frame(minWidth: 36, minHeight: 36)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isSelected ? Color.blue : Color(.systemBackground))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(isSelected ? Color.clear : (count > 0 ? Color.blue.opacity(0.3) : Color.gray.opacity(0.3)), lineWidth: 1)
+            )
+        }
+        .disabled(count == 0 && char != "ALL")
+        .opacity(count == 0 && char != "ALL" ? 0.5 : 1.0)
     }
 }
 

@@ -27,94 +27,94 @@ import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Link as LinkIcon,
   FileDownload as FileDownloadIcon,
   FileUpload as FileUploadIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import {
-  listExternalApps,
-  deleteExternalApp,
-  exportExternalAppsToCSV,
-  importExternalAppsFromCSV,
+  listGroups,
+  deleteGroup,
+  exportGroupsToCSV,
+  importGroupsFromCSV,
   ImportResult,
-} from '../services/externalAppService';
-import { ExternalAppMaster } from '../types/externalApp';
-import { ExternalAppFormDialog } from '../components/externalApp/ExternalAppFormDialog';
+} from '../../services/groupService';
+import { GroupMaster } from '../../types/group';
+import { GroupFormDialog } from './GroupFormDialog';
 
-export const ExternalAppListPage: React.FC = () => {
-  const [apps, setApps] = useState<ExternalAppMaster[]>([]);
+export const GroupList: React.FC = () => {
+  const [groups, setGroups] = useState<GroupMaster[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [editingApp, setEditingApp] = useState<ExternalAppMaster | undefined>(undefined);
-  const [deletingApp, setDeletingApp] = useState<ExternalAppMaster | null>(null);
+  const [editingGroup, setEditingGroup] = useState<GroupMaster | undefined>(undefined);
+  const [deletingGroup, setDeletingGroup] = useState<GroupMaster | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importLoading, setImportLoading] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const loadApps = async () => {
+  const loadGroups = async () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await listExternalApps();
-      setApps(data);
+      const data = await listGroups();
+      setGroups(data);
     } catch (err) {
-      console.error('Error loading external apps:', err);
-      setError('外部アプリ一覧の取得に失敗しました');
+      console.error('Error loading groups:', err);
+      setError('グループ一覧の取得に失敗しました');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadApps();
+    loadGroups();
   }, []);
 
   const handleCreateSuccess = () => {
     setCreateDialogOpen(false);
-    loadApps();
+    loadGroups();
   };
 
-  const handleEditClick = (app: ExternalAppMaster) => {
-    setEditingApp(app);
+  const handleEditClick = (group: GroupMaster) => {
+    setEditingGroup(group);
   };
 
   const handleEditSuccess = () => {
-    setEditingApp(undefined);
-    loadApps();
+    setEditingGroup(undefined);
+    loadGroups();
   };
 
-  const handleDeleteClick = (app: ExternalAppMaster) => {
-    setDeletingApp(app);
+  const handleDeleteClick = (group: GroupMaster) => {
+    setDeletingGroup(group);
   };
 
   const handleDeleteConfirm = async () => {
-    if (!deletingApp) return;
+    if (!deletingGroup) return;
 
     try {
       setDeleteLoading(true);
-      await deleteExternalApp(deletingApp.appId);
-      setDeletingApp(null);
-      loadApps();
-    } catch (err) {
-      console.error('Error deleting external app:', err);
-      setError('外部アプリの削除に失敗しました');
-      setDeletingApp(null);
+      await deleteGroup(deletingGroup.groupId);
+      setDeletingGroup(null);
+      loadGroups();
+    } catch (err: any) {
+      console.error('Error deleting group:', err);
+      const errorMessage = err.message || 'グループの削除に失敗しました';
+      setError(errorMessage);
+      setDeletingGroup(null);
     } finally {
       setDeleteLoading(false);
     }
   };
 
   const handleDeleteCancel = () => {
-    setDeletingApp(null);
+    setDeletingGroup(null);
   };
 
   const handleExport = async () => {
     try {
-      await exportExternalAppsToCSV();
+      await exportGroupsToCSV();
     } catch (err) {
       console.error('Error exporting CSV:', err);
       setError('CSVエクスポートに失敗しました');
@@ -134,11 +134,11 @@ export const ExternalAppListPage: React.FC = () => {
       setImportDialogOpen(true);
       setImportResult(null);
 
-      const result = await importExternalAppsFromCSV(file);
+      const result = await importGroupsFromCSV(file);
       setImportResult(result);
 
       if (result.success) {
-        loadApps();
+        loadGroups();
       }
     } catch (err) {
       console.error('Error importing CSV:', err);
@@ -158,7 +158,7 @@ export const ExternalAppListPage: React.FC = () => {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box>
       <Box
         sx={{
           display: 'flex',
@@ -167,8 +167,8 @@ export const ExternalAppListPage: React.FC = () => {
           mb: 3,
         }}
       >
-        <Typography variant="h4" component="h1">
-          外部アプリマスター管理
+        <Typography variant="body2" color="text.secondary">
+          K-POPグループのマスターデータを管理します
         </Typography>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Button
@@ -208,10 +208,6 @@ export const ExternalAppListPage: React.FC = () => {
         </Alert>
       )}
 
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        投票アプリケーションやサイトのマスターデータを管理します
-      </Typography>
-
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
           <CircularProgress />
@@ -221,78 +217,47 @@ export const ExternalAppListPage: React.FC = () => {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>アイコン</TableCell>
-                <TableCell>アプリ名</TableCell>
-                <TableCell>URL</TableCell>
+                <TableCell>画像</TableCell>
+                <TableCell>グループ名</TableCell>
                 <TableCell>作成日時</TableCell>
                 <TableCell align="right">操作</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {apps.length === 0 ? (
+              {groups.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} align="center">
+                  <TableCell colSpan={4} align="center">
                     <Typography color="text.secondary">
-                      外部アプリが登録されていません
+                      グループが登録されていません
                     </Typography>
                   </TableCell>
                 </TableRow>
               ) : (
-                apps.map((app) => (
-                  <TableRow key={app.appId} hover>
+                groups.map((group) => (
+                  <TableRow key={group.groupId} hover>
                     <TableCell>
                       <Avatar
-                        src={app.iconUrl || undefined}
-                        alt={app.appName}
+                        src={group.imageUrl || undefined}
+                        alt={group.name}
                         sx={{ width: 48, height: 48 }}
-                        variant="rounded"
                       >
-                        {app.appName.charAt(0)}
+                        {group.name.charAt(0)}
                       </Avatar>
                     </TableCell>
                     <TableCell>
                       <Typography variant="body1" fontWeight="medium">
-                        {app.appName}
+                        {group.name}
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      {app.appUrl ? (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                          <Typography
-                            variant="body2"
-                            color="primary"
-                            sx={{
-                              maxWidth: 300,
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {app.appUrl}
-                          </Typography>
-                          <IconButton
-                            size="small"
-                            onClick={() => window.open(app.appUrl, '_blank')}
-                            title="URLを開く"
-                          >
-                            <LinkIcon fontSize="small" />
-                          </IconButton>
-                        </Box>
-                      ) : (
-                        <Typography variant="body2" color="text.secondary">
-                          -
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {app.createdAt
-                        ? format(new Date(app.createdAt), 'yyyy/MM/dd HH:mm')
+                      {group.createdAt
+                        ? format(new Date(group.createdAt), 'yyyy/MM/dd HH:mm')
                         : '-'}
                     </TableCell>
                     <TableCell align="right">
                       <IconButton
                         size="small"
-                        onClick={() => handleEditClick(app)}
+                        onClick={() => handleEditClick(group)}
                         title="編集"
                       >
                         <EditIcon />
@@ -300,7 +265,7 @@ export const ExternalAppListPage: React.FC = () => {
                       <IconButton
                         size="small"
                         color="error"
-                        onClick={() => handleDeleteClick(app)}
+                        onClick={() => handleDeleteClick(group)}
                         title="削除"
                       >
                         <DeleteIcon />
@@ -315,34 +280,34 @@ export const ExternalAppListPage: React.FC = () => {
       )}
 
       {/* Create Dialog */}
-      <ExternalAppFormDialog
+      <GroupFormDialog
         open={createDialogOpen}
         onClose={() => setCreateDialogOpen(false)}
         onSuccess={handleCreateSuccess}
       />
 
       {/* Edit Dialog */}
-      {editingApp && (
-        <ExternalAppFormDialog
-          open={!!editingApp}
-          onClose={() => setEditingApp(undefined)}
+      {editingGroup && (
+        <GroupFormDialog
+          open={!!editingGroup}
+          onClose={() => setEditingGroup(undefined)}
           onSuccess={handleEditSuccess}
-          app={editingApp}
+          group={editingGroup}
         />
       )}
 
       {/* Delete Confirmation Dialog */}
       <Dialog
-        open={!!deletingApp}
+        open={!!deletingGroup}
         onClose={handleDeleteCancel}
         aria-labelledby="delete-dialog-title"
       >
-        <DialogTitle id="delete-dialog-title">外部アプリの削除</DialogTitle>
+        <DialogTitle id="delete-dialog-title">グループの削除</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            「{deletingApp?.appName}」を削除してもよろしいですか？
+            「{deletingGroup?.name}」を削除してもよろしいですか？
             <br />
-            この操作は取り消せません。
+            このグループに所属するアイドルがいる場合は削除できません。
           </DialogContentText>
         </DialogContent>
         <DialogActions>
