@@ -76,6 +76,11 @@ export { getNotifications } from "./community/getNotifications";
 export { markNotificationAsRead } from "./community/markNotificationAsRead";
 export { getMyVotes } from "./community/getMyVotes";
 
+// Community functions (Comments)
+export { createComment } from "./community/createComment";
+export { getComments } from "./community/getComments";
+export { deleteComment } from "./community/deleteComment";
+
 // Storage functions (Goods Trade)
 export { uploadGoodsImage } from "./storage/uploadGoodsImage";
 

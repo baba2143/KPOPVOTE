@@ -21,6 +21,7 @@ enum CommunityError: LocalizedError {
     case invalidPostType
     case invalidContent
     case unauthorized
+    case commentFailed
 
     var errorDescription: String? {
         switch self {
@@ -48,6 +49,8 @@ enum CommunityError: LocalizedError {
             return "無効なコンテンツです"
         case .unauthorized:
             return "権限がありません"
+        case .commentFailed:
+            return "コメントに失敗しました"
         }
     }
 }

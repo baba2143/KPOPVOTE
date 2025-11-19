@@ -16,6 +16,13 @@ struct PostDetailView: View {
     @State private var errorMessage: String?
     @State private var showDeleteConfirm = false
 
+    // Comment states
+    @State private var comments: [Comment] = []
+    @State private var isLoadingComments = false
+    @State private var commentText = ""
+    @State private var isSendingComment = false
+    @State private var commentError: String?
+
     init(postId: String) {
         self.postId = postId
         print("🔵 [PostDetailView] INIT with postId: \(postId)")
@@ -100,6 +107,7 @@ struct PostDetailView: View {
         .task {
             print("🟢 [PostDetailView] .task executed for postId: \(postId)")
             await loadPost()
+            await loadComments()
         }
         .onAppear {
             print("🟡 [PostDetailView] onAppear called for postId: \(postId)")
@@ -544,15 +552,87 @@ struct PostDetailView: View {
     @ViewBuilder
     private var commentsSection: some View {
         VStack(alignment: .leading, spacing: Constants.Spacing.medium) {
-            Text("コメント")
-                .font(.system(size: Constants.Typography.headlineSize, weight: .bold))
-                .foregroundColor(Constants.Colors.textWhite)
+            // Header
+            HStack {
+                Text("コメント")
+                    .font(.system(size: Constants.Typography.headlineSize, weight: .bold))
+                    .foregroundColor(Constants.Colors.textWhite)
 
-            Text("コメント機能は今後実装予定です")
-                .font(.system(size: Constants.Typography.bodySize))
-                .foregroundColor(Constants.Colors.textGray)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.vertical, Constants.Spacing.large)
+                Spacer()
+
+                Text("\(comments.count)")
+                    .font(.system(size: Constants.Typography.bodySize))
+                    .foregroundColor(Constants.Colors.textGray)
+            }
+
+            // Comment Input
+            HStack(alignment: .top, spacing: Constants.Spacing.small) {
+                TextField("コメントを入力...", text: $commentText, axis: .vertical)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: Constants.Typography.bodySize))
+                    .foregroundColor(Constants.Colors.textWhite)
+                    .padding(12)
+                    .background(Color.white.opacity(0.05))
+                    .cornerRadius(12)
+                    .lineLimit(3...6)
+                    .disabled(isSendingComment)
+
+                Button(action: {
+                    Task {
+                        await sendComment()
+                    }
+                }) {
+                    Image(systemName: "paperplane.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(commentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Constants.Colors.textGray : Constants.Colors.accentPink)
+                        .frame(width: 44, height: 44)
+                        .background(Color.white.opacity(0.05))
+                        .cornerRadius(12)
+                }
+                .disabled(commentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSendingComment)
+            }
+
+            // Error message
+            if let commentError = commentError {
+                Text(commentError)
+                    .font(.system(size: Constants.Typography.captionSize))
+                    .foregroundColor(.red)
+                    .padding(.horizontal, 8)
+            }
+
+            // Loading state
+            if isLoadingComments {
+                HStack {
+                    Spacer()
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: Constants.Colors.accentPink))
+                    Spacer()
+                }
+                .padding(.vertical, Constants.Spacing.medium)
+            }
+
+            // Comments list
+            if !comments.isEmpty {
+                VStack(alignment: .leading, spacing: Constants.Spacing.medium) {
+                    ForEach(comments) { comment in
+                        CommentRow(
+                            comment: comment,
+                            postAuthorId: post?.userId ?? "",
+                            onDelete: {
+                                Task {
+                                    await deleteCommentAction(commentId: comment.id)
+                                }
+                            }
+                        )
+                    }
+                }
+            } else if !isLoadingComments {
+                Text("まだコメントがありません")
+                    .font(.system(size: Constants.Typography.bodySize))
+                    .foregroundColor(Constants.Colors.textGray)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, Constants.Spacing.large)
+            }
         }
     }
 
@@ -612,6 +692,176 @@ struct PostDetailView: View {
     }
 
     // MARK: - Time Ago String
+    private func timeAgoString(from date: Date) -> String {
+        let interval = Date().timeIntervalSince(date)
+        let seconds = Int(interval)
+
+        if seconds < 60 {
+            return "たった今"
+        } else if seconds < 3600 {
+            return "\(seconds / 60)分前"
+        } else if seconds < 86400 {
+            return "\(seconds / 3600)時間前"
+        } else {
+            return "\(seconds / 86400)日前"
+        }
+    }
+
+    // MARK: - Load Comments
+    private func loadComments() async {
+        isLoadingComments = true
+        commentError = nil
+
+        do {
+            print("💬 [PostDetailView] Loading comments for post: \(postId)")
+            let result = try await CommunityService.shared.fetchComments(postId: postId, limit: 50)
+            comments = result.comments
+            print("✅ [PostDetailView] Loaded \(comments.count) comments")
+        } catch {
+            print("❌ [PostDetailView] Failed to load comments: \(error)")
+            commentError = "コメントの読み込みに失敗しました"
+        }
+
+        isLoadingComments = false
+    }
+
+    // MARK: - Send Comment
+    private func sendComment() async {
+        let text = commentText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+
+        isSendingComment = true
+        commentError = nil
+
+        do {
+            print("💬 [PostDetailView] Sending comment: \(text)")
+            let result = try await CommunityService.shared.createComment(postId: postId, text: text)
+
+            // Clear input
+            commentText = ""
+
+            // Update post's comment count
+            if var currentPost = post {
+                currentPost.commentsCount = result.commentsCount
+                post = currentPost
+            }
+
+            // Reload comments to show the new one
+            await loadComments()
+
+            print("✅ [PostDetailView] Comment sent successfully: \(result.commentId)")
+        } catch {
+            print("❌ [PostDetailView] Failed to send comment: \(error)")
+
+            // Show specific error message
+            if let communityError = error as? CommunityError {
+                commentError = communityError.errorDescription
+            } else {
+                commentError = "コメントの送信に失敗しました"
+            }
+        }
+
+        isSendingComment = false
+    }
+
+    // MARK: - Delete Comment
+    private func deleteCommentAction(commentId: String) async {
+        do {
+            print("🗑️ [PostDetailView] Deleting comment: \(commentId)")
+            try await CommunityService.shared.deleteComment(commentId: commentId)
+
+            // Remove from local list
+            comments.removeAll { $0.id == commentId }
+
+            // Update post's comment count
+            if var currentPost = post {
+                currentPost.commentsCount = max(0, currentPost.commentsCount - 1)
+                post = currentPost
+            }
+
+            print("✅ [PostDetailView] Comment deleted successfully")
+        } catch {
+            print("❌ [PostDetailView] Failed to delete comment: \(error)")
+            commentError = "コメントの削除に失敗しました"
+        }
+    }
+}
+
+// MARK: - Comment Row Component
+struct CommentRow: View {
+    let comment: Comment
+    let postAuthorId: String
+    let onDelete: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: Constants.Spacing.small) {
+            // Avatar
+            if let photoURL = comment.user.photoURL, !photoURL.isEmpty {
+                AsyncImage(url: URL(string: photoURL)) { image in
+                    image
+                        .resizable()
+                        .scaledToFill()
+                } placeholder: {
+                    Circle()
+                        .fill(Constants.Colors.accentPink.opacity(0.3))
+                        .overlay(
+                            Image(systemName: "person.fill")
+                                .font(.system(size: 14))
+                                .foregroundColor(Constants.Colors.accentPink)
+                        )
+                }
+                .frame(width: 32, height: 32)
+                .clipShape(Circle())
+            } else {
+                Circle()
+                    .fill(Constants.Colors.accentPink.opacity(0.3))
+                    .frame(width: 32, height: 32)
+                    .overlay(
+                        Image(systemName: "person.fill")
+                            .font(.system(size: 14))
+                            .foregroundColor(Constants.Colors.accentPink)
+                    )
+            }
+
+            // Content
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(comment.user.displayName ?? "Unknown User")
+                        .font(.system(size: Constants.Typography.captionSize, weight: .semibold))
+                        .foregroundColor(Constants.Colors.textWhite)
+
+                    Text(timeAgoString(from: comment.createdAt))
+                        .font(.system(size: 11))
+                        .foregroundColor(Constants.Colors.textGray)
+
+                    Spacer()
+
+                    // Delete button (show if current user is comment author or post author)
+                    if canDeleteComment() {
+                        Button(action: onDelete) {
+                            Image(systemName: "trash")
+                                .font(.system(size: 12))
+                                .foregroundColor(.red.opacity(0.8))
+                        }
+                    }
+                }
+
+                Text(comment.text)
+                    .font(.system(size: Constants.Typography.bodySize))
+                    .foregroundColor(Constants.Colors.textWhite)
+                    .lineSpacing(4)
+            }
+        }
+        .padding(Constants.Spacing.small)
+        .background(Color.white.opacity(0.03))
+        .cornerRadius(12)
+    }
+
+    private func canDeleteComment() -> Bool {
+        guard let currentUser = Auth.auth().currentUser else { return false }
+        return comment.userId == currentUser.uid || postAuthorId == currentUser.uid
+    }
+
     private func timeAgoString(from date: Date) -> String {
         let interval = Date().timeIntervalSince(date)
         let seconds = Int(interval)

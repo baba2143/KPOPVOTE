@@ -96,6 +96,11 @@ enum Constants {
         static let likePost = "\(apiBaseURL)/likePost"
         static let deletePost = "\(apiBaseURL)/deletePost"
 
+        // Community - Comments
+        static let createComment = "\(apiBaseURL)/createComment"
+        static let getComments = "\(apiBaseURL)/getComments"
+        static let deleteComment = "\(apiBaseURL)/deleteComment"
+
         // Community - Follow
         static let followUser = "\(apiBaseURL)/followUser"
         static let unfollowUser = "\(apiBaseURL)/unfollowUser"
