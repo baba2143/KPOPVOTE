@@ -17,7 +17,7 @@ struct MainTabView: View {
             // Main Tab Content
             TabView(selection: $selectedTab) {
                 // Home Tab
-                HomeView()
+                HomeView(selectedTab: $selectedTab)
                     .environmentObject(authService)
                     .tag(0)
                     .toolbar(.hidden, for: .tabBar)

@@ -10,7 +10,9 @@ import SwiftUI
 struct VoteDetailView: View {
     let voteId: String
     @StateObject private var viewModel: VoteDetailViewModel
+    @EnvironmentObject var authService: AuthService
     @Environment(\.dismiss) private var dismiss
+    @State private var showLoginPrompt = false
 
     init(voteId: String) {
         self.voteId = voteId
@@ -81,8 +83,13 @@ struct VoteDetailView: View {
                                 isExecuting: viewModel.isExecuting,
                                 requiredPoints: vote.requiredPoints,
                                 onVote: {
-                                    Task {
-                                        await viewModel.executeVote()
+                                    // Check if user is guest
+                                    if authService.isGuest {
+                                        showLoginPrompt = true
+                                    } else {
+                                        Task {
+                                            await viewModel.executeVote()
+                                        }
                                     }
                                 }
                             )
@@ -156,6 +163,13 @@ struct VoteDetailView: View {
         .onDisappear {
             print("👋 [VoteDetailView] View disappeared")
         }
+        .overlay(
+            Group {
+                if showLoginPrompt {
+                    LoginPromptView(isPresented: $showLoginPrompt, featureName: "投票")
+                }
+            }
+        )
     }
 }
 

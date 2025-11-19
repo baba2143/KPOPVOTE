@@ -103,9 +103,27 @@ export const getPosts = functions.https.onRequest(async (req, res) => {
         // Check if current user liked this post
         const likeDoc = await db.collection("posts").doc(doc.id).collection("likes").doc(currentUser.uid).get();
 
+        // Build user object
+        const userObject = {
+          uid: data.userId,
+          email: userData?.email || "",
+          displayName: userData?.displayName || null,
+          photoURL: userData?.photoURL || null,
+          points: userData?.points || 0,
+          biasIds: userData?.biasIds || [],
+          followingCount: userData?.followingCount || 0,
+          followersCount: userData?.followersCount || 0,
+          postsCount: userData?.postsCount || 0,
+          isPrivate: userData?.isPrivate || false,
+          isSuspended: userData?.isSuspended || false,
+          createdAt: userData?.createdAt?.toDate().toISOString() || new Date().toISOString(),
+          updatedAt: userData?.updatedAt?.toDate().toISOString() || new Date().toISOString(),
+        };
+
         return {
           id: doc.id,
           ...data,
+          user: userObject,
           createdAt: data.createdAt?.toDate().toISOString() || null,
           updatedAt: data.updatedAt?.toDate().toISOString() || null,
           isLikedByCurrentUser: likeDoc.exists,

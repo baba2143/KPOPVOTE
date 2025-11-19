@@ -139,11 +139,32 @@ export const createPost = functions.https.onRequest(async (req, res) => {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
+    // Get user info to include in response
+    const userDoc = await userRef.get();
+    const userData = userDoc.exists ? userDoc.data() : null;
+
+    // Build user object for response
+    const userObject = {
+      uid: currentUser.uid,
+      email: currentUser.email || "",
+      displayName: userData?.displayName || null,
+      photoURL: userData?.photoURL || null,
+      points: userData?.points || 0,
+      biasIds: userData?.biasIds || [],
+      followingCount: userData?.followingCount || 0,
+      followersCount: userData?.followersCount || 0,
+      postsCount: (userData?.postsCount || 0) + 1, // Already incremented
+      isPrivate: userData?.isPrivate || false,
+      isSuspended: userData?.isSuspended || false,
+      createdAt: userData?.createdAt?.toDate().toISOString() || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
     res.status(201).json({
       success: true,
       data: {
-        postId: postRef.id,
         ...postData,
+        user: userObject,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },

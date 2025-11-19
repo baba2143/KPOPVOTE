@@ -12,20 +12,30 @@ import Combine
 class AuthService: ObservableObject {
     @Published var currentUser: User?
     @Published var isAuthenticated = false
+    @Published var isGuest = false
 
     private var cancellables = Set<AnyCancellable>()
     private var authStateListener: AuthStateDidChangeListenerHandle?
 
     init() {
+        // Check if user was in guest mode
+        isGuest = AppStorageManager.shared.isGuestMode
+
         // Monitor Firebase Auth state changes
         authStateListener = Auth.auth().addStateDidChangeListener { [weak self] _, firebaseUser in
             guard let self = self else { return }
             Task { @MainActor in
                 if let firebaseUser = firebaseUser {
                     await self.loadUserData(uid: firebaseUser.uid, email: firebaseUser.email ?? "")
+                    // Exit guest mode when authenticated
+                    self.isGuest = false
+                    AppStorageManager.shared.isGuestMode = false
                 } else {
-                    self.currentUser = nil
-                    self.isAuthenticated = false
+                    // Only set not authenticated if not in guest mode
+                    if !self.isGuest {
+                        self.currentUser = nil
+                        self.isAuthenticated = false
+                    }
                 }
             }
         }
@@ -168,11 +178,28 @@ class AuthService: ObservableObject {
         }
     }
 
+    // MARK: - Guest Mode
+    func loginAsGuest() {
+        isGuest = true
+        isAuthenticated = false
+        currentUser = nil
+        AppStorageManager.shared.isGuestMode = true
+        print("👤 [Auth] User entered guest mode")
+    }
+
+    func exitGuestMode() {
+        isGuest = false
+        AppStorageManager.shared.isGuestMode = false
+        print("👤 [Auth] User exited guest mode")
+    }
+
     // MARK: - Logout
     func logout() throws {
         try Auth.auth().signOut()
         currentUser = nil
         isAuthenticated = false
+        isGuest = false
+        AppStorageManager.shared.isGuestMode = false
     }
 
     // MARK: - Load User Data

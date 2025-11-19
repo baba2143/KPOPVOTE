@@ -40,32 +40,48 @@ export const uploadGoodsImage = functions.https.onRequest(async (req, res) => {
       return;
     }
 
+    console.log(`📤 [uploadGoodsImage] Starting upload for user: ${currentUser.uid}`);
+    console.log(`📤 [uploadGoodsImage] Image data length: ${imageData.length} characters`);
+
     // Decode Base64
     const imageBuffer = Buffer.from(imageData, "base64");
+    console.log(`📤 [uploadGoodsImage] Image buffer size: ${imageBuffer.length} bytes`);
 
     // Generate unique filename
     const timestamp = Date.now();
     const filename = `${timestamp}.jpg`;
     const filepath = `goods/${currentUser.uid}/${filename}`;
 
+    console.log(`📤 [uploadGoodsImage] Target path: ${filepath}`);
+
     // Upload to Firebase Storage
     const bucket = admin.storage().bucket();
     const file = bucket.file(filepath);
 
+    console.log(`📤 [uploadGoodsImage] Saving to bucket: ${bucket.name}`);
+
+    // Save file without public option (deprecated)
     await file.save(imageBuffer, {
       metadata: {
         contentType: "image/jpeg",
       },
-      public: true,
     });
 
-    // Make file publicly accessible
-    await file.makePublic();
+    console.log("✅ [uploadGoodsImage] File saved successfully");
 
-    // Get public URL
+    // Try to make file publicly accessible
+    try {
+      await file.makePublic();
+      console.log("✅ [uploadGoodsImage] File made public");
+    } catch (publicError) {
+      console.warn("⚠️ [uploadGoodsImage] Could not make file public (may already be public):", publicError);
+      // Continue even if makePublic fails - file might still be accessible
+    }
+
+    // Get public URL - use Firebase Storage URL format
     const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filepath}`;
 
-    console.log(`✅ Image uploaded: ${publicUrl}`);
+    console.log(`✅ [uploadGoodsImage] Image uploaded successfully: ${publicUrl}`);
 
     res.status(200).json({
       success: true,
@@ -74,7 +90,15 @@ export const uploadGoodsImage = functions.https.onRequest(async (req, res) => {
       },
     } as ApiResponse<{ imageUrl: string }>);
   } catch (error: unknown) {
-    console.error("Upload goods image error:", error);
-    res.status(500).json({ success: false, error: "Internal server error" } as ApiResponse<null>);
+    console.error("❌ [uploadGoodsImage] Upload error:", error);
+    if (error instanceof Error) {
+      console.error("❌ [uploadGoodsImage] Error message:", error.message);
+      console.error("❌ [uploadGoodsImage] Error stack:", error.stack);
+    }
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+      details: error instanceof Error ? error.message : String(error),
+    } as ApiResponse<null>);
   }
 });

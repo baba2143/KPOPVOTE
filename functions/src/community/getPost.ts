@@ -58,9 +58,27 @@ export const getPost = functions.https.onRequest(async (req, res) => {
     const likeDoc = await db.collection("posts").doc(postId).collection("likes").doc(currentUser.uid).get();
     const isLikedByCurrentUser = likeDoc.exists;
 
+    // Build user object
+    const userObject = {
+      uid: postData.userId,
+      email: userData?.email || "",
+      displayName: userData?.displayName || null,
+      photoURL: userData?.photoURL || null,
+      points: userData?.points || 0,
+      biasIds: userData?.biasIds || [],
+      followingCount: userData?.followingCount || 0,
+      followersCount: userData?.followersCount || 0,
+      postsCount: userData?.postsCount || 0,
+      isPrivate: userData?.isPrivate || false,
+      isSuspended: userData?.isSuspended || false,
+      createdAt: userData?.createdAt?.toDate().toISOString() || new Date().toISOString(),
+      updatedAt: userData?.updatedAt?.toDate().toISOString() || new Date().toISOString(),
+    };
+
     const post = {
       id: postDoc.id,
       ...postData,
+      user: userObject,
       createdAt: postData.createdAt?.toDate().toISOString() || null,
       updatedAt: postData.updatedAt?.toDate().toISOString() || null,
       isLikedByCurrentUser,

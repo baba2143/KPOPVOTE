@@ -9,15 +9,27 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var authService = AuthService()
+    @State private var hasCompletedOnboarding = AppStorageManager.shared.hasCompletedOnboarding
 
     var body: some View {
         Group {
-            if authService.isAuthenticated {
-                // メイン画面（タブナビゲーション）
+            if !hasCompletedOnboarding {
+                // 初回起動 - チュートリアル表示
+                TutorialView()
+                    .environmentObject(authService)
+                    .onDisappear {
+                        hasCompletedOnboarding = AppStorageManager.shared.hasCompletedOnboarding
+                    }
+            } else if authService.isAuthenticated {
+                // 認証済み - メイン画面
+                MainTabView()
+                    .environmentObject(authService)
+            } else if authService.isGuest {
+                // ゲストモード - メイン画面（機能制限あり）
                 MainTabView()
                     .environmentObject(authService)
             } else {
-                // ログイン画面
+                // 未認証 - ログイン画面
                 LoginView(authService: authService)
             }
         }
@@ -28,9 +40,12 @@ struct ContentView: View {
 struct HomeView: View {
     @EnvironmentObject var authService: AuthService
     @StateObject private var viewModel = HomeViewModel()
+    @StateObject private var biasViewModel = BiasViewModel()
+    @Binding var selectedTab: Int
     @State private var showLogoutConfirm = false
     @State private var selectedVoteId: String?
     @State private var showVoteDetail = false
+    @State private var selectedPostId: IdentifiableString?
 
     var body: some View {
         NavigationView {
@@ -121,8 +136,16 @@ struct HomeView: View {
                     }
 
                     // Community Activity Section
-                    CommunityActivityView()
-                        .padding(.horizontal)
+                    CommunityActivityView(
+                        onViewAll: {
+                            selectedTab = 3 // Switch to Community Tab
+                        },
+                        onPostTap: { postId in
+                            selectedPostId = IdentifiableString(postId)
+                        }
+                    )
+                    .environmentObject(biasViewModel)
+                    .padding(.horizontal)
 
                     Spacer(minLength: 20)
                 }
@@ -161,9 +184,16 @@ struct HomeView: View {
             }
             .toolbarBackground(Constants.Colors.backgroundDark, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
+            .sheet(item: $selectedPostId) { identifiablePost in
+                NavigationStack {
+                    PostDetailView(postId: identifiablePost.id)
+                }
+            }
             .task {
                 await viewModel.loadActiveTasks()
                 await viewModel.loadFeaturedVotes()
+                await biasViewModel.loadIdols()
+                await biasViewModel.loadCurrentBias()
             }
             .sheet(isPresented: $showVoteDetail) {
                 if let voteId = selectedVoteId {

@@ -8,62 +8,94 @@
 import Foundation
 import UIKit
 import FirebaseAuth
+import FirebaseStorage
 
 class ImageUploadService {
     static let shared = ImageUploadService()
 
     private init() {}
 
-    /// Upload goods image to Firebase Storage
+    /// Upload goods image to Firebase Storage (using Firebase Storage SDK directly)
     /// - Parameter image: UIImage to upload
-    /// - Returns: Public URL of uploaded image
+    /// - Returns: Download URL with access token (works regardless of storage rules)
     func uploadGoodsImage(_ image: UIImage) async throws -> String {
-        guard let token = try await Auth.auth().currentUser?.getIDToken() else {
+        guard let userId = Auth.auth().currentUser?.uid else {
             throw ImageUploadError.notAuthenticated
         }
 
-        // Convert to JPEG with compression
-        guard let imageData = image.jpegData(compressionQuality: 0.7) else {
+        // Resize image if too large (max 800px for smaller file size)
+        let resizedImage = resizeImage(image, maxDimension: 800)
+
+        print("📐 [ImageUploadService] Original size: \(image.size), Resized: \(resizedImage.size)")
+
+        // Convert to JPEG with good compression (0.7 = good quality, reasonable size)
+        guard let imageData = resizedImage.jpegData(compressionQuality: 0.7) else {
             throw ImageUploadError.compressionFailed
         }
 
-        // Convert to Base64
-        let base64String = imageData.base64EncodedString()
+        print("📦 [ImageUploadService] Image data size: \(imageData.count) bytes (~\(imageData.count / 1024)KB)")
 
-        print("📤 [ImageUploadService] Uploading image (\(imageData.count) bytes)")
-
-        // Call Cloud Function
-        guard let url = URL(string: Constants.API.uploadGoodsImage) else {
-            throw ImageUploadError.invalidURL
+        // Check file size (max 5MB)
+        let maxSize = 5 * 1024 * 1024 // 5MB
+        guard imageData.count <= maxSize else {
+            throw ImageUploadError.imageTooLarge
         }
 
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        // Create unique filename
+        let filename = "\(UUID().uuidString).jpg"
+        let storagePath = "goods/\(userId)/\(filename)"
 
-        let requestBody: [String: String] = ["imageData": base64String]
-        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+        // Get Firebase Storage reference
+        let storageRef = Storage.storage().reference()
+        let imageRef = storageRef.child(storagePath)
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        print("📤 [ImageUploadService] Uploading to Firebase Storage: \(storagePath)")
 
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw ImageUploadError.invalidResponse
+        // Upload image data
+        let metadata = StorageMetadata()
+        metadata.contentType = "image/jpeg"
+
+        let _ = try await imageRef.putDataAsync(imageData, metadata: metadata)
+
+        // Get download URL with token - this works regardless of storage rules!
+        let downloadURL = try await imageRef.downloadURL()
+        let downloadURLString = downloadURL.absoluteString
+
+        print("✅ [ImageUploadService] Image uploaded successfully: \(downloadURLString)")
+
+        return downloadURLString
+    }
+
+    /// Resize image to fit within max dimension while maintaining aspect ratio
+    /// - Parameters:
+    ///   - image: Original image
+    ///   - maxDimension: Maximum width or height
+    /// - Returns: Resized image
+    private func resizeImage(_ image: UIImage, maxDimension: CGFloat) -> UIImage {
+        let size = image.size
+
+        // If image is already smaller, return as is
+        if size.width <= maxDimension && size.height <= maxDimension {
+            return image
         }
 
-        print("📥 [ImageUploadService] HTTP Status: \(httpResponse.statusCode)")
+        // Calculate new size maintaining aspect ratio
+        let aspectRatio = size.width / size.height
+        var newSize: CGSize
 
-        guard httpResponse.statusCode == 200 else {
-            if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [ImageUploadService] Error: \(errorString)")
-            }
-            throw ImageUploadError.uploadFailed
+        if size.width > size.height {
+            newSize = CGSize(width: maxDimension, height: maxDimension / aspectRatio)
+        } else {
+            newSize = CGSize(width: maxDimension * aspectRatio, height: maxDimension)
         }
 
-        let result = try JSONDecoder().decode(UploadImageResponse.self, from: data)
-        print("✅ [ImageUploadService] Image uploaded: \(result.data.imageUrl)")
+        // Render resized image
+        UIGraphicsBeginImageContextWithOptions(newSize, false, 1.0)
+        image.draw(in: CGRect(origin: .zero, size: newSize))
+        let resizedImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
 
-        return result.data.imageUrl
+        return resizedImage ?? image
     }
 }
 
@@ -84,6 +116,7 @@ enum ImageUploadError: LocalizedError {
     case invalidURL
     case invalidResponse
     case uploadFailed
+    case imageTooLarge
 
     var errorDescription: String? {
         switch self {
@@ -97,6 +130,8 @@ enum ImageUploadError: LocalizedError {
             return "無効なレスポンスです"
         case .uploadFailed:
             return "画像のアップロードに失敗しました"
+        case .imageTooLarge:
+            return "画像サイズが大きすぎます (最大5MB)"
         }
     }
 }

@@ -11,6 +11,29 @@ struct TaskRegistrationView: View {
     @StateObject private var viewModel = TaskRegistrationViewModel()
     @Environment(\.dismiss) var dismiss
 
+    // MARK: - Computed Properties
+    private var buttonGradient: LinearGradient {
+        viewModel.isFormValid ?
+            LinearGradient(
+                colors: [Constants.Colors.accentPink, Constants.Colors.gradientPink],
+                startPoint: .leading,
+                endPoint: .trailing
+            ) :
+            LinearGradient(
+                colors: [Constants.Colors.textGray, Constants.Colors.textGray],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+    }
+
+    private var coverImageHelpText: String {
+        if viewModel.selectedAppId != nil && viewModel.coverImageURL != nil && viewModel.coverImageSource == .externalApp {
+            return "選択した投票サイトの推奨画像が使用されます"
+        } else {
+            return "投票サイトを選択すると推奨画像が自動設定されます"
+        }
+    }
+
     var body: some View {
         NavigationView {
             ScrollView {
@@ -105,26 +128,7 @@ struct TaskRegistrationView: View {
                         Picker("投票サイトを選択", selection: $viewModel.selectedAppId) {
                             Text("なし").tag(nil as String?)
                             ForEach(viewModel.externalApps) { app in
-                                HStack {
-                                    if let iconUrl = app.iconUrl, let url = URL(string: iconUrl) {
-                                        AsyncImage(url: url) { phase in
-                                            switch phase {
-                                            case .success(let image):
-                                                image
-                                                    .resizable()
-                                                    .scaledToFit()
-                                                    .frame(width: 20, height: 20)
-                                            case .failure(_), .empty:
-                                                Image(systemName: "app.fill")
-                                                    .font(.system(size: 16))
-                                            @unknown default:
-                                                EmptyView()
-                                            }
-                                        }
-                                    }
-                                    Text(app.appName)
-                                }
-                                .tag(app.id as String?)
+                                Text(app.appName).tag(app.id as String?)
                             }
                         }
                         .pickerStyle(.menu)
@@ -219,17 +223,25 @@ struct TaskRegistrationView: View {
                                 }
                             }
                         } else {
-                            // Image Picker
-                            ImagePicker(
-                                selectedImage: $viewModel.selectedCoverImage,
-                                placeholder: "カバー画像を選択",
-                                maxHeight: 150
-                            )
+                            // Placeholder for image selection
+                            Button(action: {
+                                // TODO: Implement image picker
+                            }) {
+                                VStack {
+                                    Image(systemName: "photo")
+                                        .font(.system(size: 40))
+                                        .foregroundColor(Constants.Colors.textGray)
+                                    Text("カバー画像を選択")
+                                        .font(.system(size: Constants.Typography.bodySize))
+                                        .foregroundColor(Constants.Colors.textGray)
+                                }
+                                .frame(maxWidth: .infinity, maxHeight: 150)
+                                .background(Color.white.opacity(0.05))
+                                .cornerRadius(12)
+                            }
                         }
 
-                        Text(viewModel.selectedAppId != nil && viewModel.coverImageURL != nil && viewModel.coverImageSource == .externalApp
-                             ? "選択した投票サイトの推奨画像が使用されます"
-                             : "投票サイトを選択すると推奨画像が自動設定されます")
+                        Text(coverImageHelpText)
                             .font(.system(size: 12))
                             .foregroundColor(Constants.Colors.textGray)
                     }
@@ -255,19 +267,7 @@ struct TaskRegistrationView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
-                        .background(
-                            viewModel.isFormValid ?
-                            LinearGradient(
-                                colors: [Constants.Colors.accentPink, Constants.Colors.gradientPink],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            ) :
-                            LinearGradient(
-                                colors: [Constants.Colors.textGray, Constants.Colors.textGray],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
+                        .background(buttonGradient)
                         .cornerRadius(16)
                         .shadow(
                             color: viewModel.isFormValid ? Constants.Colors.accentPink.opacity(0.4) : .clear,
