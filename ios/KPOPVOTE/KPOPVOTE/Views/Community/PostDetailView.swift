@@ -12,9 +12,14 @@ struct PostDetailView: View {
     let postId: String
     @Environment(\.dismiss) private var dismiss
     @State private var post: CommunityPost?
-    @State private var isLoading = false
+    @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var showDeleteConfirm = false
+
+    init(postId: String) {
+        self.postId = postId
+        print("🔵 [PostDetailView] INIT with postId: \(postId)")
+    }
 
     var body: some View {
         ZStack {
@@ -56,6 +61,17 @@ struct PostDetailView: View {
         .navigationTitle("投稿詳細")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            // Close button (always visible)
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: {
+                    dismiss()
+                }) {
+                    Image(systemName: "xmark")
+                        .foregroundColor(Constants.Colors.textWhite)
+                }
+            }
+
+            // Delete button (owner only)
             if let post = post, isPostOwner(post) {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
@@ -82,7 +98,11 @@ struct PostDetailView: View {
             Text("この投稿を削除してもよろしいですか？")
         }
         .task {
+            print("🟢 [PostDetailView] .task executed for postId: \(postId)")
             await loadPost()
+        }
+        .onAppear {
+            print("🟡 [PostDetailView] onAppear called for postId: \(postId)")
         }
     }
 

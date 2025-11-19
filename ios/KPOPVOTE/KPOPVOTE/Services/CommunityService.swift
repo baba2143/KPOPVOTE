@@ -210,6 +210,47 @@ class CommunityService {
         return result.data
     }
 
+    // MARK: - Get My Votes
+    /// Fetch user's vote history
+    /// - Returns: Array of user's votes
+    func fetchMyVotes() async throws -> [MyVoteItem] {
+        guard let token = try await Auth.auth().currentUser?.getIDToken() else {
+            throw CommunityError.notAuthenticated
+        }
+
+        guard let url = URL(string: Constants.API.getMyVotes) else {
+            throw CommunityError.invalidResponse
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        print("🔍 [CommunityService] Fetching my votes")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw CommunityError.invalidResponse
+        }
+
+        print("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
+
+        guard httpResponse.statusCode == 200 else {
+            if let errorString = String(data: data, encoding: .utf8) {
+                print("❌ [CommunityService] Error: \(errorString)")
+            }
+            throw CommunityError.fetchFailed
+        }
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let result = try decoder.decode(CommunityMyVotesResponse.self, from: data)
+        print("✅ [CommunityService] Fetched \(result.data.voteHistory.count) votes")
+
+        return result.data.voteHistory
+    }
+
     // MARK: - Delete Post
     /// Delete a post
     /// - Parameter postId: Post ID
@@ -278,6 +319,22 @@ struct PostActionResult: Codable {
     let likesCount: Int
 }
 
+struct CommunityMyVotesResponse: Codable {
+    let success: Bool
+    let data: CommunityMyVotesData
+}
+
+struct CommunityMyVotesData: Codable {
+    let voteHistory: [MyVoteItem]
+    let hasMore: Bool
+    let summary: CommunityMyVotesSummary
+}
+
+struct CommunityMyVotesSummary: Codable {
+    let totalVotes: Int
+    let totalPointsUsed: Int
+}
+
 // MARK: - Helper Extension
 extension PostContent {
     func toDictionary() -> [String: Any] {
@@ -302,6 +359,29 @@ extension PostContent {
 
         if let myVotes = myVotes {
             dict["myVotes"] = myVotes.map { $0.toDictionary() }
+        }
+
+        if let goodsTrade = goodsTrade {
+            var goodsDict: [String: Any] = [
+                "idolId": goodsTrade.idolId,
+                "idolName": goodsTrade.idolName,
+                "groupName": goodsTrade.groupName,
+                "goodsImageUrl": goodsTrade.goodsImageUrl,
+                "goodsTags": goodsTrade.goodsTags,
+                "goodsName": goodsTrade.goodsName,
+                "tradeType": goodsTrade.tradeType,
+                "status": goodsTrade.status
+            ]
+
+            if let condition = goodsTrade.condition {
+                goodsDict["condition"] = condition
+            }
+
+            if let description = goodsTrade.description {
+                goodsDict["description"] = description
+            }
+
+            dict["goodsTrade"] = goodsDict
         }
 
         return dict

@@ -157,7 +157,7 @@ class NotificationService {
     ///   - limit: Number of votes to fetch
     ///   - lastVoteHistoryId: Last vote history ID for pagination
     /// - Returns: Array of vote history, hasMore flag, and summary stats
-    func fetchMyVotes(status: String = "all", sort: String = "date", limit: Int = 20, lastVoteHistoryId: String? = nil) async throws -> (voteHistory: [VoteHistory], hasMore: Bool, summary: VoteSummary) {
+    func fetchMyVotes(status: String = "all", sort: String = "date", limit: Int = 20, lastVoteHistoryId: String? = nil) async throws -> (voteHistory: [VoteHistory], hasMore: Bool, summary: NotificationVoteSummary) {
         guard let token = try await Auth.auth().currentUser?.getIDToken() else {
             throw NotificationError.notAuthenticated
         }
@@ -198,7 +198,7 @@ class NotificationService {
 
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        let result = try decoder.decode(MyVotesResponse.self, from: data)
+        let result = try decoder.decode(NotificationMyVotesResponse.self, from: data)
         print("✅ [NotificationService] Fetched \(result.data.voteHistory.count) vote history items")
 
         return (result.data.voteHistory, result.data.hasMore, result.data.summary)
@@ -237,18 +237,18 @@ struct MarkAllAsReadData: Codable {
     let count: Int
 }
 
-struct MyVotesResponse: Codable {
+struct NotificationMyVotesResponse: Codable {
     let success: Bool
-    let data: MyVotesData
+    let data: NotificationMyVotesData
 }
 
-struct MyVotesData: Codable {
+struct NotificationMyVotesData: Codable {
     let voteHistory: [VoteHistory]
     let hasMore: Bool
-    let summary: VoteSummary
+    let summary: NotificationVoteSummary
 }
 
-struct VoteSummary: Codable {
+struct NotificationVoteSummary: Codable {
     let totalVotes: Int
     let totalPointsUsed: Int
 }

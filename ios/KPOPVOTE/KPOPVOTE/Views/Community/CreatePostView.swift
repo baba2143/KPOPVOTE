@@ -12,6 +12,11 @@ struct CreatePostView: View {
     @StateObject private var viewModel = CreatePostViewModel()
     @StateObject private var biasViewModel = BiasViewModel()
     @State private var showImagePicker = false
+    @State private var showSuccessAlert = false
+    @State private var showVoteSelection = false
+    @State private var showMyVotesSelection = false
+
+    var onPostCreated: (() -> Void)?
 
     var body: some View {
         ZStack {
@@ -63,9 +68,27 @@ struct CreatePostView: View {
                 Text(errorMessage)
             }
         }
+        .alert("投稿完了", isPresented: $showSuccessAlert) {
+            Button("OK") {
+                onPostCreated?()
+                dismiss()
+            }
+        } message: {
+            Text("投稿が正常に作成されました")
+        }
         .onChange(of: viewModel.isSuccess) { isSuccess in
             if isSuccess {
-                dismiss()
+                showSuccessAlert = true
+            }
+        }
+        .sheet(isPresented: $showVoteSelection) {
+            VoteSelectionSheet { selectedVote in
+                viewModel.selectVote(vote: selectedVote)
+            }
+        }
+        .sheet(isPresented: $showMyVotesSelection) {
+            MyVotesSelectionSheet { selectedVotes in
+                viewModel.selectMyVotes(myVotes: selectedVotes)
             }
         }
         .task {
@@ -141,7 +164,7 @@ struct CreatePostView: View {
                     Spacer()
 
                     Button("変更") {
-                        // TODO: Open vote selection sheet
+                        showVoteSelection = true
                     }
                     .font(.system(size: Constants.Typography.captionSize, weight: .semibold))
                     .foregroundColor(Constants.Colors.accentPink)
@@ -152,7 +175,7 @@ struct CreatePostView: View {
             } else {
                 // Select Vote Button
                 Button(action: {
-                    // TODO: Open vote selection sheet
+                    showVoteSelection = true
                 }) {
                     HStack {
                         Image(systemName: "plus.circle")
@@ -179,10 +202,10 @@ struct CreatePostView: View {
 
             TextEditor(text: $viewModel.textContent)
                 .font(.system(size: Constants.Typography.bodySize))
-                .foregroundColor(Constants.Colors.textWhite)
+                .foregroundColor(.black)
                 .padding(8)
                 .frame(minHeight: 120)
-                .background(Color.white.opacity(0.05))
+                .background(Color.white.opacity(0.9))
                 .cornerRadius(12)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
@@ -193,20 +216,46 @@ struct CreatePostView: View {
                 .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
                 .foregroundColor(Constants.Colors.textWhite)
 
-            Button(action: {
-                // TODO: Open image picker
-            }) {
-                HStack {
-                    Image(systemName: "photo")
-                    Text("画像を追加")
+            if let image = viewModel.selectedImageForPost {
+                // Image Preview with Change Button
+                VStack(spacing: 8) {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxHeight: 200)
+                        .cornerRadius(12)
+
+                    Button(action: {
+                        showImagePicker = true
+                    }) {
+                        HStack {
+                            Image(systemName: "photo")
+                            Text("画像を変更")
+                        }
+                        .font(.system(size: Constants.Typography.captionSize, weight: .semibold))
+                        .foregroundColor(Constants.Colors.accentBlue)
+                    }
                 }
-                .font(.system(size: Constants.Typography.bodySize))
-                .foregroundColor(Constants.Colors.accentBlue)
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color.white.opacity(0.05))
-                .cornerRadius(12)
+            } else {
+                // Upload Button
+                Button(action: {
+                    showImagePicker = true
+                }) {
+                    HStack {
+                        Image(systemName: "photo")
+                        Text("画像を追加")
+                    }
+                    .font(.system(size: Constants.Typography.bodySize))
+                    .foregroundColor(Constants.Colors.accentBlue)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.white.opacity(0.05))
+                    .cornerRadius(12)
+                }
             }
+        }
+        .sheet(isPresented: $showImagePicker) {
+            ImagePicker(selectedImage: $viewModel.selectedImageForPost)
         }
     }
 
@@ -223,6 +272,7 @@ struct CreatePostView: View {
                 .foregroundColor(Constants.Colors.textWhite)
                 .padding(8)
                 .frame(minHeight: 80)
+                .scrollContentBackground(.hidden)
                 .background(Color.white.opacity(0.05))
                 .cornerRadius(12)
                 .overlay(
@@ -262,7 +312,7 @@ struct CreatePostView: View {
             }
 
             Button(action: {
-                // TODO: Open my votes selection sheet
+                showMyVotesSelection = true
             }) {
                 HStack {
                     Image(systemName: viewModel.selectedMyVotes.isEmpty ? "plus.circle" : "pencil.circle")
@@ -431,6 +481,7 @@ struct CreatePostView: View {
                     .foregroundColor(Constants.Colors.textWhite)
                     .padding(8)
                     .frame(minHeight: 80)
+                    .scrollContentBackground(.hidden)
                     .background(Color.white.opacity(0.05))
                     .cornerRadius(12)
                     .overlay(
@@ -448,7 +499,7 @@ struct CreatePostView: View {
     @ViewBuilder
     private var biasSelection: some View {
         VStack(alignment: .leading, spacing: Constants.Spacing.small) {
-            Text("Bias選択 *")
+            Text("推し選択 *")
                 .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
                 .foregroundColor(Constants.Colors.textWhite)
 
@@ -465,7 +516,7 @@ struct CreatePostView: View {
                     }
                 }
             } else {
-                Text("Biasが設定されていません")
+                Text("推しが設定されていません")
                     .font(.system(size: Constants.Typography.captionSize))
                     .foregroundColor(Constants.Colors.textGray)
                     .padding()
@@ -480,6 +531,16 @@ struct CreatePostView: View {
     @ViewBuilder
     private var submitButton: some View {
         Button(action: {
+            print("🔘🔘🔘 ========== BUTTON TAPPED!!! ==========")
+            print("🔘 [CreatePostView] Time: \(Date())")
+            print("🔘 [CreatePostView] canSubmit: \(viewModel.canSubmit)")
+            print("🔘 [CreatePostView] isSubmitting: \(viewModel.isSubmitting)")
+            print("🔘 [CreatePostView] selectedType: \(viewModel.selectedType.rawValue)")
+            print("🔘 [CreatePostView] selectedBiasIds: \(viewModel.selectedBiasIds)")
+            print("🔘 [CreatePostView] textContent: '\(viewModel.textContent)'")
+            print("🔘 [CreatePostView] selectedImageForPost: \(viewModel.selectedImageForPost != nil ? "YES" : "NO")")
+            print("🔘🔘🔘 ========== CALLING submitPost() ==========")
+
             Task {
                 await viewModel.submitPost()
             }
@@ -500,15 +561,28 @@ struct CreatePostView: View {
             .cornerRadius(12)
         }
         .disabled(!viewModel.canSubmit || viewModel.isSubmitting)
+        .onAppear {
+            print("🔘 [submitButton] onAppear - canSubmit: \(viewModel.canSubmit), isSubmitting: \(viewModel.isSubmitting)")
+        }
+        .onChange(of: viewModel.canSubmit) { newValue in
+            print("🔘 [submitButton] canSubmit changed to: \(newValue)")
+        }
+        .onChange(of: viewModel.isSubmitting) { newValue in
+            print("🔘 [submitButton] isSubmitting changed to: \(newValue)")
+        }
     }
 
     // MARK: - Toggle Bias
     private func toggleBias(_ biasId: String) {
+        print("🎯 [toggleBias] Before - selectedBiasIds: \(viewModel.selectedBiasIds)")
         if let index = viewModel.selectedBiasIds.firstIndex(of: biasId) {
             viewModel.selectedBiasIds.remove(at: index)
+            print("🎯 [toggleBias] Removed \(biasId)")
         } else {
             viewModel.selectedBiasIds.append(biasId)
+            print("🎯 [toggleBias] Added \(biasId)")
         }
+        print("🎯 [toggleBias] After - selectedBiasIds: \(viewModel.selectedBiasIds)")
     }
 }
 
@@ -524,11 +598,12 @@ struct PostTypeButton: View {
             VStack(spacing: 8) {
                 Image(systemName: icon)
                     .font(.system(size: 24))
+                    .frame(height: 24)
                 Text(title)
                     .font(.system(size: Constants.Typography.captionSize))
             }
             .foregroundColor(isSelected ? .white : Constants.Colors.textGray)
-            .frame(maxWidth: .infinity)
+            .frame(width: 80)
             .padding(.vertical, 16)
             .background(isSelected ? Constants.Colors.accentPink : Color.white.opacity(0.05))
             .cornerRadius(12)

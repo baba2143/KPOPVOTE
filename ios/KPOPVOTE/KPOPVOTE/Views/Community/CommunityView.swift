@@ -9,11 +9,12 @@ import SwiftUI
 import FirebaseAuth
 
 struct CommunityView: View {
+    @EnvironmentObject var authService: AuthService
     @StateObject private var viewModel = CommunityViewModel()
     @StateObject private var biasViewModel = BiasViewModel()
-    @State private var selectedPostId: String?
-    @State private var showPostDetail = false
+    @State private var selectedPost: IdentifiableString?
     @State private var showCreatePost = false
+    @State private var showLoginPrompt = false
 
     var body: some View {
         NavigationView {
@@ -53,7 +54,7 @@ struct CommunityView: View {
                                 .font(.system(size: Constants.Typography.headlineSize, weight: .bold))
                                 .foregroundColor(Constants.Colors.textWhite)
 
-                            Text(viewModel.timelineType == "following" ? "フォローしているユーザーの投稿がここに表示されます" : "このBiasの投稿がありません")
+                            Text(viewModel.timelineType == "following" ? "フォローしているユーザーの投稿がここに表示されます" : "この推しの投稿がありません")
                                 .font(.system(size: Constants.Typography.bodySize))
                                 .foregroundColor(Constants.Colors.textGray)
                                 .multilineTextAlignment(.center)
@@ -67,12 +68,18 @@ struct CommunityView: View {
                                     PostCardView(
                                         post: post,
                                         onTap: {
-                                            selectedPostId = post.id
-                                            showPostDetail = true
+                                            print("🔷 [CommunityView] Post tapped: \(post.id)")
+                                            selectedPost = IdentifiableString(post.id)
+                                            print("🔷 [CommunityView] selectedPost set to: \(post.id)")
                                         },
                                         onLike: {
-                                            Task {
-                                                await viewModel.toggleLike(postId: post.id)
+                                            // Check if user is guest
+                                            if authService.isGuest {
+                                                showLoginPrompt = true
+                                            } else {
+                                                Task {
+                                                    await viewModel.toggleLike(postId: post.id)
+                                                }
                                             }
                                         },
                                         onDelete: isPostOwner(post) ? {
@@ -107,7 +114,12 @@ struct CommunityView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
-                        showCreatePost = true
+                        // Check if user is guest
+                        if authService.isGuest {
+                            showLoginPrompt = true
+                        } else {
+                            showCreatePost = true
+                        }
                     }) {
                         Image(systemName: "plus.circle.fill")
                             .font(.system(size: 24))
@@ -115,16 +127,22 @@ struct CommunityView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showPostDetail) {
-                if let postId = selectedPostId {
-                    NavigationView {
-                        PostDetailView(postId: postId)
-                    }
+            .sheet(item: $selectedPost) { identifiablePost in
+                NavigationStack {
+                    PostDetailView(postId: identifiablePost.id)
+                        .onAppear {
+                            print("🔶 [CommunityView] Sheet appeared with postId: \(identifiablePost.id)")
+                        }
                 }
             }
             .sheet(isPresented: $showCreatePost) {
                 NavigationView {
-                    CreatePostView()
+                    CreatePostView {
+                        // Reload timeline when post is created
+                        Task {
+                            await viewModel.refresh()
+                        }
+                    }
                 }
             }
             .task {
@@ -132,41 +150,44 @@ struct CommunityView: View {
                 await biasViewModel.loadCurrentBias()
                 await viewModel.loadPosts()
             }
+            .overlay(
+                Group {
+                    if showLoginPrompt {
+                        LoginPromptView(isPresented: $showLoginPrompt, featureName: "投稿作成")
+                    }
+                }
+            )
         }
     }
 
     // MARK: - Timeline Selector
     @ViewBuilder
     private var timelineSelector: some View {
-        HStack(spacing: 12) {
-            // Following Timeline Button
-            TimelineTypeButton(
-                title: "フォロー中",
-                isSelected: viewModel.timelineType == "following",
-                action: {
-                    Task {
-                        await viewModel.changeTimelineType("following")
-                    }
-                }
-            )
-
-            // Bias Timeline Buttons
-            ForEach(Array(biasViewModel.selectedIdolObjects.prefix(3)), id: \.id) { idol in
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 12) {
+                // Following Timeline Button
                 TimelineTypeButton(
-                    title: idol.name,
-                    isSelected: viewModel.timelineType == "bias" && viewModel.selectedBiasId == idol.id,
+                    title: "フォロー中",
+                    isSelected: viewModel.timelineType == "following",
                     action: {
                         Task {
-                            await viewModel.changeTimelineType("bias", biasId: idol.id)
+                            await viewModel.changeTimelineType("following")
                         }
                     }
                 )
-            }
 
-            if biasViewModel.selectedIdols.count > 3 {
-                Text("+\(biasViewModel.selectedIdols.count - 3)")
-                    .font(.system(size: Constants.Typography.captionSize))
-                    .foregroundColor(Constants.Colors.textGray)
+                // Bias Timeline Buttons - Show all with horizontal scroll
+                ForEach(biasViewModel.selectedIdolObjects, id: \.id) { idol in
+                    TimelineTypeButton(
+                        title: idol.name,
+                        isSelected: viewModel.timelineType == "bias" && viewModel.selectedBiasId == idol.id,
+                        action: {
+                            Task {
+                                await viewModel.changeTimelineType("bias", biasId: idol.id)
+                            }
+                        }
+                    )
+                }
             }
         }
     }
@@ -194,6 +215,15 @@ struct TimelineTypeButton: View {
                 .background(isSelected ? Constants.Colors.accentPink : Color.white.opacity(0.1))
                 .cornerRadius(20)
         }
+    }
+}
+
+// MARK: - Identifiable String Wrapper
+struct IdentifiableString: Identifiable {
+    let id: String
+
+    init(_ string: String) {
+        self.id = string
     }
 }
 
