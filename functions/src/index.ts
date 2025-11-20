@@ -85,6 +85,13 @@ export { createComment } from "./community/createComment";
 export { getComments } from "./community/getComments";
 export { deleteComment } from "./community/deleteComment";
 
+// Points functions (Phase 0 - Monetization)
+export { getPoints } from "./points/getPoints";
+export { getPointHistory } from "./points/getPointHistory";
+
+// IAP functions (Phase 1A - Consumable IAP)
+export { verifyPurchase } from "./iap/verifyPurchase";
+
 // Community functions (Search & Discovery)
 export { searchUsers as searchCommunityUsers } from "./community/searchUsers";
 export { searchPosts } from "./community/searchPosts";

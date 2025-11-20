@@ -289,9 +289,11 @@ struct TaskCard: View {
 
 struct ProfileView: View {
     @EnvironmentObject var authService: AuthService
+    @StateObject private var pointsViewModel = PointsViewModel()
     @State private var showLogoutConfirm = false
     @State private var showBiasSettings = false
     @State private var showProfileEdit = false
+    @State private var showPointsHistory = false
 
     var body: some View {
         NavigationView {
@@ -311,23 +313,75 @@ struct ProfileView: View {
                                 .foregroundColor(Constants.Colors.textWhite)
                         }
 
-                        // Points Display
-                        HStack {
-                            Image(systemName: "star.fill")
-                                .foregroundColor(.yellow)
-                            Text("\(authService.currentUser?.points ?? 0) Points")
-                                .font(.system(size: Constants.Typography.bodySize, weight: .bold))
-                                .foregroundColor(Constants.Colors.textWhite)
+                        // Points Display - Tappable Card
+                        Button(action: {
+                            showPointsHistory = true
+                        }) {
+                            VStack(spacing: Constants.Spacing.small) {
+                                // Premium Badge
+                                if pointsViewModel.isPremium {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "crown.fill")
+                                            .font(.system(size: 12))
+                                        Text("プレミアム会員")
+                                            .font(.system(size: Constants.Typography.captionSize, weight: .semibold))
+                                    }
+                                    .foregroundColor(.yellow)
+                                }
+
+                                // Points Amount
+                                if pointsViewModel.isLoading {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: Constants.Colors.accentPink))
+                                } else {
+                                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                                        Image(systemName: "star.fill")
+                                            .font(.system(size: 20))
+                                            .foregroundColor(.yellow)
+                                        Text("\(pointsViewModel.points)")
+                                            .font(.system(size: 32, weight: .bold))
+                                            .foregroundColor(Constants.Colors.textWhite)
+                                        Text("P")
+                                            .font(.system(size: Constants.Typography.headlineSize, weight: .bold))
+                                            .foregroundColor(Constants.Colors.accentPink)
+                                    }
+
+                                    // View History Link
+                                    HStack(spacing: 4) {
+                                        Text("履歴を見る")
+                                            .font(.system(size: Constants.Typography.captionSize))
+                                            .foregroundColor(Constants.Colors.accentBlue)
+                                        Image(systemName: "chevron.right")
+                                            .font(.system(size: 10))
+                                            .foregroundColor(Constants.Colors.accentBlue)
+                                    }
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, Constants.Spacing.medium)
+                            .padding(.horizontal, Constants.Spacing.large)
+                            .background(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [
+                                        Constants.Colors.gradientPink.opacity(0.15),
+                                        Constants.Colors.gradientBlue.opacity(0.15)
+                                    ]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .background(Color.yellow.opacity(0.1))
+                            .cornerRadius(16)
                         }
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 10)
-                        .background(Color.yellow.opacity(0.2))
-                        .cornerRadius(20)
+                        .buttonStyle(.plain)
                     }
                     .padding()
                     .background(Constants.Colors.cardDark)
                     .cornerRadius(16)
                     .shadow(color: Color.black.opacity(0.3), radius: 4, x: 0, y: 2)
+                    .task {
+                        await pointsViewModel.loadPoints()
+                    }
 
                     // Settings Section
                     VStack(alignment: .leading, spacing: Constants.Spacing.small) {
@@ -404,6 +458,9 @@ struct ProfileView: View {
             .sheet(isPresented: $showProfileEdit) {
                 ProfileEditView()
                     .environmentObject(authService)
+            }
+            .sheet(isPresented: $showPointsHistory) {
+                PointsHistoryView()
             }
         }
     }

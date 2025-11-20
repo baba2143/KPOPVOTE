@@ -124,6 +124,13 @@ enum Constants {
         // Community - My Votes
         static let getMyVotes = "\(apiBaseURL)/getMyVotes"
 
+        // Points
+        static let getPoints = "\(apiBaseURL)/getPoints"
+        static let getPointHistory = "\(apiBaseURL)/getPointHistory"
+
+        // IAP (In-App Purchase)
+        static let verifyPurchase = "\(apiBaseURL)/verifyPurchase"
+
         // Image Upload
         static let uploadGoodsImage = "\(apiBaseURL)/uploadGoodsImage"
     }
