@@ -12,56 +12,56 @@ import { onRequest } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
 
-// Test users data
+// Test users data (Mark fans for testing)
 const testUsers = [
   {
-    uid: "test-user-1",
-    email: "test1@kpopvote.com",
-    password: "testpass123",
-    displayName: "YUTAファン",
-    biasIds: ["YUTA"], // NCT YUTA
+    uid: "test-mark-fan-1",
+    email: "markfan1@kpopvote.com",
+    displayName: "Markファン1",
+    biasIds: ["Mark"], // Match current user's bias
+    photoURL: "https://via.placeholder.com/150",
   },
   {
-    uid: "test-user-2",
-    email: "test2@kpopvote.com",
-    password: "testpass123",
-    displayName: "K-POPラバー",
-    biasIds: ["YUTA", "MARK"], // Multiple biases
+    uid: "test-mark-fan-2",
+    email: "markfan2@kpopvote.com",
+    displayName: "Markファン2",
+    biasIds: ["Mark", "Mina"], // Mark is shared
+    photoURL: "https://via.placeholder.com/150",
   },
   {
-    uid: "test-user-3",
-    email: "test3@kpopvote.com",
-    password: "testpass123",
-    displayName: "コミュニティ太郎",
-    biasIds: ["MARK"],
+    uid: "test-mark-fan-3",
+    email: "markfan3@kpopvote.com",
+    displayName: "NCT 127ファン",
+    biasIds: ["Mark", "Momo"],
+    photoURL: "https://via.placeholder.com/150",
   },
 ];
 
 // Follow relationships (follower -> following)
 const followRelationships = [
-  { followerId: "test-user-1", followingId: "test-user-2" },
-  { followerId: "test-user-1", followingId: "test-user-3" },
-  { followerId: "test-user-2", followingId: "test-user-1" },
-  { followerId: "test-user-3", followingId: "test-user-1" },
-  { followerId: "test-user-3", followingId: "test-user-2" },
+  { followerId: "test-mark-fan-1", followingId: "test-mark-fan-2" },
+  { followerId: "test-mark-fan-1", followingId: "test-mark-fan-3" },
+  { followerId: "test-mark-fan-2", followingId: "test-mark-fan-1" },
+  { followerId: "test-mark-fan-3", followingId: "test-mark-fan-1" },
+  { followerId: "test-mark-fan-3", followingId: "test-mark-fan-2" },
 ];
 
 // Test posts data
 const testPosts = [
-  // Image posts
+  // Image posts (recent posts for activity)
   {
-    userId: "test-user-1",
+    userId: "test-mark-fan-1",
     type: "image" as const,
     content: {
-      text: "NCT 127の新曲、めちゃくちゃかっこいい！🔥\nYUTAのパフォーマンスが最高でした✨",
+      text: "NCT 127の新曲、めちゃくちゃかっこいい！🔥\nMarkのパフォーマンスが最高でした✨",
       images: [
         "https://via.placeholder.com/400x300.png?text=NCT+127+Performance",
       ],
     },
-    biasIds: ["YUTA"],
+    biasIds: ["Mark"],
   },
   {
-    userId: "test-user-2",
+    userId: "test-mark-fan-2",
     type: "image" as const,
     content: {
       text: "今日のコンサート、最高の思い出になりました💚\nファンの皆さんと一緒に応援できて幸せ！",
@@ -69,10 +69,10 @@ const testPosts = [
         "https://via.placeholder.com/400x300.png?text=Concert+Photo",
       ],
     },
-    biasIds: ["YUTA", "MARK"],
+    biasIds: ["Mark", "Mina"],
   },
   {
-    userId: "test-user-1",
+    userId: "test-mark-fan-1",
     type: "image" as const,
     content: {
       text: "練習風景のビハインドが公開されました！\n努力している姿に感動😭",
@@ -80,21 +80,21 @@ const testPosts = [
         "https://via.placeholder.com/400x300.png?text=Behind+The+Scenes",
       ],
     },
-    biasIds: ["YUTA"],
+    biasIds: ["Mark"],
   },
   {
-    userId: "test-user-3",
+    userId: "test-mark-fan-3",
     type: "image" as const,
     content: {
-      text: "MARKの新しいヘアスタイル、めっちゃ似合ってる！🔥\n次のカムバックが楽しみすぎる！",
+      text: "Markの新しいヘアスタイル、めっちゃ似合ってる！🔥\n次のカムバックが楽しみすぎる！",
       images: [
         "https://via.placeholder.com/400x300.png?text=New+Hair+Style",
       ],
     },
-    biasIds: ["MARK"],
+    biasIds: ["Mark"],
   },
   {
-    userId: "test-user-2",
+    userId: "test-mark-fan-2",
     type: "image" as const,
     content: {
       text: "K-POPの魅力について語らせてください💕\nダンス、歌、ビジュアル全てが完璧！",
@@ -155,48 +155,23 @@ export const seedCommunityData = onRequest(
       logger.info("Starting community data seeding...");
 
       const db = admin.firestore();
-      const auth = admin.auth();
       const results = {
         users: [] as Array<{ uid: string; email: string; status: string }>,
         follows: 0,
         posts: 0,
       };
 
-      // Step 1: Create test users
-      logger.info("Creating test users...");
+      // Step 1: Create test users (Firestore only, skip Firebase Authentication)
+      logger.info("Creating test users in Firestore...");
       for (const user of testUsers) {
         try {
-          try {
-            // Try to get existing user
-            await auth.getUser(user.uid);
-            logger.info(`User ${user.email} already exists`);
-            results.users.push({
-              uid: user.uid,
-              email: user.email,
-              status: "exists",
-            });
-          } catch (error) {
-            // Create new user
-            await auth.createUser({
-              uid: user.uid,
-              email: user.email,
-              password: user.password,
-              displayName: user.displayName,
-            });
-            logger.info(`Created user ${user.email}`);
-            results.users.push({
-              uid: user.uid,
-              email: user.email,
-              status: "created",
-            });
-          }
-
-          // Create or update Firestore user profile
+          // Create Firestore user profile directly
           const userRef = db.collection("users").doc(user.uid);
           await userRef.set({
             email: user.email,
             displayName: user.displayName,
-            photoURL: null,
+            photoURL: user.photoURL,
+            selectedIdols: user.biasIds, // Add selectedIdols to users doc
             followingCount: 0,
             followersCount: 0,
             postsCount: 0,
@@ -204,12 +179,19 @@ export const seedCommunityData = onRequest(
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           }, { merge: true });
 
-          // Set bias
+          // Set bias in separate collection
           const biasRef = db.collection("bias").doc(user.uid);
           await biasRef.set({
             selectedIdols: user.biasIds,
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           }, { merge: true });
+
+          logger.info(`Created user ${user.displayName} in Firestore`);
+          results.users.push({
+            uid: user.uid,
+            email: user.email,
+            status: "created",
+          });
         } catch (error) {
           logger.error(`Error creating user ${user.email}:`, error);
         }

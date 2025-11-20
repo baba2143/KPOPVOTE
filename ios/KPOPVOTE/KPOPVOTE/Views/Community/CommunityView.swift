@@ -12,10 +12,13 @@ struct CommunityView: View {
     @EnvironmentObject var authService: AuthService
     @StateObject private var viewModel = CommunityViewModel()
     @StateObject private var biasViewModel = BiasViewModel()
+    @StateObject private var activityViewModel = SearchViewModel()
     @State private var selectedPost: IdentifiableString?
     @State private var showCreatePost = false
     @State private var showLoginPrompt = false
     @State private var showDeleteSuccess = false
+    @State private var showSearch = false
+    @State private var selectedUser: IdentifiableString?
 
     var body: some View {
         NavigationView {
@@ -24,6 +27,17 @@ struct CommunityView: View {
                     .ignoresSafeArea()
 
                 VStack(spacing: 0) {
+                    // User Story Bar
+                    if !activityViewModel.followingActivity.isEmpty {
+                        UserStoryBar(users: activityViewModel.followingActivity) { user in
+                            selectedUser = IdentifiableString(user.id)
+                        }
+                    } else if !activityViewModel.recommendedUsers.isEmpty {
+                        UserStoryBar(users: convertRecommendedToActivity(activityViewModel.recommendedUsers)) { user in
+                            selectedUser = IdentifiableString(user.id)
+                        }
+                    }
+
                     // Timeline Type Selector
                     timelineSelector
                         .padding(.horizontal)
@@ -114,17 +128,33 @@ struct CommunityView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        // Check if user is guest
-                        if authService.isGuest {
-                            showLoginPrompt = true
-                        } else {
-                            showCreatePost = true
+                    HStack(spacing: 16) {
+                        // Search button
+                        Button(action: {
+                            if authService.isGuest {
+                                showLoginPrompt = true
+                            } else {
+                                showSearch = true
+                            }
+                        }) {
+                            Image(systemName: "magnifyingglass")
+                                .font(.system(size: 20))
+                                .foregroundColor(Constants.Colors.textWhite)
                         }
-                    }) {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.system(size: 24))
-                            .foregroundColor(Constants.Colors.accentPink)
+
+                        // Create post button
+                        Button(action: {
+                            // Check if user is guest
+                            if authService.isGuest {
+                                showLoginPrompt = true
+                            } else {
+                                showCreatePost = true
+                            }
+                        }) {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.system(size: 24))
+                                .foregroundColor(Constants.Colors.accentPink)
+                        }
                     }
                 }
             }
@@ -146,10 +176,27 @@ struct CommunityView: View {
                     }
                 }
             }
+            .sheet(isPresented: $showSearch) {
+                SearchView()
+            }
+            .sheet(item: $selectedUser) { identifiable in
+                NavigationView {
+                    UserProfileView(userId: identifiable.id)
+                }
+            }
             .task {
-                await biasViewModel.loadIdols()
-                await biasViewModel.loadCurrentBias()
-                await viewModel.loadPosts()
+                // Parallel execution: Independent API calls
+                await withTaskGroup(of: Void.self) { group in
+                    group.addTask { await biasViewModel.loadIdols() }
+                    group.addTask { await biasViewModel.loadCurrentBias() }
+                    group.addTask { await viewModel.loadPosts() }
+                    group.addTask { await activityViewModel.loadFollowingActivity() }
+                }
+
+                // Conditional load (depends on activity result)
+                if activityViewModel.followingActivity.isEmpty {
+                    await activityViewModel.loadCommunityRecommendedUsers()
+                }
             }
             .alert("削除完了", isPresented: $showDeleteSuccess) {
                 Button("OK") {}
@@ -208,6 +255,24 @@ struct CommunityView: View {
     private func isPostOwner(_ post: CommunityPost) -> Bool {
         guard let currentUser = Auth.auth().currentUser else { return false }
         return post.userId == currentUser.uid
+    }
+
+    // MARK: - Convert Recommended to Activity
+    private func convertRecommendedToActivity(_ users: [CommunityRecommendedUser]) -> [UserActivity] {
+        return users.map { user in
+            UserActivity(
+                id: user.id,
+                displayName: user.displayName,
+                photoURL: user.photoURL,
+                bio: user.bio,
+                selectedIdols: user.selectedIdols,
+                followersCount: user.followersCount,
+                followingCount: user.followingCount,
+                postsCount: user.postsCount,
+                latestPostAt: nil,
+                hasNewPost: false
+            )
+        }
     }
 }
 

@@ -109,6 +109,12 @@ enum Constants {
         static let getFollowers = "\(apiBaseURL)/getFollowers"
         static let getRecommendedUsers = "\(apiBaseURL)/getRecommendedUsers"
 
+        // Community - Search & Discovery
+        static let searchUsers = "\(apiBaseURL)/searchCommunityUsers"
+        static let searchPosts = "\(apiBaseURL)/searchPosts"
+        static let getFollowingActivity = "\(apiBaseURL)/getFollowingActivity"
+        static let getUserProfile = "\(apiBaseURL)/getUserProfile"
+
         // Community - Notifications
         static let getNotifications = "\(apiBaseURL)/getNotifications"
         static let markNotificationAsRead = "\(apiBaseURL)/markNotificationAsRead"

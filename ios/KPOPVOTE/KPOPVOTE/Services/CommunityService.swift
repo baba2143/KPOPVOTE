@@ -549,6 +549,274 @@ class CommunityService {
 
         print("✅ [CommunityService] User followed successfully")
     }
+
+    // MARK: - Get Recommended Users
+    /// Get recommended users based on shared bias
+    /// - Parameter limit: Maximum number of users to return
+    /// - Returns: Array of recommended users
+    func getRecommendedUsers(limit: Int = 10) async throws -> [CommunityRecommendedUser] {
+        guard let token = try await Auth.auth().currentUser?.getIDToken() else {
+            throw CommunityError.notAuthenticated
+        }
+
+        var urlComponents = URLComponents(string: Constants.API.getRecommendedUsers)!
+        urlComponents.queryItems = [
+            URLQueryItem(name: "limit", value: "\(limit)")
+        ]
+
+        guard let url = urlComponents.url else {
+            throw CommunityError.invalidResponse
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        print("📱 [CommunityService] Getting recommended users: limit=\(limit)")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw CommunityError.invalidResponse
+        }
+
+        guard httpResponse.statusCode == 200 else {
+            throw CommunityError.fetchFailed
+        }
+
+        struct RecommendedUsersResponse: Codable {
+            let success: Bool
+            let data: RecommendedUsersData
+        }
+
+        struct RecommendedUsersData: Codable {
+            let users: [CommunityRecommendedUser]
+        }
+
+        let result = try JSONDecoder().decode(RecommendedUsersResponse.self, from: data)
+        print("✅ [CommunityService] Got \(result.data.users.count) recommended users")
+
+        return result.data.users
+    }
+
+    // MARK: - Get Following Activity
+    /// Get following users sorted by activity
+    /// - Parameter limit: Maximum number of users to return
+    /// - Returns: Array of user activities
+    func getFollowingActivity(limit: Int = 20) async throws -> [UserActivity] {
+        guard let token = try await Auth.auth().currentUser?.getIDToken() else {
+            throw CommunityError.notAuthenticated
+        }
+
+        var urlComponents = URLComponents(string: Constants.API.getFollowingActivity)!
+        urlComponents.queryItems = [
+            URLQueryItem(name: "limit", value: "\(limit)")
+        ]
+
+        guard let url = urlComponents.url else {
+            throw CommunityError.invalidResponse
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        print("📱 [CommunityService] Getting following activity: limit=\(limit)")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw CommunityError.invalidResponse
+        }
+
+        guard httpResponse.statusCode == 200 else {
+            throw CommunityError.fetchFailed
+        }
+
+        struct FollowingActivityResponse: Codable {
+            let success: Bool
+            let data: FollowingActivityData
+        }
+
+        struct FollowingActivityData: Codable {
+            let users: [UserActivity]
+        }
+
+        let result = try JSONDecoder().decode(FollowingActivityResponse.self, from: data)
+        print("✅ [CommunityService] Got \(result.data.users.count) following activities")
+
+        return result.data.users
+    }
+
+    // MARK: - Search Users
+    /// Search users by name
+    /// - Parameters:
+    ///   - query: Search query
+    ///   - biasId: Optional bias ID filter
+    ///   - limit: Maximum number of results
+    /// - Returns: Array of recommended users
+    func searchUsers(query: String, biasId: String? = nil, limit: Int = 20) async throws -> [CommunityRecommendedUser] {
+        guard let token = try await Auth.auth().currentUser?.getIDToken() else {
+            throw CommunityError.notAuthenticated
+        }
+
+        var urlComponents = URLComponents(string: Constants.API.searchUsers)!
+        var queryItems = [
+            URLQueryItem(name: "query", value: query),
+            URLQueryItem(name: "limit", value: "\(limit)")
+        ]
+
+        if let biasId = biasId {
+            queryItems.append(URLQueryItem(name: "biasId", value: biasId))
+        }
+
+        urlComponents.queryItems = queryItems
+
+        guard let url = urlComponents.url else {
+            throw CommunityError.invalidResponse
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        print("📱 [CommunityService] Searching users: query=\(query)")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw CommunityError.invalidResponse
+        }
+
+        guard httpResponse.statusCode == 200 else {
+            throw CommunityError.fetchFailed
+        }
+
+        struct SearchUsersResponse: Codable {
+            let success: Bool
+            let data: SearchUsersData
+        }
+
+        struct SearchUsersData: Codable {
+            let users: [CommunityRecommendedUser]
+        }
+
+        let result = try JSONDecoder().decode(SearchUsersResponse.self, from: data)
+        print("✅ [CommunityService] Found \(result.data.users.count) users")
+
+        return result.data.users
+    }
+
+    // MARK: - Search Posts
+    /// Search posts by text content
+    /// - Parameters:
+    ///   - query: Search query
+    ///   - biasId: Optional bias ID filter
+    ///   - limit: Maximum number of results
+    /// - Returns: Array of community posts
+    func searchPosts(query: String, biasId: String? = nil, limit: Int = 20) async throws -> [CommunityPost] {
+        guard let token = try await Auth.auth().currentUser?.getIDToken() else {
+            throw CommunityError.notAuthenticated
+        }
+
+        var urlComponents = URLComponents(string: Constants.API.searchPosts)!
+        var queryItems = [
+            URLQueryItem(name: "query", value: query),
+            URLQueryItem(name: "limit", value: "\(limit)")
+        ]
+
+        if let biasId = biasId {
+            queryItems.append(URLQueryItem(name: "biasId", value: biasId))
+        }
+
+        urlComponents.queryItems = queryItems
+
+        guard let url = urlComponents.url else {
+            throw CommunityError.invalidResponse
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        print("📱 [CommunityService] Searching posts: query=\(query)")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw CommunityError.invalidResponse
+        }
+
+        guard httpResponse.statusCode == 200 else {
+            throw CommunityError.fetchFailed
+        }
+
+        struct SearchPostsResponse: Codable {
+            let success: Bool
+            let data: SearchPostsData
+        }
+
+        struct SearchPostsData: Codable {
+            let posts: [CommunityPost]
+        }
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let result = try decoder.decode(SearchPostsResponse.self, from: data)
+        print("✅ [CommunityService] Found \(result.data.posts.count) posts")
+
+        return result.data.posts
+    }
+
+    // MARK: - Get User Profile
+    /// Get user profile information
+    /// - Parameter userId: User ID to get profile for
+    /// - Returns: User profile with posts and statistics
+    func getUserProfile(userId: String) async throws -> UserProfile {
+        guard let token = try await Auth.auth().currentUser?.getIDToken() else {
+            throw CommunityError.notAuthenticated
+        }
+
+        guard var urlComponents = URLComponents(string: Constants.API.getUserProfile) else {
+            throw CommunityError.invalidResponse
+        }
+
+        urlComponents.queryItems = [
+            URLQueryItem(name: "userId", value: userId)
+        ]
+
+        guard let url = urlComponents.url else {
+            throw CommunityError.invalidResponse
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        print("📤 [CommunityService] Getting profile for user: \(userId)")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw CommunityError.invalidResponse
+        }
+
+        print("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
+
+        guard httpResponse.statusCode == 200 else {
+            if let errorString = String(data: data, encoding: .utf8) {
+                print("❌ [CommunityService] Error: \(errorString)")
+            }
+            throw CommunityError.fetchFailed
+        }
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let result = try decoder.decode(UserProfileResponse.self, from: data)
+        print("✅ [CommunityService] Got profile for: \(result.data.displayName)")
+
+        return result.data
+    }
 }
 
 // MARK: - Response Models

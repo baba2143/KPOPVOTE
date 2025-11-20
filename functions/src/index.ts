@@ -52,6 +52,8 @@ export { updateGroup } from "./master/updateGroup";
 export { deleteGroup } from "./master/deleteGroup";
 export { seedExternalApps } from "./seedExternalApps";
 export { seedCommunityData } from "./community/seedCommunityData";
+export { fixUserBias } from "./community/fixUserBias";
+export { setTestUserBias } from "./community/setTestUserBias";
 
 // Community functions (Phase 0+)
 export { getCommunityPosts } from "./community/getCommunityPosts";
@@ -81,6 +83,13 @@ export { getMyVotes } from "./community/getMyVotes";
 export { createComment } from "./community/createComment";
 export { getComments } from "./community/getComments";
 export { deleteComment } from "./community/deleteComment";
+
+// Community functions (Search & Discovery)
+export { searchUsers as searchCommunityUsers } from "./community/searchUsers";
+export { searchPosts } from "./community/searchPosts";
+export { getFollowingActivity } from "./community/getFollowingActivity";
+export { seedTestUsers } from "./community/seedTestUsers";
+export { getUserProfile } from "./community/getUserProfile";
 
 // Storage functions (Goods Trade)
 export { uploadGoodsImage } from "./storage/uploadGoodsImage";
