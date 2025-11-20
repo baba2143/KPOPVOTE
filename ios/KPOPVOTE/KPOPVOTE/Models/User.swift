@@ -12,6 +12,7 @@ struct User: Codable, Identifiable {
     let email: String
     var displayName: String?
     var photoURL: String?
+    var bio: String?
     var points: Int
     var biasIds: [String]
     var followingCount: Int
@@ -27,6 +28,7 @@ struct User: Codable, Identifiable {
         case email
         case displayName
         case photoURL
+        case bio
         case points
         case biasIds
         case followingCount
@@ -45,6 +47,7 @@ struct User: Codable, Identifiable {
         email = try container.decode(String.self, forKey: .email)
         displayName = try container.decodeIfPresent(String.self, forKey: .displayName)
         photoURL = try container.decodeIfPresent(String.self, forKey: .photoURL)
+        bio = try container.decodeIfPresent(String.self, forKey: .bio)
         points = try container.decode(Int.self, forKey: .points)
         biasIds = try container.decodeIfPresent([String].self, forKey: .biasIds) ?? []
         followingCount = try container.decodeIfPresent(Int.self, forKey: .followingCount) ?? 0
@@ -68,11 +71,12 @@ struct User: Codable, Identifiable {
     }
 
     // Default initializer
-    init(id: String, email: String, displayName: String? = nil, photoURL: String? = nil, points: Int = 0, biasIds: [String] = [], followingCount: Int = 0, followersCount: Int = 0, postsCount: Int = 0, isPrivate: Bool = false, isSuspended: Bool = false) {
+    init(id: String, email: String, displayName: String? = nil, photoURL: String? = nil, bio: String? = nil, points: Int = 0, biasIds: [String] = [], followingCount: Int = 0, followersCount: Int = 0, postsCount: Int = 0, isPrivate: Bool = false, isSuspended: Bool = false) {
         self.id = id
         self.email = email
         self.displayName = displayName
         self.photoURL = photoURL
+        self.bio = bio
         self.points = points
         self.biasIds = biasIds
         self.followingCount = followingCount

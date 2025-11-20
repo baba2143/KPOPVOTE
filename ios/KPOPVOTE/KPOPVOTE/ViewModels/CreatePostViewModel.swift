@@ -15,8 +15,8 @@ class CreatePostViewModel: ObservableObject {
     @Published var selectedType: PostType = .image
     @Published var textContent: String = ""
     @Published var selectedImageURLs: [String] = []
-    @Published var selectedVoteId: String?
-    @Published var selectedVoteSnapshot: InAppVote?
+    @Published var selectedVoteIds: [String] = []
+    @Published var selectedVoteSnapshots: [InAppVote] = []
     @Published var selectedMyVotes: [MyVoteItem] = []
     @Published var selectedBiasIds: [String] = []
     @Published var isSubmitting = false
@@ -48,7 +48,7 @@ class CreatePostViewModel: ObservableObject {
         let result: Bool
         switch selectedType {
         case .voteShare:
-            result = selectedVoteId != nil && selectedVoteSnapshot != nil && !selectedBiasIds.isEmpty
+            result = !selectedVoteIds.isEmpty && !selectedVoteSnapshots.isEmpty && !selectedBiasIds.isEmpty
         case .image:
             let hasText = !textContent.isEmpty
             let hasBias = !selectedBiasIds.isEmpty
@@ -93,9 +93,12 @@ class CreatePostViewModel: ObservableObject {
 
             switch selectedType {
             case .voteShare:
-                content.voteId = selectedVoteId
-                content.voteSnapshot = selectedVoteSnapshot
-                print("📝 [CreatePostViewModel] Vote share - voteId: \(selectedVoteId ?? "nil")")
+                content.voteIds = selectedVoteIds
+                content.voteSnapshots = selectedVoteSnapshots
+                if !textContent.isEmpty {
+                    content.text = textContent
+                }
+                print("📝 [CreatePostViewModel] Vote share - vote count: \(selectedVoteIds.count), text: \(textContent.isEmpty ? "none" : "\(textContent.count) chars")")
             case .image:
                 content.text = textContent
                 print("📝 [CreatePostViewModel] Image post - text length: \(textContent.count) characters")
@@ -187,14 +190,33 @@ class CreatePostViewModel: ObservableObject {
         isSubmitting = false
     }
 
-    // MARK: - Select Vote
-    /// Set selected vote for voteShare type
-    func selectVote(vote: InAppVote) {
-        selectedVoteId = vote.id
-        selectedVoteSnapshot = vote
+    // MARK: - Select Votes
+    /// Add vote to voteShare type
+    func addVote(vote: InAppVote) {
+        guard !selectedVoteIds.contains(vote.id) else { return }
+        selectedVoteIds.append(vote.id)
+        selectedVoteSnapshots.append(vote)
         selectedType = .voteShare
 
-        print("🎯 [CreatePostViewModel] Selected vote: \(vote.title)")
+        print("🎯 [CreatePostViewModel] Added vote: \(vote.title), total: \(selectedVoteIds.count)")
+    }
+
+    /// Remove vote from voteShare type
+    func removeVote(voteId: String) {
+        if let index = selectedVoteIds.firstIndex(of: voteId) {
+            selectedVoteIds.remove(at: index)
+            selectedVoteSnapshots.remove(at: index)
+            print("🎯 [CreatePostViewModel] Removed vote ID: \(voteId), remaining: \(selectedVoteIds.count)")
+        }
+    }
+
+    /// Set selected votes for voteShare type (used by VoteSelectionSheet)
+    func selectVotes(votes: [InAppVote]) {
+        selectedVoteIds = votes.map { $0.id }
+        selectedVoteSnapshots = votes
+        selectedType = .voteShare
+
+        print("🎯 [CreatePostViewModel] Selected \(votes.count) votes")
     }
 
     // MARK: - Select My Votes
@@ -213,8 +235,8 @@ class CreatePostViewModel: ObservableObject {
         textContent = ""
         selectedImageURLs = []
         selectedImageForPost = nil
-        selectedVoteId = nil
-        selectedVoteSnapshot = nil
+        selectedVoteIds = []
+        selectedVoteSnapshots = []
         selectedMyVotes = []
         selectedBiasIds = []
         selectedGoodsImage = nil

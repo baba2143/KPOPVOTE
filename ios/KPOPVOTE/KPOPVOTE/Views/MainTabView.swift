@@ -291,6 +291,7 @@ struct ProfileView: View {
     @EnvironmentObject var authService: AuthService
     @State private var showLogoutConfirm = false
     @State private var showBiasSettings = false
+    @State private var showProfileEdit = false
 
     var body: some View {
         NavigationView {
@@ -303,9 +304,9 @@ struct ProfileView: View {
                             .font(.system(size: 80))
                             .foregroundColor(Constants.Colors.accentPink)
 
-                        // User Email
-                        if let email = authService.currentUser?.email {
-                            Text(email)
+                        // Display Name or Email
+                        if let user = authService.currentUser {
+                            Text(user.displayNameOrEmail)
                                 .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
                                 .foregroundColor(Constants.Colors.textWhite)
                         }
@@ -345,7 +346,12 @@ struct ProfileView: View {
                             .buttonStyle(.plain)
 
                             Divider().padding(.leading, 60).background(Constants.Colors.textGray.opacity(0.3))
-                            SettingsRow(icon: "person.fill", title: "Account", color: Constants.Colors.accentBlue)
+                            Button {
+                                showProfileEdit = true
+                            } label: {
+                                SettingsRow(icon: "person.fill", title: "Account", color: Constants.Colors.accentBlue)
+                            }
+                            .buttonStyle(.plain)
                             Divider().padding(.leading, 60).background(Constants.Colors.textGray.opacity(0.3))
                             SettingsRow(icon: "bell.fill", title: "Notifications", color: .orange)
                             Divider().padding(.leading, 60).background(Constants.Colors.textGray.opacity(0.3))
@@ -394,6 +400,10 @@ struct ProfileView: View {
             }
             .sheet(isPresented: $showBiasSettings) {
                 BiasSettingsView()
+            }
+            .sheet(isPresented: $showProfileEdit) {
+                ProfileEditView()
+                    .environmentObject(authService)
             }
         }
     }

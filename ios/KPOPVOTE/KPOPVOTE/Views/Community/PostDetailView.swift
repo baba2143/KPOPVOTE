@@ -223,62 +223,92 @@ struct PostDetailView: View {
     // MARK: - Vote Share Content
     @ViewBuilder
     private func voteShareContent(post: CommunityPost) -> some View {
-        if let voteSnapshot = post.content.voteSnapshot {
-            VStack(alignment: .leading, spacing: Constants.Spacing.small) {
-                // Vote Card
-                VStack(alignment: .leading, spacing: 12) {
-                    if let coverImageUrl = voteSnapshot.coverImageUrl, let url = URL(string: coverImageUrl) {
-                        AsyncImage(url: url) { phase in
-                            switch phase {
-                            case .success(let image):
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(maxHeight: 300)
-                                    .clipped()
-                                    .cornerRadius(12)
-                            case .failure(_), .empty:
+        VStack(alignment: .leading, spacing: Constants.Spacing.medium) {
+            // Comment text (if exists)
+            if let text = post.content.text, !text.isEmpty {
+                Text(text)
+                    .font(.system(size: Constants.Typography.bodySize))
+                    .foregroundColor(Constants.Colors.textWhite)
+                    .lineSpacing(6)
+            }
+
+            // Vote cards
+            if let voteSnapshots = post.content.voteSnapshots, !voteSnapshots.isEmpty {
+                ForEach(voteSnapshots, id: \.id) { voteSnapshot in
+                    NavigationLink(destination: VoteDetailView(voteId: voteSnapshot.id)) {
+                        // Vote Card
+                        VStack(alignment: .leading, spacing: 12) {
+                            if let coverImageUrl = voteSnapshot.coverImageUrl, !coverImageUrl.isEmpty, let url = URL(string: coverImageUrl) {
+                                AsyncImage(url: url) { phase in
+                                    switch phase {
+                                    case .success(let image):
+                                        image
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(maxHeight: 300)
+                                            .clipped()
+                                            .cornerRadius(12)
+                                    case .failure(_), .empty:
+                                        Rectangle()
+                                            .fill(Constants.Colors.backgroundDark)
+                                            .frame(height: 200)
+                                            .cornerRadius(12)
+                                            .overlay(
+                                                Image(systemName: "photo")
+                                                    .font(.system(size: 60))
+                                                    .foregroundColor(Constants.Colors.textGray)
+                                            )
+                                    @unknown default:
+                                        EmptyView()
+                                    }
+                                }
+                            } else {
+                                // Placeholder for missing cover image
                                 Rectangle()
                                     .fill(Constants.Colors.backgroundDark)
                                     .frame(height: 200)
                                     .cornerRadius(12)
-                            @unknown default:
-                                EmptyView()
+                                    .overlay(
+                                        Image(systemName: "photo")
+                                            .font(.system(size: 60))
+                                            .foregroundColor(Constants.Colors.textGray)
+                                    )
+                            }
+
+                            Text(voteSnapshot.title)
+                                .font(.system(size: Constants.Typography.titleSize, weight: .bold))
+                                .foregroundColor(Constants.Colors.textWhite)
+
+                            Text(voteSnapshot.description)
+                                .font(.system(size: Constants.Typography.bodySize))
+                                .foregroundColor(Constants.Colors.textGray)
+                                .lineSpacing(4)
+
+                            // Vote Stats
+                            HStack(spacing: 16) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "chart.bar")
+                                        .font(.system(size: 14))
+                                    Text("\(voteSnapshot.totalVotes)票")
+                                        .font(.system(size: Constants.Typography.captionSize))
+                                }
+                                .foregroundColor(Constants.Colors.textGray)
+
+                                HStack(spacing: 4) {
+                                    Image(systemName: "flame")
+                                        .font(.system(size: 14))
+                                    Text("\(voteSnapshot.requiredPoints)P")
+                                        .font(.system(size: Constants.Typography.captionSize))
+                                }
+                                .foregroundColor(Constants.Colors.accentBlue)
                             }
                         }
+                        .padding()
+                        .background(Color.white.opacity(0.05))
+                        .cornerRadius(16)
                     }
-
-                    Text(voteSnapshot.title)
-                        .font(.system(size: Constants.Typography.titleSize, weight: .bold))
-                        .foregroundColor(Constants.Colors.textWhite)
-
-                    Text(voteSnapshot.description)
-                        .font(.system(size: Constants.Typography.bodySize))
-                        .foregroundColor(Constants.Colors.textGray)
-                        .lineSpacing(4)
-
-                    // Vote Stats
-                    HStack(spacing: 16) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "chart.bar")
-                                .font(.system(size: 14))
-                            Text("\(voteSnapshot.totalVotes)票")
-                                .font(.system(size: Constants.Typography.captionSize))
-                        }
-                        .foregroundColor(Constants.Colors.textGray)
-
-                        HStack(spacing: 4) {
-                            Image(systemName: "flame")
-                                .font(.system(size: 14))
-                            Text("\(voteSnapshot.requiredPoints)P")
-                                .font(.system(size: Constants.Typography.captionSize))
-                        }
-                        .foregroundColor(Constants.Colors.accentBlue)
-                    }
+                    .buttonStyle(.plain)
                 }
-                .padding()
-                .background(Color.white.opacity(0.05))
-                .cornerRadius(16)
             }
         }
     }

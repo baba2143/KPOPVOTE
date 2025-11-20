@@ -202,6 +202,14 @@ class AuthService: ObservableObject {
         AppStorageManager.shared.isGuestMode = false
     }
 
+    // MARK: - Update Current User
+    func updateCurrentUser(_ user: User) async {
+        await MainActor.run {
+            self.currentUser = user
+        }
+        print("✅ [Auth] Current user updated: \(user.displayName ?? user.email)")
+    }
+
     // MARK: - Load User Data
     private func loadUserData(uid: String, email: String) async {
         do {

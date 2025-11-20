@@ -59,18 +59,64 @@ struct GoodsTradeContent: Codable {
 struct PostContent: Codable {
     var text: String?
     var images: [String]?
-    var voteId: String?
-    var voteSnapshot: InAppVote?
+    var voteIds: [String]?
+    var voteSnapshots: [InAppVote]?
     var myVotes: [MyVoteItem]?
     var goodsTrade: GoodsTradeContent?
 
-    init(text: String? = nil, images: [String]? = nil, voteId: String? = nil, voteSnapshot: InAppVote? = nil, myVotes: [MyVoteItem]? = nil, goodsTrade: GoodsTradeContent? = nil) {
+    enum CodingKeys: String, CodingKey {
+        case text, images, voteIds, voteSnapshots, myVotes, goodsTrade
+        case voteId  // For backward compatibility
+        case voteSnapshot  // For backward compatibility
+    }
+
+    init(text: String? = nil, images: [String]? = nil, voteIds: [String]? = nil, voteSnapshots: [InAppVote]? = nil, myVotes: [MyVoteItem]? = nil, goodsTrade: GoodsTradeContent? = nil) {
         self.text = text
         self.images = images
-        self.voteId = voteId
-        self.voteSnapshot = voteSnapshot
+        self.voteIds = voteIds
+        self.voteSnapshots = voteSnapshots
         self.myVotes = myVotes
         self.goodsTrade = goodsTrade
+    }
+
+    // Custom decoding for backward compatibility
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        text = try container.decodeIfPresent(String.self, forKey: .text)
+        images = try container.decodeIfPresent([String].self, forKey: .images)
+        myVotes = try container.decodeIfPresent([MyVoteItem].self, forKey: .myVotes)
+        goodsTrade = try container.decodeIfPresent(GoodsTradeContent.self, forKey: .goodsTrade)
+
+        // Try to decode new format first (arrays)
+        if let voteIds = try? container.decodeIfPresent([String].self, forKey: .voteIds) {
+            self.voteIds = voteIds
+        } else if let singleVoteId = try? container.decodeIfPresent(String.self, forKey: .voteId) {
+            // Fallback to old format (single value)
+            self.voteIds = [singleVoteId]
+        } else {
+            self.voteIds = nil
+        }
+
+        if let voteSnapshots = try? container.decodeIfPresent([InAppVote].self, forKey: .voteSnapshots) {
+            self.voteSnapshots = voteSnapshots
+        } else if let singleSnapshot = try? container.decodeIfPresent(InAppVote.self, forKey: .voteSnapshot) {
+            // Fallback to old format (single value)
+            self.voteSnapshots = [singleSnapshot]
+        } else {
+            self.voteSnapshots = nil
+        }
+    }
+
+    // Custom encoding (always use new format)
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(text, forKey: .text)
+        try container.encodeIfPresent(images, forKey: .images)
+        try container.encodeIfPresent(voteIds, forKey: .voteIds)
+        try container.encodeIfPresent(voteSnapshots, forKey: .voteSnapshots)
+        try container.encodeIfPresent(myVotes, forKey: .myVotes)
+        try container.encodeIfPresent(goodsTrade, forKey: .goodsTrade)
     }
 }
 
@@ -220,7 +266,7 @@ extension CommunityPost {
     }
 
     var hasVote: Bool {
-        return content.voteId != nil && content.voteSnapshot != nil
+        return content.voteIds?.isEmpty == false && content.voteSnapshots?.isEmpty == false
     }
 
     var hasMyVotes: Bool {

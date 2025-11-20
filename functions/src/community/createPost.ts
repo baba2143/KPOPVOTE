@@ -53,10 +53,17 @@ export const createPost = functions.https.onRequest(async (req, res) => {
 
     // Type-specific validation
     if (type === "vote_share") {
-      if (!content.voteId || !content.voteSnapshot) {
+      if (!content.voteIds || !Array.isArray(content.voteIds) || content.voteIds.length === 0) {
         res.status(400).json({
           success: false,
-          error: "voteId and voteSnapshot required for vote_share",
+          error: "voteIds must be a non-empty array for vote_share",
+        } as ApiResponse<null>);
+        return;
+      }
+      if (!content.voteSnapshots || !Array.isArray(content.voteSnapshots) || content.voteSnapshots.length === 0) {
+        res.status(400).json({
+          success: false,
+          error: "voteSnapshots must be a non-empty array for vote_share",
         } as ApiResponse<null>);
         return;
       }

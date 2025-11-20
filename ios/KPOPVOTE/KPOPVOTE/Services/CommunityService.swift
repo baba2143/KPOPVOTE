@@ -875,13 +875,13 @@ extension PostContent {
             dict["images"] = images
         }
 
-        if let voteId = voteId {
-            dict["voteId"] = voteId
+        if let voteIds = voteIds {
+            dict["voteIds"] = voteIds
         }
 
-        if let voteSnapshot = voteSnapshot {
-            // Convert InAppVote to dictionary
-            dict["voteSnapshot"] = voteSnapshot.toDictionary()
+        if let voteSnapshots = voteSnapshots {
+            // Convert InAppVote array to dictionary array
+            dict["voteSnapshots"] = voteSnapshots.map { $0.toDictionary() }
         }
 
         if let myVotes = myVotes {

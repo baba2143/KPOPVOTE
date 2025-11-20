@@ -107,43 +107,64 @@ struct PostCardView: View {
     // MARK: - Vote Share Content
     @ViewBuilder
     private var voteShareContent: some View {
-        if let voteSnapshot = post.content.voteSnapshot {
+        if let voteSnapshots = post.content.voteSnapshots, !voteSnapshots.isEmpty {
             VStack(alignment: .leading, spacing: Constants.Spacing.small) {
-                // Vote Card
-                VStack(alignment: .leading, spacing: 8) {
-                    if let coverImageUrl = voteSnapshot.coverImageUrl, let url = URL(string: coverImageUrl) {
-                        AsyncImage(url: url) { phase in
-                            switch phase {
-                            case .success(let image):
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                                    .frame(height: 120)
-                                    .clipped()
-                                    .cornerRadius(8)
-                            case .failure(_), .empty:
+                ForEach(voteSnapshots, id: \.id) { voteSnapshot in
+                    NavigationLink(destination: VoteDetailView(voteId: voteSnapshot.id)) {
+                        // Vote Card
+                        VStack(alignment: .leading, spacing: 8) {
+                            if let coverImageUrl = voteSnapshot.coverImageUrl, !coverImageUrl.isEmpty, let url = URL(string: coverImageUrl) {
+                                AsyncImage(url: url) { phase in
+                                    switch phase {
+                                    case .success(let image):
+                                        image
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(height: 120)
+                                            .clipped()
+                                            .cornerRadius(8)
+                                    case .failure(_), .empty:
+                                        Rectangle()
+                                            .fill(Constants.Colors.backgroundDark)
+                                            .frame(height: 120)
+                                            .cornerRadius(8)
+                                            .overlay(
+                                                Image(systemName: "photo")
+                                                    .font(.system(size: 40))
+                                                    .foregroundColor(Constants.Colors.textGray)
+                                            )
+                                    @unknown default:
+                                        EmptyView()
+                                    }
+                                }
+                            } else {
+                                // Placeholder for missing cover image
                                 Rectangle()
                                     .fill(Constants.Colors.backgroundDark)
                                     .frame(height: 120)
                                     .cornerRadius(8)
-                            @unknown default:
-                                EmptyView()
+                                    .overlay(
+                                        Image(systemName: "photo")
+                                            .font(.system(size: 40))
+                                            .foregroundColor(Constants.Colors.textGray)
+                                    )
                             }
+
+                            Text(voteSnapshot.title)
+                                .font(.system(size: Constants.Typography.headlineSize, weight: .bold))
+                                .foregroundColor(Constants.Colors.textWhite)
+
+                            Text(voteSnapshot.description)
+                                .font(.system(size: Constants.Typography.captionSize))
+                                .foregroundColor(Constants.Colors.textGray)
+                                .lineLimit(2)
                         }
+                        .padding(Constants.Spacing.small)
+                        .background(Color.white.opacity(0.05))
+                        .cornerRadius(12)
                     }
-
-                    Text(voteSnapshot.title)
-                        .font(.system(size: Constants.Typography.headlineSize, weight: .bold))
-                        .foregroundColor(Constants.Colors.textWhite)
-
-                    Text(voteSnapshot.description)
-                        .font(.system(size: Constants.Typography.captionSize))
-                        .foregroundColor(Constants.Colors.textGray)
-                        .lineLimit(2)
+                    .buttonStyle(.plain)
                 }
-                .padding(Constants.Spacing.small)
-                .background(Color.white.opacity(0.05))
-                .cornerRadius(12)
             }
         }
     }
@@ -436,7 +457,7 @@ struct PostCardView: View {
                     postsCount: 10
                 ),
                 type: .image,
-                content: PostContent(text: "素晴らしいパフォーマンスでした！", images: nil, voteId: nil, voteSnapshot: nil, myVotes: nil),
+                content: PostContent(text: "素晴らしいパフォーマンスでした！", images: nil, voteIds: nil, voteSnapshots: nil, myVotes: nil),
                 biasIds: [],
                 isLiked: false
             ),

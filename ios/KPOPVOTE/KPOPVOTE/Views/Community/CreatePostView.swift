@@ -83,7 +83,7 @@ struct CreatePostView: View {
         }
         .sheet(isPresented: $showVoteSelection) {
             VoteSelectionSheet { selectedVote in
-                viewModel.selectVote(vote: selectedVote)
+                viewModel.addVote(vote: selectedVote)
             }
         }
         .sheet(isPresented: $showMyVotesSelection) {
@@ -143,51 +143,74 @@ struct CreatePostView: View {
     @ViewBuilder
     private var voteShareInput: some View {
         VStack(alignment: .leading, spacing: Constants.Spacing.small) {
+            // Text Input (Optional)
+            Text("コメント (オプション)")
+                .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
+                .foregroundColor(Constants.Colors.textWhite)
+
+            TextEditor(text: $viewModel.textContent)
+                .font(.system(size: Constants.Typography.bodySize))
+                .foregroundColor(.black)
+                .padding(8)
+                .frame(minHeight: 100)
+                .background(Color.white.opacity(0.9))
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Constants.Colors.accentPink.opacity(0.3), lineWidth: 1)
+                )
+
             Text("投票を選択")
                 .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
                 .foregroundColor(Constants.Colors.textWhite)
 
-            if let voteSnapshot = viewModel.selectedVoteSnapshot {
-                // Selected Vote Display
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(voteSnapshot.title)
-                            .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
-                            .foregroundColor(Constants.Colors.textWhite)
+            if !viewModel.selectedVoteSnapshots.isEmpty {
+                // Selected Votes List
+                VStack(spacing: 8) {
+                    ForEach(viewModel.selectedVoteSnapshots, id: \.id) { voteSnapshot in
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(voteSnapshot.title)
+                                    .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
+                                    .foregroundColor(Constants.Colors.textWhite)
 
-                        Text(voteSnapshot.description)
-                            .font(.system(size: Constants.Typography.captionSize))
-                            .foregroundColor(Constants.Colors.textGray)
-                            .lineLimit(2)
+                                Text(voteSnapshot.description)
+                                    .font(.system(size: Constants.Typography.captionSize))
+                                    .foregroundColor(Constants.Colors.textGray)
+                                    .lineLimit(2)
+                            }
+
+                            Spacer()
+
+                            Button(action: {
+                                viewModel.removeVote(voteId: voteSnapshot.id)
+                            }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(Constants.Colors.textGray)
+                            }
+                        }
+                        .padding()
+                        .background(Color.white.opacity(0.05))
+                        .cornerRadius(12)
                     }
-
-                    Spacer()
-
-                    Button("変更") {
-                        showVoteSelection = true
-                    }
-                    .font(.system(size: Constants.Typography.captionSize, weight: .semibold))
-                    .foregroundColor(Constants.Colors.accentPink)
                 }
+            }
+
+            // Add Vote Button
+            Button(action: {
+                showVoteSelection = true
+            }) {
+                HStack {
+                    Image(systemName: viewModel.selectedVoteSnapshots.isEmpty ? "plus.circle" : "plus.circle.fill")
+                    Text(viewModel.selectedVoteSnapshots.isEmpty ? "投票を選択" : "投票を追加")
+                }
+                .font(.system(size: Constants.Typography.bodySize))
+                .foregroundColor(Constants.Colors.accentPink)
+                .frame(maxWidth: .infinity)
                 .padding()
                 .background(Color.white.opacity(0.05))
                 .cornerRadius(12)
-            } else {
-                // Select Vote Button
-                Button(action: {
-                    showVoteSelection = true
-                }) {
-                    HStack {
-                        Image(systemName: "plus.circle")
-                        Text("投票を選択")
-                    }
-                    .font(.system(size: Constants.Typography.bodySize))
-                    .foregroundColor(Constants.Colors.accentPink)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.white.opacity(0.05))
-                    .cornerRadius(12)
-                }
             }
         }
     }

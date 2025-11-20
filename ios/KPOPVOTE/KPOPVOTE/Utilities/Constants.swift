@@ -63,6 +63,8 @@ enum Constants {
 
     // MARK: - API Endpoints
     enum API {
+        static let baseURL = apiBaseURL
+
         // Auth
         static let register = "\(apiBaseURL)/register"
         static let login = "\(apiBaseURL)/login"

@@ -348,8 +348,8 @@ export interface GoodsTradeContent {
 export interface PostContent {
   text?: string;
   images?: string[];
-  voteId?: string;
-  voteSnapshot?: InAppVote;
+  voteIds?: string[];
+  voteSnapshots?: InAppVote[];
   myVotes?: MyVoteItem[];
   goodsTrade?: GoodsTradeContent;
 }
