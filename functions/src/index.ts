@@ -63,6 +63,7 @@ export { getCommunityStats } from "./community/getCommunityStats";
 export { createPost } from "./community/createPost";
 export { getPost } from "./community/getPost";
 export { getPosts } from "./community/getPosts";
+export { updatePost } from "./community/updatePost";
 export { followUser } from "./community/followUser";
 export { unfollowUser } from "./community/unfollowUser";
 

@@ -15,6 +15,8 @@ struct PostDetailView: View {
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var showDeleteConfirm = false
+    @State private var showDeleteSuccess = false
+    @State private var showEditSheet = false
 
     // Comment states
     @State private var comments: [Comment] = []
@@ -22,6 +24,9 @@ struct PostDetailView: View {
     @State private var commentText = ""
     @State private var isSendingComment = false
     @State private var commentError: String?
+    @State private var needsToFollow = false
+    @State private var commentToDelete: String?
+    @State private var showDeleteCommentSuccess = false
 
     init(postId: String) {
         self.postId = postId
@@ -78,10 +83,16 @@ struct PostDetailView: View {
                 }
             }
 
-            // Delete button (owner only)
+            // Edit/Delete menu (owner only)
             if let post = post, isPostOwner(post) {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
+                        Button(action: {
+                            showEditSheet = true
+                        }) {
+                            Label("編集", systemImage: "pencil")
+                        }
+
                         Button(role: .destructive, action: {
                             showDeleteConfirm = true
                         }) {
@@ -103,6 +114,43 @@ struct PostDetailView: View {
             }
         } message: {
             Text("この投稿を削除してもよろしいですか？")
+        }
+        .alert("削除完了", isPresented: $showDeleteSuccess) {
+            Button("OK") {
+                dismiss()
+            }
+        } message: {
+            Text("投稿を削除しました")
+        }
+        .alert("コメントを削除", isPresented: Binding(
+            get: { commentToDelete != nil },
+            set: { if !$0 { commentToDelete = nil } }
+        )) {
+            Button("キャンセル", role: .cancel) {
+                commentToDelete = nil
+            }
+            Button("削除", role: .destructive) {
+                if let commentId = commentToDelete {
+                    Task {
+                        await deleteCommentAction(commentId: commentId)
+                    }
+                }
+            }
+        } message: {
+            Text("このコメントを削除してもよろしいですか？")
+        }
+        .alert("削除完了", isPresented: $showDeleteCommentSuccess) {
+            Button("OK") {}
+        } message: {
+            Text("コメントを削除しました")
+        }
+        .sheet(isPresented: $showEditSheet) {
+            if let post = post {
+                PostEditView(post: post) { updatedPost in
+                    // Update the local post
+                    self.post = updatedPost
+                }
+            }
         }
         .task {
             print("🟢 [PostDetailView] .task executed for postId: \(postId)")
@@ -565,31 +613,84 @@ struct PostDetailView: View {
                     .foregroundColor(Constants.Colors.textGray)
             }
 
-            // Comment Input
-            HStack(alignment: .top, spacing: Constants.Spacing.small) {
-                TextField("コメントを入力...", text: $commentText, axis: .vertical)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: Constants.Typography.bodySize))
-                    .foregroundColor(Constants.Colors.textWhite)
-                    .padding(12)
-                    .background(Color.white.opacity(0.05))
-                    .cornerRadius(12)
-                    .lineLimit(3...6)
-                    .disabled(isSendingComment)
+            // Comment Input or Follow Prompt
+            if needsToFollow {
+                // Follow to comment prompt
+                VStack(alignment: .leading, spacing: Constants.Spacing.small) {
+                    HStack(spacing: Constants.Spacing.small) {
+                        Image(systemName: "info.circle.fill")
+                            .foregroundColor(Constants.Colors.accentBlue)
 
-                Button(action: {
-                    Task {
-                        await sendComment()
+                        Text("この投稿者をフォローするとコメントできます")
+                            .font(.system(size: Constants.Typography.bodySize))
+                            .foregroundColor(Constants.Colors.textWhite)
                     }
-                }) {
-                    Image(systemName: "paperplane.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(commentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Constants.Colors.textGray : Constants.Colors.accentPink)
-                        .frame(width: 44, height: 44)
-                        .background(Color.white.opacity(0.05))
-                        .cornerRadius(12)
+                    .padding(Constants.Spacing.medium)
+                    .background(Constants.Colors.accentBlue.opacity(0.15))
+                    .cornerRadius(12)
+
+                    if let post = post {
+                        Button(action: {
+                            Task {
+                                await followUser(userId: post.userId)
+                            }
+                        }) {
+                            HStack {
+                                Image(systemName: "person.badge.plus")
+                                Text("フォローする")
+                                    .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
+                            }
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(Constants.Spacing.medium)
+                            .background(Constants.Colors.accentPink)
+                            .cornerRadius(12)
+                        }
+                    }
                 }
-                .disabled(commentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSendingComment)
+            } else {
+                // Normal comment input
+                HStack(alignment: .top, spacing: Constants.Spacing.small) {
+                    ZStack(alignment: .topLeading) {
+                        // Placeholder text
+                        if commentText.isEmpty {
+                            Text("コメントを入力...")
+                                .font(.system(size: Constants.Typography.bodySize))
+                                .foregroundColor(Constants.Colors.textGray)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 16)
+                        }
+
+                        // TextEditor
+                        TextEditor(text: $commentText)
+                            .font(.system(size: Constants.Typography.bodySize))
+                            .foregroundColor(Constants.Colors.textWhite)
+                            .padding(8)
+                            .frame(minHeight: 80)
+                            .scrollContentBackground(.hidden)
+                            .background(Color.white.opacity(0.05))
+                            .cornerRadius(12)
+                            .disabled(isSendingComment)
+                            .onChange(of: commentText) { newValue in
+                                print("📝 [PostDetailView] Comment text changed: '\(newValue)' (length: \(newValue.count))")
+                            }
+                    }
+
+                    Button(action: {
+                        print("👆 [PostDetailView] Send button tapped, text: '\(commentText)'")
+                        Task {
+                            await sendComment()
+                        }
+                    }) {
+                        Image(systemName: "paperplane.fill")
+                            .font(.system(size: 20))
+                            .foregroundColor(commentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Constants.Colors.textGray : Constants.Colors.accentPink)
+                            .frame(width: 44, height: 44)
+                            .background(Color.white.opacity(0.05))
+                            .cornerRadius(12)
+                    }
+                    .disabled(commentText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isSendingComment)
+                }
             }
 
             // Error message
@@ -619,9 +720,7 @@ struct PostDetailView: View {
                             comment: comment,
                             postAuthorId: post?.userId ?? "",
                             onDelete: {
-                                Task {
-                                    await deleteCommentAction(commentId: comment.id)
-                                }
+                                commentToDelete = comment.id
                             }
                         )
                     }
@@ -678,7 +777,7 @@ struct PostDetailView: View {
             print("🗑️ [PostDetailView] Deleting post: \(postId)")
             try await CommunityService.shared.deletePost(postId: postId)
             print("✅ [PostDetailView] Post deleted successfully")
-            dismiss()
+            showDeleteSuccess = true
         } catch {
             print("❌ [PostDetailView] Failed to delete post: \(error)")
             errorMessage = error.localizedDescription
@@ -728,10 +827,14 @@ struct PostDetailView: View {
     // MARK: - Send Comment
     private func sendComment() async {
         let text = commentText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
+        guard !text.isEmpty else {
+            print("⚠️ [PostDetailView] Comment text is empty, cannot send")
+            return
+        }
 
         isSendingComment = true
         commentError = nil
+        needsToFollow = false
 
         do {
             print("💬 [PostDetailView] Sending comment: \(text)")
@@ -753,9 +856,15 @@ struct PostDetailView: View {
         } catch {
             print("❌ [PostDetailView] Failed to send comment: \(error)")
 
-            // Show specific error message
+            // Check if it's the specific "must follow" error
             if let communityError = error as? CommunityError {
-                commentError = communityError.errorDescription
+                if case .mustFollowToComment = communityError {
+                    print("🚫 [PostDetailView] User must follow to comment")
+                    needsToFollow = true
+                    commentError = communityError.errorDescription
+                } else {
+                    commentError = communityError.errorDescription
+                }
             } else {
                 commentError = "コメントの送信に失敗しました"
             }
@@ -780,9 +889,31 @@ struct PostDetailView: View {
             }
 
             print("✅ [PostDetailView] Comment deleted successfully")
+
+            // Reset and show success
+            commentToDelete = nil
+            showDeleteCommentSuccess = true
         } catch {
             print("❌ [PostDetailView] Failed to delete comment: \(error)")
             commentError = "コメントの削除に失敗しました"
+            commentToDelete = nil
+        }
+    }
+
+    // MARK: - Follow User
+    private func followUser(userId: String) async {
+        do {
+            print("👥 [PostDetailView] Following user: \(userId)")
+            try await CommunityService.shared.followUser(userId: userId)
+
+            // Reset follow state and allow commenting
+            needsToFollow = false
+            commentError = nil
+
+            print("✅ [PostDetailView] Successfully followed user, can now comment")
+        } catch {
+            print("❌ [PostDetailView] Failed to follow user: \(error)")
+            commentError = "フォローに失敗しました"
         }
     }
 }

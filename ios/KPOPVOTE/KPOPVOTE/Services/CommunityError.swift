@@ -22,6 +22,7 @@ enum CommunityError: LocalizedError {
     case invalidContent
     case unauthorized
     case commentFailed
+    case mustFollowToComment
 
     var errorDescription: String? {
         switch self {
@@ -51,6 +52,8 @@ enum CommunityError: LocalizedError {
             return "権限がありません"
         case .commentFailed:
             return "コメントに失敗しました"
+        case .mustFollowToComment:
+            return "この投稿者をフォローするとコメントできます"
         }
     }
 }

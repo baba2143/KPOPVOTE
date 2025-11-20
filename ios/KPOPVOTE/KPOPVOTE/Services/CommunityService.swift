@@ -67,6 +67,62 @@ class CommunityService {
         return result.data
     }
 
+    // MARK: - Update Post
+    /// Update an existing post
+    /// - Parameters:
+    ///   - postId: Post ID to update
+    ///   - content: Updated post content (optional)
+    ///   - biasIds: Updated bias IDs (optional)
+    /// - Returns: Updated post data
+    func updatePost(postId: String, content: PostContent? = nil, biasIds: [String]? = nil) async throws -> CommunityPost {
+        guard let token = try await Auth.auth().currentUser?.getIDToken() else {
+            throw CommunityError.notAuthenticated
+        }
+
+        guard let url = URL(string: Constants.API.updatePost) else {
+            throw CommunityError.invalidResponse
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        var requestBody: [String: Any] = ["postId": postId]
+        if let content = content {
+            requestBody["content"] = content.toDictionary()
+        }
+        if let biasIds = biasIds {
+            requestBody["biasIds"] = biasIds
+        }
+
+        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+
+        print("📤 [CommunityService] Updating post: \(postId)")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw CommunityError.invalidResponse
+        }
+
+        print("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
+
+        guard httpResponse.statusCode == 200 else {
+            if let errorString = String(data: data, encoding: .utf8) {
+                print("❌ [CommunityService] Error: \(errorString)")
+            }
+            throw CommunityError.updateFailed
+        }
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let result = try decoder.decode(PostResponse.self, from: data)
+        print("✅ [CommunityService] Post updated successfully")
+
+        return result.data
+    }
+
     // MARK: - Get Post
     /// Fetch post detail
     /// - Parameter postId: Post ID
@@ -330,6 +386,11 @@ class CommunityService {
         guard httpResponse.statusCode == 201 else {
             if let errorString = String(data: data, encoding: .utf8) {
                 print("❌ [CommunityService] Error: \(errorString)")
+
+                // Check if it's a 403 "must follow" error
+                if httpResponse.statusCode == 403 && errorString.contains("follow") {
+                    throw CommunityError.mustFollowToComment
+                }
             }
             throw CommunityError.commentFailed
         }
@@ -447,6 +508,46 @@ class CommunityService {
         }
 
         print("✅ [CommunityService] Comment deleted successfully")
+    }
+
+    // MARK: - Follow User
+    /// Follow a user
+    /// - Parameter userId: User ID to follow
+    func followUser(userId: String) async throws {
+        guard let token = try await Auth.auth().currentUser?.getIDToken() else {
+            throw CommunityError.notAuthenticated
+        }
+
+        guard let url = URL(string: Constants.API.followUser) else {
+            throw CommunityError.invalidResponse
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let requestBody = ["targetUserId": userId]
+        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+
+        print("👥 [CommunityService] Following user: \(userId)")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw CommunityError.invalidResponse
+        }
+
+        print("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
+
+        guard httpResponse.statusCode == 200 else {
+            if let errorString = String(data: data, encoding: .utf8) {
+                print("❌ [CommunityService] Error: \(errorString)")
+            }
+            throw CommunityError.updateFailed
+        }
+
+        print("✅ [CommunityService] User followed successfully")
     }
 }
 

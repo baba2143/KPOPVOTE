@@ -15,6 +15,7 @@ struct CommunityView: View {
     @State private var selectedPost: IdentifiableString?
     @State private var showCreatePost = false
     @State private var showLoginPrompt = false
+    @State private var showDeleteSuccess = false
 
     var body: some View {
         NavigationView {
@@ -149,6 +150,17 @@ struct CommunityView: View {
                 await biasViewModel.loadIdols()
                 await biasViewModel.loadCurrentBias()
                 await viewModel.loadPosts()
+            }
+            .alert("削除完了", isPresented: $showDeleteSuccess) {
+                Button("OK") {}
+            } message: {
+                Text("投稿を削除しました")
+            }
+            .onChange(of: viewModel.deleteSuccess) { newValue in
+                if newValue {
+                    showDeleteSuccess = true
+                    viewModel.deleteSuccess = false // Reset
+                }
             }
             .overlay(
                 Group {

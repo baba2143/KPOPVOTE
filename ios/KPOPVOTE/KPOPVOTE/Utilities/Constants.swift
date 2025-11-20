@@ -93,6 +93,7 @@ enum Constants {
         static let createPost = "\(apiBaseURL)/createPost"
         static let getPost = "\(apiBaseURL)/getPost"
         static let getPosts = "\(apiBaseURL)/getPosts"
+        static let updatePost = "\(apiBaseURL)/updatePost"
         static let likePost = "\(apiBaseURL)/likePost"
         static let deletePost = "\(apiBaseURL)/deletePost"
 

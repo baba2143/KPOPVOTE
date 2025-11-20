@@ -17,6 +17,7 @@ class CommunityViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var hasMore = false
+    @Published var deleteSuccess = false
 
     // MARK: - Private Properties
     private var lastPostId: String?
@@ -120,6 +121,7 @@ class CommunityViewModel: ObservableObject {
             posts.removeAll { $0.id == postId }
 
             print("✅ [CommunityViewModel] Post deleted")
+            deleteSuccess = true
         } catch {
             print("❌ [CommunityViewModel] Failed to delete post: \(error)")
             errorMessage = error.localizedDescription
