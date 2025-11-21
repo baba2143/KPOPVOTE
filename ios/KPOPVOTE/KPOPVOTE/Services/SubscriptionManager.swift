@@ -39,16 +39,33 @@ class SubscriptionManager: ObservableObject {
     func loadSubscriptions() async {
         do {
             print("📦 [SubscriptionManager] Loading subscriptions from App Store...")
+            print("📦 [SubscriptionManager] Requesting Product IDs: \(SubscriptionProductID.allProducts)")
+            print("📦 [SubscriptionManager] Bundle ID: \(Bundle.main.bundleIdentifier ?? "unknown")")
 
             let products = try await Product.products(for: SubscriptionProductID.allProducts)
             subscriptions = products.sorted { $0.price < $1.price }
 
             print("✅ [SubscriptionManager] Loaded \(subscriptions.count) subscriptions")
+            if subscriptions.isEmpty {
+                print("⚠️ [SubscriptionManager] WARNING: No products returned from App Store")
+                print("⚠️ [SubscriptionManager] Possible causes:")
+                print("   - Product IDs not registered in App Store Connect")
+                print("   - Bundle ID mismatch")
+                print("   - Sandbox account not signed in")
+                print("   - Paid Applications contract not active")
+            }
             for product in subscriptions {
                 print("  - \(product.id): \(product.displayPrice)")
             }
         } catch {
-            print("❌ [SubscriptionManager] Failed to load subscriptions: \(error.localizedDescription)")
+            print("❌ [SubscriptionManager] Failed to load subscriptions")
+            print("❌ [SubscriptionManager] Error: \(error)")
+            print("❌ [SubscriptionManager] Error Description: \(error.localizedDescription)")
+            if let nsError = error as NSError? {
+                print("❌ [SubscriptionManager] Error Domain: \(nsError.domain)")
+                print("❌ [SubscriptionManager] Error Code: \(nsError.code)")
+                print("❌ [SubscriptionManager] Error UserInfo: \(nsError.userInfo)")
+            }
             errorMessage = "サブスクリプションの読み込みに失敗しました"
         }
     }
