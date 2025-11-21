@@ -58,7 +58,8 @@ class CreateCollectionViewModel: ObservableObject {
             userTasks = try await taskService.getUserTasks(isCompleted: false)
             print("✅ [CreateCollectionViewModel] Loaded \(userTasks.count) user tasks")
         } catch {
-            errorMessage = "タスクの読み込みに失敗しました: \(error.localizedDescription)"
+            let errorType = NetworkErrorHandler.parseError(error)
+            errorMessage = errorType.userMessage
             showError = true
             print("❌ [CreateCollectionViewModel] Failed to load tasks: \(error.localizedDescription)")
         }
@@ -90,8 +91,39 @@ class CreateCollectionViewModel: ObservableObject {
     /// Create new collection
     /// - Returns: Success status
     func createCollection() async -> Bool {
-        guard canCreate else {
-            errorMessage = "入力内容を確認してください"
+        // Detailed validation with specific error messages
+        if title.isEmpty {
+            errorMessage = "タイトルを入力してください"
+            showError = true
+            return false
+        }
+
+        if title.count > 50 {
+            errorMessage = "タイトルは50文字以内にしてください"
+            showError = true
+            return false
+        }
+
+        if description.count > 500 {
+            errorMessage = "説明は500文字以内にしてください"
+            showError = true
+            return false
+        }
+
+        if tags.count > 10 {
+            errorMessage = "タグは10個までです"
+            showError = true
+            return false
+        }
+
+        if selectedTasks.isEmpty {
+            errorMessage = "タスクを1つ以上選択してください"
+            showError = true
+            return false
+        }
+
+        if selectedTasks.count > 50 {
+            errorMessage = "タスクは50個までです"
             showError = true
             return false
         }
@@ -172,7 +204,9 @@ class CreateCollectionViewModel: ObservableObject {
             return true
 
         } catch {
-            errorMessage = "コレクションの作成に失敗しました: \(error.localizedDescription)"
+            // Use NetworkErrorHandler for better error messages
+            let errorType = NetworkErrorHandler.parseError(error)
+            errorMessage = errorType.userMessage
             showError = true
             isLoading = false
             print("❌ [CreateCollectionViewModel] Create failed: \(error.localizedDescription)")

@@ -97,7 +97,7 @@ class CollectionViewModel: ObservableObject {
             trendingCollections = try await collectionService.getTrendingCollections(period: period, limit: limit)
             print("✅ [CollectionViewModel] Loaded \(trendingCollections.count) trending collections")
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = NetworkErrorHandler.getUserMessage(for: error)
             print("❌ [CollectionViewModel] Failed to load trending: \(error.localizedDescription)")
         }
 
@@ -129,7 +129,7 @@ class CollectionViewModel: ObservableObject {
 
             print("✅ [CollectionViewModel] Loaded \(response.data.collections.count) collections (page \(page))")
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = NetworkErrorHandler.getUserMessage(for: error)
             print("❌ [CollectionViewModel] Failed to load latest: \(error.localizedDescription)")
         }
 
@@ -173,7 +173,7 @@ class CollectionViewModel: ObservableObject {
 
             print("✅ [CollectionViewModel] Found \(response.data.collections.count) collections for '\(query)'")
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = NetworkErrorHandler.getUserMessage(for: error)
             print("❌ [CollectionViewModel] Search failed: \(error.localizedDescription)")
         }
 
@@ -200,7 +200,7 @@ class CollectionViewModel: ObservableObject {
 
             print("✅ [CollectionViewModel] Loaded \(response.data.collections.count) saved collections")
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = NetworkErrorHandler.getUserMessage(for: error)
             print("❌ [CollectionViewModel] Failed to load saved: \(error.localizedDescription)")
         }
 
@@ -227,7 +227,7 @@ class CollectionViewModel: ObservableObject {
 
             print("✅ [CollectionViewModel] Loaded \(response.data.collections.count) created collections")
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = NetworkErrorHandler.getUserMessage(for: error)
             print("❌ [CollectionViewModel] Failed to load my collections: \(error.localizedDescription)")
         }
 
@@ -249,7 +249,7 @@ class CollectionViewModel: ObservableObject {
 
             print("✅ [CollectionViewModel] Loaded collection detail: \(response.data.collection.title)")
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = NetworkErrorHandler.getUserMessage(for: error)
             print("❌ [CollectionViewModel] Failed to load detail: \(error.localizedDescription)")
         }
 
@@ -273,7 +273,7 @@ class CollectionViewModel: ObservableObject {
             print("✅ [CollectionViewModel] Save toggled: \(isSaved)")
             return true
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = NetworkErrorHandler.getUserMessage(for: error)
             print("❌ [CollectionViewModel] Save toggle failed: \(error.localizedDescription)")
             return false
         }
@@ -287,7 +287,7 @@ class CollectionViewModel: ObservableObject {
             print("✅ [CollectionViewModel] Added \(response.data.addedCount) tasks")
             return response.data
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = NetworkErrorHandler.getUserMessage(for: error)
             print("❌ [CollectionViewModel] Add to tasks failed: \(error.localizedDescription)")
             return nil
         }

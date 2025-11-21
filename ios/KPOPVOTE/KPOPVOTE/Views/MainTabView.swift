@@ -9,23 +9,25 @@ import SwiftUI
 
 struct MainTabView: View {
     @EnvironmentObject var authService: AuthService
-    @State private var selectedTab = 0
+    @StateObject private var tabCoordinator = TabCoordinator()
     @State private var showingTaskSheet = false
 
     var body: some View {
         ZStack {
             // Main Tab Content
-            TabView(selection: $selectedTab) {
+            TabView(selection: $tabCoordinator.selectedTab) {
                 // Home Tab
-                HomeView(selectedTab: $selectedTab)
+                HomeView(selectedTab: $tabCoordinator.selectedTab)
                     .environmentObject(authService)
+                    .environmentObject(tabCoordinator)
                     .tag(0)
                     .toolbar(.hidden, for: .tabBar)
 
                 // Votes Tab (Phase 2 - Collections)
                 VotesTabView()
-                .tag(1)
-                .toolbar(.hidden, for: .tabBar)
+                    .environmentObject(tabCoordinator)
+                    .tag(1)
+                    .toolbar(.hidden, for: .tabBar)
 
                 // Center Button Placeholder (Empty, handled by custom tab bar)
                 Color.clear
@@ -52,7 +54,7 @@ struct MainTabView: View {
             // Custom Tab Bar (Overlay)
             VStack {
                 Spacer()
-                CustomTabBar(selectedTab: $selectedTab) {
+                CustomTabBar(selectedTab: $tabCoordinator.selectedTab) {
                     showingTaskSheet = true
                 }
                 .padding(.bottom, 0)

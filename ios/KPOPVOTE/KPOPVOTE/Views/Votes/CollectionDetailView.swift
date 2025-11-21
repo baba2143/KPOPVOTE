@@ -11,6 +11,7 @@ struct CollectionDetailView: View {
     let collectionId: String
     @StateObject private var viewModel = CollectionViewModel()
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var tabCoordinator: TabCoordinator
 
     @State private var showAddToTasksConfirmation = false
     @State private var addToTasksResult: AddToTasksData?
@@ -80,11 +81,12 @@ struct CollectionDetailView: View {
                                 Task {
                                     if let result = await viewModel.addCollectionToTasks(collectionId: collection.id) {
                                         addToTasksResult = result
-                                        showAddToTasksConfirmation = true
 
-                                        // Haptic feedback
+                                        // Haptic feedback for success
                                         let generator = UINotificationFeedbackGenerator()
                                         generator.notificationOccurred(.success)
+
+                                        showAddToTasksConfirmation = true
                                     }
                                 }
                             }
@@ -148,7 +150,14 @@ struct CollectionDetailView: View {
             }
         }
         .alert("タスク追加完了", isPresented: $showAddToTasksConfirmation) {
-            Button("OK", role: .cancel) { }
+            Button("TASKSで確認", role: .none) {
+                // Dismiss sheet first, then navigate to TASKS tab
+                dismiss()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    tabCoordinator.navigateToTasks()
+                }
+            }
+            Button("閉じる", role: .cancel) { }
         } message: {
             if let result = addToTasksResult {
                 Text("\(result.addedCount)個のタスクを追加しました\n（\(result.skippedCount)個は既に登録済みのためスキップ）")

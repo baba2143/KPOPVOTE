@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct VotesTabView: View {
+    @EnvironmentObject var tabCoordinator: TabCoordinator
     @State private var selectedSegment = 0 // 0: Discover, 1: Saved, 2: My Collections
 
     var body: some View {
@@ -30,12 +31,15 @@ struct VotesTabView: View {
                     // Content
                     TabView(selection: $selectedSegment) {
                         DiscoverContentView()
+                            .environmentObject(tabCoordinator)
                             .tag(0)
 
                         SavedCollectionsContentView()
+                            .environmentObject(tabCoordinator)
                             .tag(1)
 
                         MyCollectionsContentView()
+                            .environmentObject(tabCoordinator)
                             .tag(2)
                     }
                     .tabViewStyle(.page(indexDisplayMode: .never))
@@ -49,6 +53,7 @@ struct VotesTabView: View {
 
 // MARK: - Discover Content (without NavigationView wrapper)
 struct DiscoverContentView: View {
+    @EnvironmentObject var tabCoordinator: TabCoordinator
     @StateObject private var viewModel = CollectionViewModel()
     @State private var selectedCollectionId: String?
     @State private var showCollectionDetail = false
@@ -144,6 +149,7 @@ struct DiscoverContentView: View {
             if let collectionId = selectedCollectionId {
                 NavigationView {
                     CollectionDetailView(collectionId: collectionId)
+                        .environmentObject(tabCoordinator)
                 }
             }
         }
@@ -158,6 +164,7 @@ struct DiscoverContentView: View {
 
 // MARK: - Saved Collections Content (without NavigationView wrapper)
 struct SavedCollectionsContentView: View {
+    @EnvironmentObject var tabCoordinator: TabCoordinator
     @StateObject private var viewModel = CollectionViewModel()
     @State private var selectedCollectionId: String?
     @State private var showCollectionDetail = false
@@ -230,6 +237,7 @@ struct SavedCollectionsContentView: View {
             if let collectionId = selectedCollectionId {
                 NavigationView {
                     CollectionDetailView(collectionId: collectionId)
+                        .environmentObject(tabCoordinator)
                 }
             }
         }
@@ -243,6 +251,7 @@ struct SavedCollectionsContentView: View {
 
 // MARK: - My Collections Content (without NavigationView wrapper)
 struct MyCollectionsContentView: View {
+    @EnvironmentObject var tabCoordinator: TabCoordinator
     @StateObject private var viewModel = CollectionViewModel()
     @State private var selectedCollectionId: String?
     @State private var showCollectionDetail = false
@@ -333,6 +342,7 @@ struct MyCollectionsContentView: View {
             if let collectionId = selectedCollectionId {
                 NavigationView {
                     CollectionDetailView(collectionId: collectionId)
+                        .environmentObject(tabCoordinator)
                 }
             }
         }
