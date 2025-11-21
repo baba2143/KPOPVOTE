@@ -105,3 +105,8 @@ export const verifyAdmin = async (
     });
   }
 };
+
+/**
+ * Simple auth middleware alias for collections API
+ */
+export const authMiddleware = verifyToken;

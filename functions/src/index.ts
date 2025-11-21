@@ -105,9 +105,18 @@ export { getUserProfile } from "./community/getUserProfile";
 // Storage functions (Goods Trade)
 export { uploadGoodsImage } from "./storage/uploadGoodsImage";
 
-// Placeholder function for testing
+// Collections API (Phase 2 - Votes Tab)
 import * as functions from "firebase-functions";
+import collectionsRouter from "./api/collections";
+import express = require("express");
 
+const app = express();
+app.use(express.json());
+app.use("/api/collections", collectionsRouter);
+
+export const api = functions.https.onRequest(app);
+
+// Placeholder function for testing
 export const helloWorld = functions.https.onRequest((request, response) => {
   response.json({ message: "K-VOTE COLLECTOR API is running!" });
 });

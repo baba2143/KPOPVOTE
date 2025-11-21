@@ -134,6 +134,13 @@ enum Constants {
 
         // Image Upload
         static let uploadGoodsImage = "\(apiBaseURL)/uploadGoodsImage"
+
+        // Collections (Phase 2 - Votes Tab)
+        static let collections = "\(apiBaseURL)/api/collections"
+        static let searchCollections = "\(apiBaseURL)/api/collections/search"
+        static let trendingCollections = "\(apiBaseURL)/api/collections/trending"
+        static let savedCollections = "\(apiBaseURL)/api/collections/users/me/saved"
+        static let myCollections = "\(apiBaseURL)/api/collections/users/me/created"
     }
 
     // MARK: - UserDefaults Keys

@@ -22,10 +22,8 @@ struct MainTabView: View {
                     .tag(0)
                     .toolbar(.hidden, for: .tabBar)
 
-                // Votes Tab
-                NavigationView {
-                    VoteListView()
-                }
+                // Votes Tab (Phase 2 - Collections)
+                VotesTabView()
                 .tag(1)
                 .toolbar(.hidden, for: .tabBar)
 

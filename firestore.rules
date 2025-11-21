@@ -246,5 +246,129 @@ service cloud.firestore {
       // Admins can read all vote history
       allow read: if isAdmin();
     }
+
+    // ========================================
+    // Vote Collections (Phase 2)
+    // ========================================
+    match /collections/{collectionId} {
+      // Anyone authenticated can read public collections
+      allow read: if isAuthenticated() &&
+                     (resource.data.visibility == 'public' ||
+                      resource.data.creatorId == request.auth.uid);
+
+      // Anyone authenticated can create collections
+      allow create: if isAuthenticated() &&
+                       request.auth.uid == request.resource.data.creatorId;
+
+      // Only creator can update or delete
+      allow update, delete: if isAuthenticated() &&
+                               request.auth.uid == resource.data.creatorId;
+
+      // Admins can read/delete any collection
+      allow read, delete: if isAdmin();
+    }
+
+    // ========================================
+    // User Collection Saves (Phase 2)
+    // ========================================
+    match /userCollectionSaves/{saveId} {
+      // Users can read their own saves
+      allow read: if isAuthenticated() &&
+                     request.auth.uid == resource.data.userId;
+
+      // Users can create their own saves
+      allow create: if isAuthenticated() &&
+                       request.auth.uid == request.resource.data.userId;
+
+      // Users can update/delete their own saves
+      allow update, delete: if isAuthenticated() &&
+                               request.auth.uid == resource.data.userId;
+
+      // Admins can read all saves
+      allow read: if isAdmin();
+    }
+
+    // ========================================
+    // Collection Likes (Phase 2)
+    // ========================================
+    match /collectionLikes/{likeId} {
+      // Anyone authenticated can read likes
+      allow read: if isAuthenticated();
+
+      // Users can create their own likes
+      allow create: if isAuthenticated() &&
+                       request.auth.uid == request.resource.data.userId;
+
+      // Users can delete their own likes
+      allow delete: if isAuthenticated() &&
+                       request.auth.uid == resource.data.userId;
+    }
+
+    // ========================================
+    // Collection Comments (Phase 2 - Future)
+    // ========================================
+    match /collectionComments/{commentId} {
+      // Anyone authenticated can read comments
+      allow read: if isAuthenticated();
+
+      // Anyone authenticated can create comments
+      allow create: if isAuthenticated() &&
+                       request.auth.uid == request.resource.data.userId;
+
+      // Only comment author can update or delete
+      allow update, delete: if isAuthenticated() &&
+                               request.auth.uid == resource.data.userId;
+
+      // Admins can delete any comment
+      allow delete: if isAdmin();
+    }
+
+    // ========================================
+    // User Follows (Phase 2 - Future)
+    // ========================================
+    match /userFollows/{followId} {
+      // Anyone authenticated can read follows
+      allow read: if isAuthenticated();
+
+      // Users can create their own follows
+      allow create: if isAuthenticated() &&
+                       request.auth.uid == request.resource.data.followerId;
+
+      // Users can delete their own follows
+      allow delete: if isAuthenticated() &&
+                       request.auth.uid == resource.data.followerId;
+    }
+
+    // ========================================
+    // Tasks Collection (Updated for Phase 2)
+    // ========================================
+    match /tasks/{taskId} {
+      // Users can read their own tasks
+      allow read: if isAuthenticated() &&
+                     request.auth.uid == resource.data.userId;
+
+      // Users can create their own tasks
+      allow create: if isAuthenticated() &&
+                       request.auth.uid == request.resource.data.userId;
+
+      // Users can update/delete their own tasks
+      allow update, delete: if isAuthenticated() &&
+                               request.auth.uid == resource.data.userId;
+
+      // Admins can read all tasks
+      allow read: if isAdmin();
+    }
+
+    // ========================================
+    // Subscriptions Collection (Phase 1A)
+    // ========================================
+    match /subscriptions/{subscriptionId} {
+      // Users can read their own subscriptions
+      allow read: if isAuthenticated() &&
+                     request.auth.uid == resource.data.userId;
+
+      // System/Cloud Functions can write subscriptions
+      allow write: if isAdmin();
+    }
   }
 }
