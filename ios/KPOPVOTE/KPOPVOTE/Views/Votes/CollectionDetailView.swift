@@ -92,7 +92,7 @@ struct CollectionDetailView: View {
                         .padding(.horizontal)
 
                         // Tasks Section
-                        TasksListView(tasks: collection.tasks)
+                        CollectionTasksListView(tasks: collection.tasks)
                             .padding(.horizontal)
 
                         // Creator Info Section
@@ -287,7 +287,7 @@ struct ActionButtonsView: View {
 }
 
 // MARK: - Tasks List View
-struct TasksListView: View {
+struct CollectionTasksListView: View {
     let tasks: [VoteTaskInCollection]
 
     var body: some View {

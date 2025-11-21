@@ -1,0 +1,302 @@
+//
+//  CreateCollectionViewModel.swift
+//  KPOPVOTE
+//
+//  K-VOTE COLLECTOR - Create Collection ViewModel (Phase 2 - Week 3)
+//
+
+import Foundation
+import FirebaseAuth
+import FirebaseStorage
+import UIKit
+
+@MainActor
+class CreateCollectionViewModel: ObservableObject {
+    // MARK: - Published Properties
+
+    // Form Fields
+    @Published var title: String = ""
+    @Published var description: String = ""
+    @Published var tags: [String] = []
+    @Published var coverImage: UIImage?
+    @Published var selectedTasks: [VoteTask] = []
+    @Published var visibility: CollectionVisibility = .public
+
+    // Available Tasks
+    @Published var userTasks: [VoteTask] = []
+
+    // UI State
+    @Published var isLoading: Bool = false
+    @Published var showError: Bool = false
+    @Published var errorMessage: String?
+    @Published var showImagePicker: Bool = false
+
+    // MARK: - Private Properties
+    private let taskService = TaskService()
+
+    // MARK: - Validation
+
+    /// Check if form can be submitted
+    var canCreate: Bool {
+        !title.isEmpty &&
+        title.count <= 50 &&
+        description.count <= 500 &&
+        tags.count <= 10 &&
+        selectedTasks.count > 0 &&
+        selectedTasks.count <= 50
+    }
+
+    // MARK: - Load Data
+
+    /// Load user's existing tasks for selection
+    func loadUserTasks() async {
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            // Get all non-completed tasks
+            userTasks = try await taskService.getUserTasks(isCompleted: false)
+            print("✅ [CreateCollectionViewModel] Loaded \(userTasks.count) user tasks")
+        } catch {
+            errorMessage = "タスクの読み込みに失敗しました: \(error.localizedDescription)"
+            showError = true
+            print("❌ [CreateCollectionViewModel] Failed to load tasks: \(error.localizedDescription)")
+        }
+
+        isLoading = false
+    }
+
+    // MARK: - Task Selection
+
+    /// Toggle task selection
+    func toggleTaskSelection(_ task: VoteTask) {
+        if selectedTasks.contains(where: { $0.id == task.id }) {
+            selectedTasks.removeAll { $0.id == task.id }
+            print("📋 [CreateCollectionViewModel] Deselected task: \(task.title)")
+        } else {
+            // Check max limit
+            if selectedTasks.count >= 50 {
+                errorMessage = "最大50個のタスクまで選択できます"
+                showError = true
+                return
+            }
+            selectedTasks.append(task)
+            print("📋 [CreateCollectionViewModel] Selected task: \(task.title)")
+        }
+    }
+
+    // MARK: - Create Collection
+
+    /// Create new collection
+    /// - Returns: Success status
+    func createCollection() async -> Bool {
+        guard canCreate else {
+            errorMessage = "入力内容を確認してください"
+            showError = true
+            return false
+        }
+
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            // Step 1: Upload cover image if present
+            var coverImageUrl: String?
+            if let image = coverImage {
+                coverImageUrl = try await uploadCoverImage(image)
+                print("✅ [CreateCollectionViewModel] Cover image uploaded: \(coverImageUrl ?? "")")
+            }
+
+            // Step 2: Get authentication token
+            guard let token = try await Auth.auth().currentUser?.getIDToken() else {
+                throw CreateCollectionError.notAuthenticated
+            }
+
+            // Step 3: Prepare collection data
+            let collectionData = CreateCollectionRequest(
+                title: title,
+                description: description,
+                tags: tags,
+                coverImage: coverImageUrl,
+                tasks: selectedTasks.map { task in
+                    CreateCollectionRequest.TaskInput(
+                        title: task.title,
+                        url: task.url,
+                        deadline: task.deadline,
+                        externalAppId: task.externalAppId,
+                        externalAppName: task.externalAppName,
+                        externalAppIconUrl: task.externalAppIconUrl,
+                        coverImage: task.coverImage
+                    )
+                },
+                visibility: visibility.rawValue
+            )
+
+            // Step 4: Create API request
+            guard let url = URL(string: Constants.API.collections) else {
+                throw CreateCollectionError.invalidURL
+            }
+
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            request.httpBody = try encoder.encode(collectionData)
+
+            print("📡 [CreateCollectionViewModel] Creating collection: \(title)")
+
+            // Step 5: Send request
+            let (data, response) = try await URLSession.shared.data(for: request)
+
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw CreateCollectionError.invalidResponse
+            }
+
+            print("📥 [CreateCollectionViewModel] HTTP Status: \(httpResponse.statusCode)")
+
+            guard httpResponse.statusCode == 201 else {
+                if let errorString = String(data: data, encoding: .utf8) {
+                    print("❌ [CreateCollectionViewModel] Error response: \(errorString)")
+                }
+                throw CreateCollectionError.serverError(httpResponse.statusCode)
+            }
+
+            // Step 6: Parse response
+            let result = try JSONDecoder().decode(CreateCollectionResponse.self, from: data)
+            print("✅ [CreateCollectionViewModel] Collection created: \(result.data.collectionId)")
+
+            isLoading = false
+            return true
+
+        } catch {
+            errorMessage = "コレクションの作成に失敗しました: \(error.localizedDescription)"
+            showError = true
+            isLoading = false
+            print("❌ [CreateCollectionViewModel] Create failed: \(error.localizedDescription)")
+            return false
+        }
+    }
+
+    // MARK: - Image Upload
+
+    /// Upload cover image to Firebase Storage
+    /// - Parameter image: UIImage to upload
+    /// - Returns: Download URL string
+    private func uploadCoverImage(_ image: UIImage) async throws -> String {
+        guard let userId = Auth.auth().currentUser?.uid else {
+            throw CreateCollectionError.notAuthenticated
+        }
+
+        // Compress and convert image to JPEG data
+        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+            throw CreateCollectionError.imageCompressionFailed
+        }
+
+        // Check file size (max 10MB)
+        let maxSize = 10 * 1024 * 1024 // 10MB
+        guard imageData.count <= maxSize else {
+            throw CreateCollectionError.imageTooLarge
+        }
+
+        // Create unique filename
+        let filename = "\(UUID().uuidString).jpg"
+        let storagePath = "collection-cover-images/\(userId)/\(filename)"
+
+        // Get Firebase Storage reference
+        let storageRef = Storage.storage().reference()
+        let imageRef = storageRef.child(storagePath)
+
+        print("📤 [CreateCollectionViewModel] Uploading cover image to: \(storagePath)")
+
+        // Upload image data
+        let metadata = StorageMetadata()
+        metadata.contentType = "image/jpeg"
+
+        let _ = try await imageRef.putDataAsync(imageData, metadata: metadata)
+
+        // Get download URL
+        let downloadURL = try await imageRef.downloadURL()
+        let downloadURLString = downloadURL.absoluteString
+
+        print("✅ [CreateCollectionViewModel] Cover image uploaded: \(downloadURLString)")
+
+        return downloadURLString
+    }
+
+    // MARK: - Helper Methods
+
+    /// Clear all form fields
+    func clearForm() {
+        title = ""
+        description = ""
+        tags = []
+        coverImage = nil
+        selectedTasks = []
+        visibility = .public
+    }
+}
+
+// MARK: - Request Model
+
+struct CreateCollectionRequest: Codable {
+    let title: String
+    let description: String
+    let tags: [String]
+    let coverImage: String?
+    let tasks: [TaskInput]
+    let visibility: String
+
+    struct TaskInput: Codable {
+        let title: String
+        let url: String
+        let deadline: Date
+        let externalAppId: String?
+        let externalAppName: String?
+        let externalAppIconUrl: String?
+        let coverImage: String?
+    }
+}
+
+// MARK: - Response Model
+
+struct CreateCollectionResponse: Codable {
+    let success: Bool
+    let data: CreateCollectionData
+
+    struct CreateCollectionData: Codable {
+        let collectionId: String
+        let title: String
+        let createdAt: String
+    }
+}
+
+// MARK: - Error Types
+
+enum CreateCollectionError: Error, LocalizedError {
+    case notAuthenticated
+    case invalidURL
+    case invalidResponse
+    case serverError(Int)
+    case imageCompressionFailed
+    case imageTooLarge
+
+    var errorDescription: String? {
+        switch self {
+        case .notAuthenticated:
+            return "認証が必要です"
+        case .invalidURL:
+            return "無効なURLです"
+        case .invalidResponse:
+            return "無効なレスポンスです"
+        case .serverError(let code):
+            return "サーバーエラーが発生しました (コード: \(code))"
+        case .imageCompressionFailed:
+            return "画像の圧縮に失敗しました"
+        case .imageTooLarge:
+            return "画像サイズが大きすぎます (最大10MB)"
+        }
+    }
+}

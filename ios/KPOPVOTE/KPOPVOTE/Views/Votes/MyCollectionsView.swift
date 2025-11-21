@@ -99,8 +99,7 @@ struct MyCollectionsView: View {
                 }
             }
             .sheet(isPresented: $showCreateCollection) {
-                // TODO: Create Collection View (Week 3)
-                Text("コレクション作成画面（Week 3で実装）")
+                CreateCollectionView()
             }
             .onAppear {
                 Task {

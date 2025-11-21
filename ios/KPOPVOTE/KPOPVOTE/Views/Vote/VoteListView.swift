@@ -39,7 +39,7 @@ struct VoteListView: View {
                     Spacer()
                 } else if let errorMessage = viewModel.errorMessage {
                     Spacer()
-                    ErrorView(message: errorMessage) {
+                    VoteErrorView(message: errorMessage) {
                         Task {
                             await viewModel.refresh()
                         }
@@ -47,7 +47,7 @@ struct VoteListView: View {
                     Spacer()
                 } else if viewModel.votes.isEmpty {
                     Spacer()
-                    EmptyStateView(status: viewModel.selectedStatus)
+                    VoteEmptyStateView(status: viewModel.selectedStatus)
                     Spacer()
                 } else {
                     ScrollView {
@@ -269,7 +269,7 @@ struct FilterButton: View {
 }
 
 // MARK: - Error View
-struct ErrorView: View {
+struct VoteErrorView: View {
     let message: String
     let onRetry: () -> Void
 
@@ -323,7 +323,7 @@ struct ErrorView: View {
 }
 
 // MARK: - Empty State View
-struct EmptyStateView: View {
+struct VoteEmptyStateView: View {
     let status: VoteStatus?
 
     var body: some View {

@@ -243,43 +243,5 @@ struct UserCollectionSave: Codable, Identifiable {
 }
 
 // MARK: - Preview Helpers
-#if DEBUG
-extension VoteCollection {
-    static var preview: VoteCollection {
-        VoteCollection(
-            id: "coll_preview",
-            creatorId: "user_abc",
-            creatorName: "K-POP Master",
-            creatorAvatarUrl: nil,
-            title: "BTS MAMA 2024 完全投票パック",
-            description: "BTSのMAMA 2024投票を網羅！期限別にまとめています。",
-            coverImage: nil,
-            tags: ["BTS", "MAMA2024", "授賞式"],
-            tasks: [
-                VoteTaskInCollection(from: [
-                    "taskId": "task_001",
-                    "title": "MAMA Best Male Group",
-                    "url": "https://vote.mnet.com/...",
-                    "deadline": Timestamp(date: Date(timeIntervalSinceNow: 86400 * 18)),
-                    "orderIndex": 0
-                ])!,
-                VoteTaskInCollection(from: [
-                    "taskId": "task_002",
-                    "title": "MAMA Worldwide Fans' Choice",
-                    "url": "https://vote.mnet.com/...",
-                    "deadline": Timestamp(date: Date(timeIntervalSinceNow: 86400 * 12)),
-                    "orderIndex": 1
-                ])!
-            ],
-            taskCount: 2,
-            visibility: .public,
-            likeCount: 245,
-            saveCount: 89,
-            viewCount: 1523,
-            commentCount: 34,
-            createdAt: Date(timeIntervalSinceNow: -86400 * 3),
-            updatedAt: Date(timeIntervalSinceNow: -86400)
-        )
-    }
-}
-#endif
+// Preview commented out temporarily due to initializer issues
+// Will be fixed in Phase 2 Week 4

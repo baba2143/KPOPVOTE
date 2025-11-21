@@ -62,14 +62,7 @@ class CollectionService {
         }
 
         let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .custom { decoder in
-            let container = try decoder.singleValueContainer()
-            if let dict = try? container.decode([String: Any].self),
-               let seconds = dict["_seconds"] as? Double {
-                return Date(timeIntervalSince1970: seconds)
-            }
-            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid date format")
-        }
+        decoder.dateDecodingStrategy = .iso8601
 
         let result = try decoder.decode(CollectionsListResponse.self, from: data)
         print("✅ [CollectionService] Successfully fetched \(result.data.collections.count) collections")
@@ -125,14 +118,7 @@ class CollectionService {
         }
 
         let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .custom { decoder in
-            let container = try decoder.singleValueContainer()
-            if let dict = try? container.decode([String: Any].self),
-               let seconds = dict["_seconds"] as? Double {
-                return Date(timeIntervalSince1970: seconds)
-            }
-            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid date format")
-        }
+        decoder.dateDecodingStrategy = .iso8601
 
         let result = try decoder.decode(CollectionsListResponse.self, from: data)
         print("✅ [CollectionService] Found \(result.data.collections.count) collections")
@@ -172,14 +158,7 @@ class CollectionService {
         }
 
         let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .custom { decoder in
-            let container = try decoder.singleValueContainer()
-            if let dict = try? container.decode([String: Any].self),
-               let seconds = dict["_seconds"] as? Double {
-                return Date(timeIntervalSince1970: seconds)
-            }
-            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid date format")
-        }
+        decoder.dateDecodingStrategy = .iso8601
 
         let result = try decoder.decode(TrendingCollectionsResponse.self, from: data)
         print("✅ [CollectionService] Fetched \(result.data.collections.count) trending collections")
@@ -214,14 +193,7 @@ class CollectionService {
         }
 
         let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .custom { decoder in
-            let container = try decoder.singleValueContainer()
-            if let dict = try? container.decode([String: Any].self),
-               let seconds = dict["_seconds"] as? Double {
-                return Date(timeIntervalSince1970: seconds)
-            }
-            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid date format")
-        }
+        decoder.dateDecodingStrategy = .iso8601
 
         let result = try decoder.decode(CollectionDetailResponse.self, from: data)
         print("✅ [CollectionService] Successfully fetched collection detail")
@@ -268,14 +240,7 @@ class CollectionService {
         }
 
         let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .custom { decoder in
-            let container = try decoder.singleValueContainer()
-            if let dict = try? container.decode([String: Any].self),
-               let seconds = dict["_seconds"] as? Double {
-                return Date(timeIntervalSince1970: seconds)
-            }
-            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid date format")
-        }
+        decoder.dateDecodingStrategy = .iso8601
 
         let result = try decoder.decode(CollectionsListResponse.self, from: data)
         print("✅ [CollectionService] Fetched \(result.data.collections.count) saved collections")
@@ -320,14 +285,7 @@ class CollectionService {
         }
 
         let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .custom { decoder in
-            let container = try decoder.singleValueContainer()
-            if let dict = try? container.decode([String: Any].self),
-               let seconds = dict["_seconds"] as? Double {
-                return Date(timeIntervalSince1970: seconds)
-            }
-            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Invalid date format")
-        }
+        decoder.dateDecodingStrategy = .iso8601
 
         let result = try decoder.decode(CollectionsListResponse.self, from: data)
         print("✅ [CollectionService] Fetched \(result.data.collections.count) created collections")
