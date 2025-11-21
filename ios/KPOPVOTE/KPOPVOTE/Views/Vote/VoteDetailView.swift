@@ -10,6 +10,7 @@ import SwiftUI
 struct VoteDetailView: View {
     let voteId: String
     @StateObject private var viewModel: VoteDetailViewModel
+    @StateObject private var pointsViewModel = PointsViewModel()
     @EnvironmentObject var authService: AuthService
     @Environment(\.dismiss) private var dismiss
     @State private var showLoginPrompt = false
@@ -78,21 +79,30 @@ struct VoteDetailView: View {
 
                         // Vote Button
                         if !viewModel.hasVoted && vote.isActive {
-                            VoteButton(
-                                canVote: viewModel.canVote,
-                                isExecuting: viewModel.isExecuting,
-                                requiredPoints: vote.requiredPoints,
-                                onVote: {
-                                    // Check if user is guest
-                                    if authService.isGuest {
-                                        showLoginPrompt = true
-                                    } else {
-                                        Task {
-                                            await viewModel.executeVote()
+                            VStack(spacing: Constants.Spacing.small) {
+                                // Premium Multiplier Badge
+                                if pointsViewModel.isPremium {
+                                    PremiumMultiplierBadge(multiplier: 2, style: .medium)
+                                        .frame(maxWidth: .infinity, alignment: .center)
+                                }
+
+                                VoteButton(
+                                    canVote: viewModel.canVote,
+                                    isExecuting: viewModel.isExecuting,
+                                    requiredPoints: vote.requiredPoints,
+                                    isPremium: pointsViewModel.isPremium,
+                                    onVote: {
+                                        // Check if user is guest
+                                        if authService.isGuest {
+                                            showLoginPrompt = true
+                                        } else {
+                                            Task {
+                                                await viewModel.executeVote()
+                                            }
                                         }
                                     }
-                                }
-                            )
+                                )
+                            }
                         }
 
                         // Success/Already Voted Message
@@ -155,7 +165,8 @@ struct VoteDetailView: View {
         .task {
             print("🚀 [VoteDetailView] Task started - loading detail for voteId: \(voteId)")
             await viewModel.loadDetail()
-            print("✅ [VoteDetailView] Task completed - vote loaded: \(viewModel.vote != nil)")
+            await pointsViewModel.loadPoints()
+            print("✅ [VoteDetailView] Task completed - vote loaded: \(viewModel.vote != nil), premium: \(pointsViewModel.isPremium)")
         }
         .onAppear {
             print("👀 [VoteDetailView] View appeared")
@@ -356,21 +367,39 @@ struct VoteButton: View {
     let canVote: Bool
     let isExecuting: Bool
     let requiredPoints: Int
+    let isPremium: Bool
     let onVote: () -> Void
+
+    var earnedPoints: Int {
+        isPremium ? requiredPoints * 2 : requiredPoints
+    }
 
     var body: some View {
         Button(action: onVote) {
-            HStack {
-                if isExecuting {
-                    ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                    Text("投票中...")
-                } else {
-                    Image(systemName: "hand.thumbsup.fill")
-                    Text("投票する（\(requiredPoints)pt消費）")
+            VStack(spacing: 8) {
+                HStack {
+                    if isExecuting {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        Text("投票中...")
+                    } else {
+                        Image(systemName: "hand.thumbsup.fill")
+                        Text("投票する（\(requiredPoints)pt消費）")
+                    }
+                }
+                .font(.system(size: 18, weight: .bold))
+
+                // Show earned points if premium
+                if isPremium && !isExecuting {
+                    HStack(spacing: 4) {
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 12))
+                        Text("\(earnedPoints)pt 獲得")
+                            .font(.system(size: 14, weight: .semibold))
+                    }
+                    .foregroundColor(.yellow)
                 }
             }
-            .font(.system(size: 18, weight: .bold))
             .foregroundColor(.white)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)

@@ -64,22 +64,31 @@ struct CustomTabBar: View {
                 .offset(y: -20) // Float above tab bar
             }
 
-            // Community Tab
+            // Store Tab
             TabBarItem(
-                iconName: selectedTab == 3 ? "bubble.left.and.bubble.right.fill" : "bubble.left.and.bubble.right",
-                title: "Community",
+                iconName: selectedTab == 3 ? "cart.fill" : "cart",
+                title: "Store",
                 isSelected: selectedTab == 3
             ) {
                 selectedTab = 3
             }
 
-            // Profile Tab
+            // Community Tab
             TabBarItem(
-                iconName: selectedTab == 4 ? "person.fill" : "person",
-                title: "Profile",
+                iconName: selectedTab == 4 ? "bubble.left.and.bubble.right.fill" : "bubble.left.and.bubble.right",
+                title: "Community",
                 isSelected: selectedTab == 4
             ) {
                 selectedTab = 4
+            }
+
+            // Profile Tab
+            TabBarItem(
+                iconName: selectedTab == 5 ? "person.fill" : "person",
+                title: "Profile",
+                isSelected: selectedTab == 5
+            ) {
+                selectedTab = 5
             }
         }
         .frame(height: 50)

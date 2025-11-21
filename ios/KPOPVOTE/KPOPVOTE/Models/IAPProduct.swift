@@ -29,6 +29,15 @@ struct IAPProduct: Identifiable {
             self.displayName = "通常"
         }
     }
+
+    // Test/Preview initializer
+    init(id: String, price: String, points: Int, displayName: String, isPromo: Bool) {
+        self.id = id
+        self.price = price
+        self.points = points
+        self.displayName = displayName
+        self.isPromo = isPromo
+    }
 }
 
 /// Product configuration from Firestore

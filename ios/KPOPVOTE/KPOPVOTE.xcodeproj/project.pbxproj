@@ -31,6 +31,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		4F56BA132ECFFB0600FFE270 /* Configuration.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Configuration.storekit; sourceTree = "<group>"; };
 		4FF2C7DD2EC4102800186296 /* KPOPVOTE.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KPOPVOTE.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4FF2C7EE2EC4103200186296 /* KPOPVOTETests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = KPOPVOTETests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4FF2C7F82EC4103200186296 /* KPOPVOTEUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = KPOPVOTEUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -86,6 +87,7 @@
 		4FF2C7D42EC4102800186296 = {
 			isa = PBXGroup;
 			children = (
+				4F56BA132ECFFB0600FFE270 /* Configuration.storekit */,
 				4FF2C7DF2EC4102800186296 /* KPOPVOTE */,
 				4FF2C7F12EC4103200186296 /* KPOPVOTETests */,
 				4FF2C7FB2EC4103200186296 /* KPOPVOTEUITests */,

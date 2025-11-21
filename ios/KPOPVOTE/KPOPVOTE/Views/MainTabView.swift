@@ -34,15 +34,20 @@ struct MainTabView: View {
                     .tag(2)
                     .toolbar(.hidden, for: .tabBar)
 
+                // Store Tab
+                StoreView()
+                    .tag(3)
+                    .toolbar(.hidden, for: .tabBar)
+
                 // Community Tab
                 CommunityView()
-                    .tag(3)
+                    .tag(4)
                     .toolbar(.hidden, for: .tabBar)
 
                 // Profile Tab
                 ProfileView()
                     .environmentObject(authService)
-                    .tag(4)
+                    .tag(5)
                     .toolbar(.hidden, for: .tabBar)
             }
 
@@ -294,6 +299,7 @@ struct ProfileView: View {
     @State private var showBiasSettings = false
     @State private var showProfileEdit = false
     @State private var showPointsHistory = false
+    @State private var showPremium = false
 
     var body: some View {
         NavigationView {
@@ -391,6 +397,43 @@ struct ProfileView: View {
                             .padding(.horizontal)
 
                         VStack(spacing: 0) {
+                            // Premium Button
+                            Button {
+                                showPremium = true
+                            } label: {
+                                HStack(spacing: Constants.Spacing.small) {
+                                    Image(systemName: "crown.fill")
+                                        .font(.system(size: 20))
+                                        .foregroundColor(.yellow)
+                                        .frame(width: 40)
+
+                                    Text("プレミアム会員")
+                                        .font(.system(size: Constants.Typography.bodySize))
+                                        .foregroundColor(Constants.Colors.textWhite)
+
+                                    if pointsViewModel.isPremium {
+                                        Text("有効")
+                                            .font(.system(size: 11, weight: .semibold))
+                                            .foregroundColor(.green)
+                                            .padding(.horizontal, 8)
+                                            .padding(.vertical, 4)
+                                            .background(Color.green.opacity(0.2))
+                                            .cornerRadius(6)
+                                    }
+
+                                    Spacer()
+
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(Constants.Colors.textGray)
+                                }
+                                .padding()
+                                .background(Color.clear)
+                            }
+                            .buttonStyle(.plain)
+
+                            Divider().padding(.leading, 60).background(Constants.Colors.textGray.opacity(0.3))
+
                             // Bias Settings Button
                             Button {
                                 showBiasSettings = true
@@ -461,6 +504,9 @@ struct ProfileView: View {
             }
             .sheet(isPresented: $showPointsHistory) {
                 PointsHistoryView()
+            }
+            .sheet(isPresented: $showPremium) {
+                PremiumView()
             }
         }
     }

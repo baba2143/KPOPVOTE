@@ -130,6 +130,7 @@ enum Constants {
 
         // IAP (In-App Purchase)
         static let verifyPurchase = "\(apiBaseURL)/verifyPurchase"
+        static let verifySubscription = "\(apiBaseURL)/verifySubscription"
 
         // Image Upload
         static let uploadGoodsImage = "\(apiBaseURL)/uploadGoodsImage"

@@ -234,15 +234,15 @@ class IAPManager: ObservableObject {
     // MARK: - Transaction Listener
     /// Listen for transaction updates
     private func listenForTransactions() -> Task<Void, Error> {
-        return Task.detached {
+        return Task {
             for await result in Transaction.updates {
                 do {
-                    let transaction = try self.checkVerified(result)
+                    let transaction = try checkVerified(result)
 
                     print("🔔 [IAPManager] Transaction update: \(transaction.id)")
 
                     // Update purchased products
-                    await self.updatePurchasedProducts()
+                    await updatePurchasedProducts()
 
                     // Finish the transaction
                     await transaction.finish()

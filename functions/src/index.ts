@@ -92,6 +92,9 @@ export { getPointHistory } from "./points/getPointHistory";
 // IAP functions (Phase 1A - Consumable IAP)
 export { verifyPurchase } from "./iap/verifyPurchase";
 
+// IAP functions (Phase 1B - Auto-Renewable Subscription)
+export { verifySubscription } from "./iap/verifySubscription";
+
 // Community functions (Search & Discovery)
 export { searchUsers as searchCommunityUsers } from "./community/searchUsers";
 export { searchPosts } from "./community/searchPosts";
