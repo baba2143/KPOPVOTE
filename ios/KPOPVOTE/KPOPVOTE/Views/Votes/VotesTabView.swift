@@ -145,6 +145,15 @@ struct DiscoverContentView: View {
                 }
             }
         }
+        .navigationBarItems(trailing:
+            Button(action: {
+                showCreateCollection = true
+            }) {
+                Image(systemName: "plus")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(Constants.Colors.accentPink)
+            }
+        )
         .sheet(isPresented: $showCollectionDetail) {
             if let collectionId = selectedCollectionId {
                 NavigationView {
@@ -152,6 +161,9 @@ struct DiscoverContentView: View {
                         .environmentObject(tabCoordinator)
                 }
             }
+        }
+        .sheet(isPresented: $showCreateCollection) {
+            CreateCollectionView()
         }
         .onAppear {
             Task {
@@ -346,6 +358,15 @@ struct MyCollectionsContentView: View {
                 }
             }
         }
+        .navigationBarItems(trailing:
+            Button(action: {
+                showCreateCollection = true
+            }) {
+                Image(systemName: "plus")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(Constants.Colors.accentPink)
+            }
+        )
         .sheet(isPresented: $showCreateCollection) {
             CreateCollectionView()
         }

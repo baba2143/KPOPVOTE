@@ -112,7 +112,7 @@ import express = require("express");
 
 const app = express();
 app.use(express.json());
-app.use("/api/collections", collectionsRouter);
+app.use("/collections", collectionsRouter);
 
 export const api = functions.https.onRequest(app);
 

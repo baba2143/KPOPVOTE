@@ -51,10 +51,13 @@ export async function getTrending(
     // Trending score = (saveCount * 3) + (likeCount * 2) + (viewCount * 1)
     const snapshot = await db.collection("collections")
       .where("visibility", "==", "public")
-      .where("createdAt", ">=", firestore.Timestamp.fromDate(timeThreshold))
       .get();
 
     const collectionsWithScores = snapshot.docs
+      .filter((doc) => {
+        const createdAt = doc.data().createdAt?.toDate();
+        return createdAt && createdAt >= timeThreshold;
+      })
       .map((doc) => {
         const data = doc.data();
         const trendingScore = (
