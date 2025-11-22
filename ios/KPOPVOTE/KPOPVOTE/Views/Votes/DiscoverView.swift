@@ -70,6 +70,7 @@ struct DiscoverView: View {
                                     TrendingSectionView(
                                         collections: viewModel.trendingCollections,
                                         onSelectCollection: { collection in
+                                            print("🔍 [DiscoverView] Selected trending collection: \(collection.id) - \(collection.title)")
                                             selectedCollectionId = collection.id
                                             showCollectionDetail = true
                                         }
@@ -81,6 +82,7 @@ struct DiscoverView: View {
                                     title: viewModel.searchQuery.isEmpty ? "最新のコレクション" : "検索結果",
                                     collections: viewModel.searchQuery.isEmpty ? viewModel.latestCollections : viewModel.searchResults,
                                     onSelectCollection: { collection in
+                                        print("🔍 [DiscoverView] Selected trending collection: \(collection.id) - \(collection.title)")
                                         selectedCollectionId = collection.id
                                         showCollectionDetail = true
                                     },

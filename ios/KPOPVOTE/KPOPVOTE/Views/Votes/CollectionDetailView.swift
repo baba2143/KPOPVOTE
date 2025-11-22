@@ -26,6 +26,10 @@ struct CollectionDetailView: View {
                     ProgressView("読み込み中...")
                         .progressViewStyle(CircularProgressViewStyle(tint: Constants.Colors.accentPink))
                         .foregroundColor(Constants.Colors.textWhite)
+                    Text("CollectionID: \(collectionId)")
+                        .foregroundColor(Constants.Colors.textGray)
+                        .font(.system(size: 12))
+                        .padding(.top, 8)
                 }
             } else if let errorMessage = viewModel.errorMessage {
                 VStack(spacing: 16) {
@@ -39,6 +43,7 @@ struct CollectionDetailView: View {
                         .multilineTextAlignment(.center)
 
                     Button(action: {
+                        print("🔄 [CollectionDetailView] Retry button tapped for: \(collectionId)")
                         Task {
                             await viewModel.loadCollectionDetail(collectionId: collectionId)
                         }
@@ -164,8 +169,11 @@ struct CollectionDetailView: View {
             }
         }
         .onAppear {
+            print("📱 [CollectionDetailView] onAppear - collectionId: \(collectionId)")
             Task {
+                print("📱 [CollectionDetailView] Starting to load collection detail...")
                 await viewModel.loadCollectionDetail(collectionId: collectionId)
+                print("📱 [CollectionDetailView] Finished loading. currentCollection: \(viewModel.currentCollection?.title ?? "nil"), error: \(viewModel.errorMessage ?? "none")")
             }
         }
     }

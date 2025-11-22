@@ -4,11 +4,21 @@
 //
 
 import { Request, Response } from "express";
-import { firestore } from "firebase-admin";
+import * as admin from "firebase-admin";
 import {
-  VoteCollection,
+  VoteCollectionResponse,
   GetTrendingQuery,
 } from "../../types/voteCollection";
+
+/**
+ * Convert Date to ISO8601 string without milliseconds
+ * Swift's .iso8601 decoder doesn't support milliseconds
+ * @param date Date to convert
+ * @returns ISO8601 string without milliseconds (e.g. "2025-11-22T09:24:00Z")
+ */
+const toISOStringWithoutMillis = (date: Date): string => {
+  return date.toISOString().replace(/\.\d{3}Z$/, "Z");
+};
 
 /**
  * Get Trending Collections
@@ -29,7 +39,7 @@ export async function getTrending(
       period: (req.query.period as "24h" | "7d" | "30d") || "7d",
     };
 
-    const db = firestore();
+    const db = admin.firestore();
 
     // Calculate time threshold based on period
     const now = new Date();
@@ -75,15 +85,22 @@ export async function getTrending(
           description: data.description,
           coverImage: data.coverImage,
           tags: data.tags || [],
-          tasks: data.tasks || [],
+          tasks: (data.tasks || []).map((task: any) => ({
+            ...task,
+            deadline: task.deadline?.toDate ? toISOStringWithoutMillis(task.deadline.toDate()) : task.deadline,
+          })),
           taskCount: data.taskCount || 0,
           visibility: data.visibility || "public",
           likeCount: data.likeCount || 0,
           saveCount: data.saveCount || 0,
           viewCount: data.viewCount || 0,
           commentCount: data.commentCount || 0,
-          createdAt: data.createdAt,
-          updatedAt: data.updatedAt,
+          createdAt: data.createdAt?.toDate ?
+            toISOStringWithoutMillis(data.createdAt.toDate()) :
+            toISOStringWithoutMillis(new Date()),
+          updatedAt: data.updatedAt?.toDate ?
+            toISOStringWithoutMillis(data.updatedAt.toDate()) :
+            toISOStringWithoutMillis(new Date()),
           trendingScore,
         };
       })
@@ -91,9 +108,9 @@ export async function getTrending(
       .slice(0, query.limit);
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const collections = collectionsWithScores.map(({ trendingScore: _trendingScore, ...collection }) =>
-      collection as VoteCollection
-    );
+    const collections: VoteCollectionResponse[] =
+      collectionsWithScores.map(({ trendingScore: _trendingScore,
+        ...collection }) => collection);
 
     res.status(200).json({
       success: true,

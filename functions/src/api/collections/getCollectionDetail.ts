@@ -5,11 +5,21 @@
 
 import { Response } from "express";
 import { AuthenticatedRequest } from "../../middleware/auth";
-import { firestore } from "firebase-admin";
+import * as admin from "firebase-admin";
 import {
-  VoteCollection,
+  VoteCollectionResponse,
   CollectionDetailResponse,
 } from "../../types/voteCollection";
+
+/**
+ * Convert Date to ISO8601 string without milliseconds
+ * Swift's .iso8601 decoder doesn't support milliseconds
+ * @param date Date to convert
+ * @returns ISO8601 string without milliseconds (e.g. "2025-11-22T09:24:00Z")
+ */
+const toISOStringWithoutMillis = (date: Date): string => {
+  return date.toISOString().replace(/\.\d{3}Z$/, "Z");
+};
 
 /**
  * Get Collection Detail
@@ -37,7 +47,7 @@ export async function getCollectionDetail(
       return;
     }
 
-    const db = firestore();
+    const db = admin.firestore();
 
     // Get collection
     const collectionDoc = await db.collection("collections").doc(collectionId).get();
@@ -61,7 +71,7 @@ export async function getCollectionDetail(
       return;
     }
 
-    const collection: VoteCollection = {
+    const collection: VoteCollectionResponse = {
       collectionId: collectionDoc.id,
       creatorId: data.creatorId,
       creatorName: data.creatorName,
@@ -70,20 +80,27 @@ export async function getCollectionDetail(
       description: data.description,
       coverImage: data.coverImage,
       tags: data.tags || [],
-      tasks: data.tasks || [],
+      tasks: (data.tasks || []).map((task: any) => ({
+        ...task,
+        deadline: task.deadline?.toDate ? toISOStringWithoutMillis(task.deadline.toDate()) : task.deadline,
+      })),
       taskCount: data.taskCount || 0,
       visibility: data.visibility || "public",
       likeCount: data.likeCount || 0,
       saveCount: data.saveCount || 0,
       viewCount: data.viewCount || 0,
       commentCount: data.commentCount || 0,
-      createdAt: data.createdAt,
-      updatedAt: data.updatedAt,
+      createdAt: data.createdAt?.toDate ?
+        toISOStringWithoutMillis(data.createdAt.toDate()) :
+        toISOStringWithoutMillis(new Date()),
+      updatedAt: data.updatedAt?.toDate ?
+        toISOStringWithoutMillis(data.updatedAt.toDate()) :
+        toISOStringWithoutMillis(new Date()),
     };
 
     // Increment view count (async, don't wait)
     db.collection("collections").doc(collectionId).update({
-      viewCount: firestore.FieldValue.increment(1),
+      viewCount: admin.firestore.FieldValue.increment(1),
     }).catch((error) => {
       console.error("⚠️ [getCollectionDetail] Failed to increment view count:", error);
     });

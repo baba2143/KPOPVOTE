@@ -4,11 +4,22 @@
 //
 
 import { Request, Response } from "express";
-import { firestore } from "firebase-admin";
+import * as admin from "firebase-admin";
 import {
+  VoteCollectionResponse,
   SearchCollectionsQuery,
   CollectionsListResponse,
 } from "../../types/voteCollection";
+
+/**
+ * Convert Date to ISO8601 string without milliseconds
+ * Swift's .iso8601 decoder doesn't support milliseconds
+ * @param date Date to convert
+ * @returns ISO8601 string without milliseconds (e.g. "2025-11-22T09:24:00Z")
+ */
+const toISOStringWithoutMillis = (date: Date): string => {
+  return date.toISOString().replace(/\.\d{3}Z$/, "Z");
+};
 
 /**
  * Search Collections
@@ -52,7 +63,7 @@ export async function searchCollections(
         undefined,
     };
 
-    const db = firestore();
+    const db = admin.firestore();
 
     // Firestore doesn't support full-text search natively
     // Simple implementation using title/description matching
@@ -72,26 +83,36 @@ export async function searchCollections(
 
     // Filter by search query in title and description
     const searchLower = query.q.toLowerCase();
-    const filteredCollections = snapshot.docs
-      .map((doc) => ({
-        collectionId: doc.id,
-        creatorId: doc.data().creatorId,
-        creatorName: doc.data().creatorName,
-        creatorAvatarUrl: doc.data().creatorAvatarUrl,
-        title: doc.data().title,
-        description: doc.data().description,
-        coverImage: doc.data().coverImage,
-        tags: doc.data().tags || [],
-        tasks: doc.data().tasks || [],
-        taskCount: doc.data().taskCount || 0,
-        visibility: doc.data().visibility || "public",
-        likeCount: doc.data().likeCount || 0,
-        saveCount: doc.data().saveCount || 0,
-        viewCount: doc.data().viewCount || 0,
-        commentCount: doc.data().commentCount || 0,
-        createdAt: doc.data().createdAt,
-        updatedAt: doc.data().updatedAt,
-      }))
+    const filteredCollections: VoteCollectionResponse[] = snapshot.docs
+      .map((doc) => {
+        const data = doc.data();
+        return {
+          collectionId: doc.id,
+          creatorId: data.creatorId,
+          creatorName: data.creatorName,
+          creatorAvatarUrl: data.creatorAvatarUrl,
+          title: data.title,
+          description: data.description,
+          coverImage: data.coverImage,
+          tags: data.tags || [],
+          tasks: (data.tasks || []).map((task: any) => ({
+            ...task,
+            deadline: task.deadline?.toDate ? toISOStringWithoutMillis(task.deadline.toDate()) : task.deadline,
+          })),
+          taskCount: data.taskCount || 0,
+          visibility: data.visibility || "public",
+          likeCount: data.likeCount || 0,
+          saveCount: data.saveCount || 0,
+          viewCount: data.viewCount || 0,
+          commentCount: data.commentCount || 0,
+          createdAt: data.createdAt?.toDate ?
+            toISOStringWithoutMillis(data.createdAt.toDate()) :
+            toISOStringWithoutMillis(new Date()),
+          updatedAt: data.updatedAt?.toDate ?
+            toISOStringWithoutMillis(data.updatedAt.toDate()) :
+            toISOStringWithoutMillis(new Date()),
+        };
+      })
       .filter((collection) => {
         const titleMatch = collection.title.toLowerCase().includes(searchLower);
         const descMatch = collection.description.toLowerCase().includes(searchLower);
@@ -107,9 +128,7 @@ export async function searchCollections(
       break;
     case "latest":
       filteredCollections.sort((a, b) => {
-        const aTime = a.createdAt?.toMillis?.() || 0;
-        const bTime = b.createdAt?.toMillis?.() || 0;
-        return bTime - aTime;
+        return b.createdAt.localeCompare(a.createdAt);
       });
       break;
     case "relevance":

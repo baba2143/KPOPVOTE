@@ -6,7 +6,7 @@
 import { Timestamp } from "firebase-admin/firestore";
 
 /**
- * Vote Collection - User-created collection of voting tasks
+ * Vote Collection - User-created collection of voting tasks (Firestore)
  */
 export interface VoteCollection {
   // Basic Information
@@ -40,13 +40,62 @@ export interface VoteCollection {
 }
 
 /**
- * Task within a Collection
+ * Vote Collection - API Response (with ISO8601 strings)
+ */
+export interface VoteCollectionResponse {
+  // Basic Information
+  collectionId: string;
+  creatorId: string;
+  creatorName: string;
+  creatorAvatarUrl?: string;
+
+  // Collection Content
+  title: string;
+  description: string;
+  coverImage?: string;
+  tags: string[];
+
+  // Included Tasks
+  tasks: VoteTaskInCollectionResponse[];
+  taskCount: number;
+
+  // Visibility Settings
+  visibility: CollectionVisibility;
+
+  // Engagement Metrics
+  likeCount: number;
+  saveCount: number;
+  viewCount: number;
+  commentCount: number;
+
+  // Timestamps (ISO8601 strings)
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Task within a Collection (Firestore)
  */
 export interface VoteTaskInCollection {
   taskId: string;
   title: string;
   url: string;
   deadline: Timestamp;
+  externalAppId?: string;
+  externalAppName?: string;
+  externalAppIconUrl?: string;
+  coverImage?: string;
+  orderIndex: number;
+}
+
+/**
+ * Task within a Collection (API Response)
+ */
+export interface VoteTaskInCollectionResponse {
+  taskId: string;
+  title: string;
+  url: string;
+  deadline: string; // ISO8601 string
   externalAppId?: string;
   externalAppName?: string;
   externalAppIconUrl?: string;
@@ -172,7 +221,7 @@ export interface AddToTasksResponse {
 export interface CollectionDetailResponse {
   success: boolean;
   data: {
-    collection: VoteCollection;
+    collection: VoteCollectionResponse;
     isSaved: boolean;
     isLiked: boolean;
     isOwner: boolean;
@@ -191,7 +240,16 @@ export interface PaginationInfo {
 export interface CollectionsListResponse {
   success: boolean;
   data: {
-    collections: VoteCollection[];
+    collections: VoteCollectionResponse[];
     pagination: PaginationInfo;
+  };
+}
+
+// Trending Collections Response
+export interface TrendingCollectionsResponse {
+  success: boolean;
+  data: {
+    collections: VoteCollectionResponse[];
+    period: string;
   };
 }

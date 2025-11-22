@@ -61,13 +61,41 @@ class CollectionService {
             throw CollectionError.fetchFailed
         }
 
+        // Debug: Print raw response
+        if let jsonString = String(data: data, encoding: .utf8) {
+            print("📦 [CollectionService] Raw JSON response:")
+            print(jsonString)
+        }
+
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
 
-        let result = try decoder.decode(CollectionsListResponse.self, from: data)
-        print("✅ [CollectionService] Successfully fetched \(result.data.collections.count) collections")
-
-        return result
+        do {
+            let result = try decoder.decode(CollectionsListResponse.self, from: data)
+            print("✅ [CollectionService] Successfully fetched \(result.data.collections.count) collections")
+            return result
+        } catch {
+            print("❌ [CollectionService] Decoding error: \(error)")
+            if let decodingError = error as? DecodingError {
+                switch decodingError {
+                case .typeMismatch(let type, let context):
+                    print("   Type mismatch: \(type)")
+                    print("   Context: \(context)")
+                case .valueNotFound(let type, let context):
+                    print("   Value not found: \(type)")
+                    print("   Context: \(context)")
+                case .keyNotFound(let key, let context):
+                    print("   Key not found: \(key)")
+                    print("   Context: \(context)")
+                case .dataCorrupted(let context):
+                    print("   Data corrupted:")
+                    print("   Context: \(context)")
+                @unknown default:
+                    print("   Unknown decoding error")
+                }
+            }
+            throw error
+        }
     }
 
     /// Search collections by keyword
@@ -157,48 +185,112 @@ class CollectionService {
             throw CollectionError.fetchFailed
         }
 
+        // Debug: Print raw response
+        if let jsonString = String(data: data, encoding: .utf8) {
+            print("📦 [CollectionService] Raw JSON response:")
+            print(jsonString)
+        }
+
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
 
-        let result = try decoder.decode(TrendingCollectionsResponse.self, from: data)
-        print("✅ [CollectionService] Fetched \(result.data.collections.count) trending collections")
-
-        return result.data.collections
+        do {
+            let result = try decoder.decode(TrendingCollectionsResponse.self, from: data)
+            print("✅ [CollectionService] Fetched \(result.data.collections.count) trending collections")
+            return result.data.collections
+        } catch {
+            print("❌ [CollectionService] Decoding error: \(error)")
+            if let decodingError = error as? DecodingError {
+                switch decodingError {
+                case .typeMismatch(let type, let context):
+                    print("   Type mismatch: \(type)")
+                    print("   Context: \(context)")
+                case .valueNotFound(let type, let context):
+                    print("   Value not found: \(type)")
+                    print("   Context: \(context)")
+                case .keyNotFound(let key, let context):
+                    print("   Key not found: \(key)")
+                    print("   Context: \(context)")
+                case .dataCorrupted(let context):
+                    print("   Data corrupted:")
+                    print("   Context: \(context)")
+                @unknown default:
+                    print("   Unknown decoding error")
+                }
+            }
+            throw error
+        }
     }
 
     /// Get collection detail by ID
     /// - Parameter collectionId: Collection ID
     /// - Returns: Collection detail with user-specific data
     func getCollectionDetail(collectionId: String) async throws -> CollectionDetailResponse {
+        print("🌐 [CollectionService] getCollectionDetail called with ID: \(collectionId)")
+
         guard let token = try await Auth.auth().currentUser?.getIDToken() else {
+            print("❌ [CollectionService] Not authenticated")
             throw CollectionError.notAuthenticated
         }
 
         let url = URL(string: "\(Constants.API.collections)/\(collectionId)")!
+        print("🌐 [CollectionService] URL: \(url.absoluteString)")
 
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("🔍 [CollectionService] Fetching collection detail: \(collectionId)")
+        print("🔍 [CollectionService] Sending GET request...")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse else {
+            print("❌ [CollectionService] Invalid response type")
             throw CollectionError.invalidResponse
         }
 
+        print("📡 [CollectionService] HTTP Status: \(httpResponse.statusCode)")
+
+        // Debug: Print raw response
+        if let jsonString = String(data: data, encoding: .utf8) {
+            print("📦 [CollectionService] Raw JSON response:")
+            print(jsonString)
+        }
+
         guard httpResponse.statusCode == 200 else {
+            print("❌ [CollectionService] HTTP error: \(httpResponse.statusCode)")
             throw CollectionError.fetchFailed
         }
 
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
 
-        let result = try decoder.decode(CollectionDetailResponse.self, from: data)
-        print("✅ [CollectionService] Successfully fetched collection detail")
-
-        return result
+        do {
+            let result = try decoder.decode(CollectionDetailResponse.self, from: data)
+            print("✅ [CollectionService] Successfully decoded collection detail: \(result.data.collection.title)")
+            return result
+        } catch {
+            print("❌ [CollectionService] Decoding error: \(error)")
+            if let decodingError = error as? DecodingError {
+                switch decodingError {
+                case .typeMismatch(let type, let context):
+                    print("   Type mismatch: \(type)")
+                    print("   Context: \(context)")
+                case .valueNotFound(let type, let context):
+                    print("   Value not found: \(type)")
+                    print("   Context: \(context)")
+                case .keyNotFound(let key, let context):
+                    print("   Key not found: \(key)")
+                    print("   Context: \(context)")
+                case .dataCorrupted(let context):
+                    print("   Data corrupted:")
+                    print("   Context: \(context)")
+                @unknown default:
+                    print("   Unknown decoding error")
+                }
+            }
+            throw error
+        }
     }
 
     // MARK: - User Collections

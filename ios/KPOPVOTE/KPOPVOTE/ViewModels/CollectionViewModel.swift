@@ -236,12 +236,15 @@ class CollectionViewModel: ObservableObject {
 
     /// Load collection detail
     func loadCollectionDetail(collectionId: String) async {
+        print("🔄 [CollectionViewModel] loadCollectionDetail called with ID: \(collectionId)")
         isLoading = true
         errorMessage = nil
 
         do {
+            print("🌐 [CollectionViewModel] Calling collectionService.getCollectionDetail...")
             let response = try await collectionService.getCollectionDetail(collectionId: collectionId)
 
+            print("📦 [CollectionViewModel] Received response: \(response)")
             currentCollection = response.data.collection
             isSaved = response.data.isSaved
             isLiked = response.data.isLiked
@@ -249,11 +252,19 @@ class CollectionViewModel: ObservableObject {
 
             print("✅ [CollectionViewModel] Loaded collection detail: \(response.data.collection.title)")
         } catch {
-            errorMessage = NetworkErrorHandler.getUserMessage(for: error)
-            print("❌ [CollectionViewModel] Failed to load detail: \(error.localizedDescription)")
+            let userMessage = NetworkErrorHandler.getUserMessage(for: error)
+            errorMessage = userMessage
+            print("❌ [CollectionViewModel] Failed to load detail")
+            print("   Error: \(error)")
+            print("   LocalizedDescription: \(error.localizedDescription)")
+            print("   User Message: \(userMessage)")
+            if let decodingError = error as? DecodingError {
+                print("   DecodingError details: \(decodingError)")
+            }
         }
 
         isLoading = false
+        print("🏁 [CollectionViewModel] loadCollectionDetail finished. currentCollection: \(currentCollection?.title ?? "nil"), error: \(errorMessage ?? "none")")
     }
 
     // MARK: - Action Methods
