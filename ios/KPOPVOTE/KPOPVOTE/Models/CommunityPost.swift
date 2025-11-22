@@ -14,6 +14,24 @@ enum PostType: String, Codable {
     case goodsTrade = "goods_trade"
     case collection = "collection"
 
+    // カスタムデコーダーで後方互換性対応
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(String.self)
+
+        // 旧名称 "vote_share" を新名称 "my_votes" として扱う
+        if rawValue == "vote_share" {
+            self = .myVotes
+        } else if let type = PostType(rawValue: rawValue) {
+            self = type
+        } else {
+            throw DecodingError.dataCorruptedError(
+                in: container,
+                debugDescription: "Cannot initialize PostType from invalid String value \(rawValue)"
+            )
+        }
+    }
+
     var displayName: String {
         switch self {
         case .image:
