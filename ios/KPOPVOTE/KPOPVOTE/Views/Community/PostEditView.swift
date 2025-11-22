@@ -45,9 +45,7 @@ struct PostEditView: View {
                             .background(Constants.Colors.cardDark)
                             .cornerRadius(12)
                             .tint(Constants.Colors.accentPink)
-                            .onAppear {
-                                UITextView.appearance().textColor = UIColor(Constants.Colors.textWhite)
-                            }
+                            .foregroundStyle(.white)
                     }
 
                     // Error Message

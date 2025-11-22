@@ -142,9 +142,7 @@ struct CreatePostView: View {
                 .background(Constants.Colors.cardDark)
                 .cornerRadius(12)
                 .tint(Constants.Colors.accentPink)
-                .onAppear {
-                    UITextView.appearance().textColor = UIColor(Constants.Colors.textWhite)
-                }
+                .foregroundStyle(.white)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
                         .stroke(Constants.Colors.accentPink.opacity(0.3), lineWidth: 1)
@@ -213,13 +211,11 @@ struct CreatePostView: View {
                 .background(Constants.Colors.cardDark)
                 .cornerRadius(12)
                 .tint(Constants.Colors.accentPink)
+                .foregroundStyle(.white)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
                         .stroke(Constants.Colors.accentPink.opacity(0.3), lineWidth: 1)
                 )
-                .onAppear {
-                    UITextView.appearance().textColor = UIColor(Constants.Colors.textWhite)
-                }
 
             Text("投票履歴を選択")
                 .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
@@ -422,13 +418,11 @@ struct CreatePostView: View {
                     .background(Constants.Colors.cardDark)
                     .cornerRadius(12)
                     .tint(Constants.Colors.accentPink)
+                    .foregroundStyle(.white)
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
                             .stroke(Constants.Colors.accentPink.opacity(0.3), lineWidth: 1)
                     )
-                    .onAppear {
-                        UITextView.appearance().textColor = UIColor(Constants.Colors.textWhite)
-                    }
             }
         }
         .sheet(isPresented: $showImagePicker) {
