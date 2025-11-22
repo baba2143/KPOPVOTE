@@ -301,5 +301,6 @@ struct IdentifiableString: Identifiable {
 
 // MARK: - Preview
 #Preview {
-    CommunityView()
+    CommunityView(showCreatePost: .constant(false))
+        .environmentObject(AuthService())
 }
