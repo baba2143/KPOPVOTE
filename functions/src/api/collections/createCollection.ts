@@ -9,6 +9,7 @@ import * as admin from "firebase-admin";
 import {
   CreateCollectionRequest,
   VoteCollection,
+  VoteTaskInCollection,
 } from "../../types/voteCollection";
 
 /**
@@ -141,20 +142,23 @@ export async function createCollection(
       }
       const taskData = taskDoc.data()!;
       console.log(`✅ [createCollection] Task found: ${taskDoc.id}, deadline type: ${typeof taskData.deadline}`);
-      return {
+      const taskInCollection: VoteTaskInCollection = {
         taskId: taskDoc.id,
         title: taskData.title,
         url: taskData.url,
         deadline: taskData.deadline,
-        externalAppId: taskData.externalAppId,
-        externalAppName: taskData.externalAppName,
-        externalAppIconUrl: taskData.externalAppIconUrl,
-        coverImage: taskData.coverImage,
         orderIndex: taskRef.orderIndex,
+        ...(taskData.externalAppId && { externalAppId: taskData.externalAppId }),
+        ...(taskData.externalAppName && { externalAppName: taskData.externalAppName }),
+        ...(taskData.externalAppIconUrl && { externalAppIconUrl: taskData.externalAppIconUrl }),
+        ...(taskData.coverImage && { coverImage: taskData.coverImage }),
       };
+      return taskInCollection;
     });
 
-    const tasks = (await Promise.all(taskPromises)).filter((task) => task !== null);
+    const tasks = (await Promise.all(taskPromises)).filter(
+      (task): task is VoteTaskInCollection => task !== null
+    );
     console.log(`📊 [createCollection] Tasks retrieved: ${tasks.length}`);
 
     if (tasks.length === 0) {
