@@ -5,7 +5,7 @@
 
 import { Response } from "express";
 import { AuthenticatedRequest } from "../../middleware/auth";
-import { firestore } from "firebase-admin";
+import * as admin from "firebase-admin";
 import {
   CreateCollectionRequest,
   VoteCollection,
@@ -113,7 +113,7 @@ export async function createCollection(
       return;
     }
 
-    const db = firestore();
+    const db = admin.firestore();
 
     // Get user info
     const userDoc = await db.collection("users").doc(userId).get();
@@ -136,9 +136,11 @@ export async function createCollection(
         .doc(taskRef.taskId)
         .get();
       if (!taskDoc.exists) {
+        console.log(`⚠️ [createCollection] Task not found: ${taskRef.taskId}`);
         return null;
       }
       const taskData = taskDoc.data()!;
+      console.log(`✅ [createCollection] Task found: ${taskDoc.id}, deadline type: ${typeof taskData.deadline}`);
       return {
         taskId: taskDoc.id,
         title: taskData.title,
@@ -153,6 +155,7 @@ export async function createCollection(
     });
 
     const tasks = (await Promise.all(taskPromises)).filter((task) => task !== null);
+    console.log(`📊 [createCollection] Tasks retrieved: ${tasks.length}`);
 
     if (tasks.length === 0) {
       res.status(400).json({
@@ -163,7 +166,8 @@ export async function createCollection(
     }
 
     // Create collection
-    const now = firestore.Timestamp.now();
+    const now = admin.firestore.Timestamp.now();
+    console.log(`🔨 [createCollection] Building collection data for: ${body.title}`);
     const collectionData: VoteCollection = {
       collectionId: "",
       creatorId: userId,
@@ -184,7 +188,9 @@ export async function createCollection(
       updatedAt: now,
     };
 
+    console.log("💾 [createCollection] Saving to Firestore...");
     const collectionRef = await db.collection("collections").add(collectionData);
+    console.log(`✅ [createCollection] Collection created with ID: ${collectionRef.id}`);
 
     collectionData.collectionId = collectionRef.id;
 
@@ -196,6 +202,8 @@ export async function createCollection(
     });
   } catch (error) {
     console.error("❌ [createCollection] Error:", error);
+    console.error("❌ [createCollection] Error stack:", error instanceof Error ? error.stack : "No stack");
+    console.error("❌ [createCollection] Error message:", error instanceof Error ? error.message : String(error));
     res.status(500).json({
       success: false,
       error: "コレクションの作成に失敗しました",
