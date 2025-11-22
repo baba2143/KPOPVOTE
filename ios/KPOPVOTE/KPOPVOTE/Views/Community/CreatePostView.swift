@@ -13,7 +13,6 @@ struct CreatePostView: View {
     @StateObject private var biasViewModel = BiasViewModel()
     @State private var showImagePicker = false
     @State private var showSuccessAlert = false
-    @State private var showVoteSelection = false
     @State private var showMyVotesSelection = false
 
     var onPostCreated: (() -> Void)?
@@ -30,14 +29,14 @@ struct CreatePostView: View {
 
                     // Content Input based on Type
                     switch viewModel.selectedType {
-                    case .voteShare:
-                        voteShareInput
                     case .image:
                         imageInput
                     case .myVotes:
                         myVotesInput
                     case .goodsTrade:
                         goodsTradeInput
+                    case .collection:
+                        EmptyView() // Collections are not created from Community tab
                     }
 
                     // Bias Selection
@@ -81,11 +80,6 @@ struct CreatePostView: View {
                 showSuccessAlert = true
             }
         }
-        .sheet(isPresented: $showVoteSelection) {
-            VoteSelectionSheet { selectedVote in
-                viewModel.addVote(vote: selectedVote)
-            }
-        }
         .sheet(isPresented: $showMyVotesSelection) {
             MyVotesSelectionSheet { selectedVotes in
                 viewModel.selectMyVotes(myVotes: selectedVotes)
@@ -115,13 +109,6 @@ struct CreatePostView: View {
                     )
 
                     PostTypeButton(
-                        icon: "chart.bar",
-                        title: "投票シェア",
-                        isSelected: viewModel.selectedType == .voteShare,
-                        action: { viewModel.selectedType = .voteShare }
-                    )
-
-                    PostTypeButton(
                         icon: "list.bullet",
                         title: "My投票",
                         isSelected: viewModel.selectedType == .myVotes,
@@ -135,82 +122,6 @@ struct CreatePostView: View {
                         action: { viewModel.selectedType = .goodsTrade }
                     )
                 }
-            }
-        }
-    }
-
-    // MARK: - Vote Share Input
-    @ViewBuilder
-    private var voteShareInput: some View {
-        VStack(alignment: .leading, spacing: Constants.Spacing.small) {
-            // Text Input (Optional)
-            Text("コメント (オプション)")
-                .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
-                .foregroundColor(Constants.Colors.textWhite)
-
-            TextEditor(text: $viewModel.textContent)
-                .font(.system(size: Constants.Typography.bodySize))
-                .foregroundColor(.black)
-                .padding(8)
-                .frame(minHeight: 100)
-                .background(Color.white.opacity(0.9))
-                .cornerRadius(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Constants.Colors.accentPink.opacity(0.3), lineWidth: 1)
-                )
-
-            Text("投票を選択")
-                .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
-                .foregroundColor(Constants.Colors.textWhite)
-
-            if !viewModel.selectedVoteSnapshots.isEmpty {
-                // Selected Votes List
-                VStack(spacing: 8) {
-                    ForEach(viewModel.selectedVoteSnapshots, id: \.id) { voteSnapshot in
-                        HStack {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(voteSnapshot.title)
-                                    .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
-                                    .foregroundColor(Constants.Colors.textWhite)
-
-                                Text(voteSnapshot.description)
-                                    .font(.system(size: Constants.Typography.captionSize))
-                                    .foregroundColor(Constants.Colors.textGray)
-                                    .lineLimit(2)
-                            }
-
-                            Spacer()
-
-                            Button(action: {
-                                viewModel.removeVote(voteId: voteSnapshot.id)
-                            }) {
-                                Image(systemName: "xmark.circle.fill")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(Constants.Colors.textGray)
-                            }
-                        }
-                        .padding()
-                        .background(Color.white.opacity(0.05))
-                        .cornerRadius(12)
-                    }
-                }
-            }
-
-            // Add Vote Button
-            Button(action: {
-                showVoteSelection = true
-            }) {
-                HStack {
-                    Image(systemName: viewModel.selectedVoteSnapshots.isEmpty ? "plus.circle" : "plus.circle.fill")
-                    Text(viewModel.selectedVoteSnapshots.isEmpty ? "投票を選択" : "投票を追加")
-                }
-                .font(.system(size: Constants.Typography.bodySize))
-                .foregroundColor(Constants.Colors.accentPink)
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color.white.opacity(0.05))
-                .cornerRadius(12)
             }
         }
     }

@@ -92,80 +92,98 @@ struct PostCardView: View {
     private var postContentView: some View {
         VStack(alignment: .leading, spacing: Constants.Spacing.small) {
             switch post.type {
-            case .voteShare:
-                voteShareContent
             case .image:
                 imageContent
             case .myVotes:
                 myVotesContent
             case .goodsTrade:
                 goodsTradeContent
+            case .collection:
+                collectionContent
             }
         }
     }
 
-    // MARK: - Vote Share Content
+    // MARK: - Collection Content
     @ViewBuilder
-    private var voteShareContent: some View {
-        if let voteSnapshots = post.content.voteSnapshots, !voteSnapshots.isEmpty {
-            VStack(alignment: .leading, spacing: Constants.Spacing.small) {
-                ForEach(voteSnapshots, id: \.id) { voteSnapshot in
-                    NavigationLink(destination: VoteDetailView(voteId: voteSnapshot.id)) {
-                        // Vote Card
-                        VStack(alignment: .leading, spacing: 8) {
-                            if let coverImageUrl = voteSnapshot.coverImageUrl, !coverImageUrl.isEmpty, let url = URL(string: coverImageUrl) {
-                                AsyncImage(url: url) { phase in
-                                    switch phase {
-                                    case .success(let image):
-                                        image
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fill)
-                                            .frame(height: 120)
-                                            .clipped()
-                                            .cornerRadius(8)
-                                    case .failure(_), .empty:
-                                        Rectangle()
-                                            .fill(Constants.Colors.backgroundDark)
-                                            .frame(height: 120)
-                                            .cornerRadius(8)
-                                            .overlay(
-                                                Image(systemName: "photo")
-                                                    .font(.system(size: 40))
-                                                    .foregroundColor(Constants.Colors.textGray)
-                                            )
-                                    @unknown default:
-                                        EmptyView()
-                                    }
-                                }
-                            } else {
-                                // Placeholder for missing cover image
-                                Rectangle()
-                                    .fill(Constants.Colors.backgroundDark)
-                                    .frame(height: 120)
-                                    .cornerRadius(8)
-                                    .overlay(
-                                        Image(systemName: "photo")
-                                            .font(.system(size: 40))
-                                            .foregroundColor(Constants.Colors.textGray)
-                                    )
-                            }
-
-                            Text(voteSnapshot.title)
-                                .font(.system(size: Constants.Typography.headlineSize, weight: .bold))
-                                .foregroundColor(Constants.Colors.textWhite)
-
-                            Text(voteSnapshot.description)
-                                .font(.system(size: Constants.Typography.captionSize))
-                                .foregroundColor(Constants.Colors.textGray)
-                                .lineLimit(2)
-                        }
-                        .padding(Constants.Spacing.small)
-                        .background(Color.white.opacity(0.05))
-                        .cornerRadius(12)
-                    }
-                    .buttonStyle(.plain)
-                }
+    private var collectionContent: some View {
+        VStack(alignment: .leading, spacing: Constants.Spacing.small) {
+            // Optional text
+            if let text = post.content.text, !text.isEmpty {
+                Text(text)
+                    .font(.system(size: Constants.Typography.bodySize))
+                    .foregroundColor(Constants.Colors.textWhite)
+                    .lineSpacing(4)
             }
+
+            // Collection Card
+            VStack(alignment: .leading, spacing: 8) {
+                // Cover Image
+                if let coverImageUrl = post.content.collectionCoverImage, !coverImageUrl.isEmpty, let url = URL(string: coverImageUrl) {
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(height: 150)
+                                .clipped()
+                                .cornerRadius(8)
+                        case .failure(_), .empty:
+                            Rectangle()
+                                .fill(Constants.Colors.backgroundDark)
+                                .frame(height: 150)
+                                .cornerRadius(8)
+                                .overlay(
+                                    Image(systemName: "rectangle.stack")
+                                        .font(.system(size: 40))
+                                        .foregroundColor(Constants.Colors.textGray)
+                                )
+                        @unknown default:
+                            EmptyView()
+                        }
+                    }
+                } else {
+                    // Placeholder
+                    Rectangle()
+                        .fill(Constants.Colors.backgroundDark)
+                        .frame(height: 150)
+                        .cornerRadius(8)
+                        .overlay(
+                            Image(systemName: "rectangle.stack")
+                                .font(.system(size: 40))
+                                .foregroundColor(Constants.Colors.textGray)
+                        )
+                }
+
+                // Collection Info
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(post.content.collectionTitle ?? "")
+                        .font(.system(size: Constants.Typography.headlineSize, weight: .bold))
+                        .foregroundColor(Constants.Colors.textWhite)
+
+                    if let description = post.content.collectionDescription, !description.isEmpty {
+                        Text(description)
+                            .font(.system(size: Constants.Typography.captionSize))
+                            .foregroundColor(Constants.Colors.textGray)
+                            .lineLimit(2)
+                    }
+
+                    // Task count
+                    if let taskCount = post.content.collectionTaskCount {
+                        HStack(spacing: 4) {
+                            Image(systemName: "checklist")
+                                .font(.system(size: 12))
+                            Text("\(taskCount)個のタスク")
+                                .font(.system(size: Constants.Typography.captionSize))
+                        }
+                        .foregroundColor(Constants.Colors.accentPink)
+                    }
+                }
+                .padding(Constants.Spacing.small)
+            }
+            .background(Color.white.opacity(0.05))
+            .cornerRadius(12)
         }
     }
 

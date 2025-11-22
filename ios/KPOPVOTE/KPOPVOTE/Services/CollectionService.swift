@@ -362,6 +362,54 @@ class CollectionService {
 
         return result
     }
+
+    // MARK: - Share Collection to Community
+
+    /// Share collection to community timeline
+    /// - Parameters:
+    ///   - collectionId: Collection ID to share
+    ///   - biasIds: Bias IDs for post targeting
+    ///   - text: Optional message text
+    /// - Returns: Share response with post ID
+    func shareCollectionToCommunity(
+        collectionId: String,
+        biasIds: [String],
+        text: String? = nil
+    ) async throws -> ShareCollectionResponse {
+        guard let token = try await Auth.auth().currentUser?.getIDToken() else {
+            throw CollectionError.notAuthenticated
+        }
+
+        let url = URL(string: "\(Constants.API.collections)/\(collectionId)/share-to-community")!
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let requestBody: [String: Any] = [
+            "biasIds": biasIds,
+            "text": text ?? ""
+        ]
+        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+
+        print("📤 [CollectionService] Sharing collection to community: \(collectionId)")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw CollectionError.invalidResponse
+        }
+
+        guard httpResponse.statusCode == 201 else {
+            throw CollectionError.shareFailed
+        }
+
+        let result = try JSONDecoder().decode(ShareCollectionResponse.self, from: data)
+        print("✅ [CollectionService] Shared to community: postId=\(result.data.postId)")
+
+        return result
+    }
 }
 
 // MARK: - Response Models
@@ -427,6 +475,16 @@ struct AddToTasksData: Codable {
     let addedTaskIds: [String]
 }
 
+struct ShareCollectionResponse: Codable {
+    let success: Bool
+    let data: ShareCollectionData
+}
+
+struct ShareCollectionData: Codable {
+    let postId: String
+    let collectionId: String
+}
+
 // MARK: - Error Types
 
 enum CollectionError: Error, LocalizedError {
@@ -436,6 +494,7 @@ enum CollectionError: Error, LocalizedError {
     case searchFailed
     case saveFailed
     case addToTasksFailed
+    case shareFailed
 
     var errorDescription: String? {
         switch self {
@@ -451,6 +510,8 @@ enum CollectionError: Error, LocalizedError {
             return "保存に失敗しました"
         case .addToTasksFailed:
             return "タスクの追加に失敗しました"
+        case .shareFailed:
+            return "コミュニティへの投稿に失敗しました"
         }
     }
 }

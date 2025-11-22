@@ -30,6 +30,8 @@ class CreateCollectionViewModel: ObservableObject {
     @Published var showError: Bool = false
     @Published var errorMessage: String?
     @Published var showImagePicker: Bool = false
+    @Published var showCommunityShareDialog: Bool = false
+    @Published var createdCollectionId: String?
 
     // MARK: - Private Properties
     private let taskService = TaskService()
@@ -200,7 +202,11 @@ class CreateCollectionViewModel: ObservableObject {
             let result = try JSONDecoder().decode(CreateCollectionResponse.self, from: data)
             print("✅ [CreateCollectionViewModel] Collection created: \(result.data.collectionId)")
 
+            // Store collection ID and show community share dialog
+            createdCollectionId = result.data.collectionId
             isLoading = false
+            showCommunityShareDialog = true
+
             return true
 
         } catch {

@@ -47,8 +47,6 @@ class CreatePostViewModel: ObservableObject {
     var canSubmit: Bool {
         let result: Bool
         switch selectedType {
-        case .voteShare:
-            result = !selectedVoteIds.isEmpty && !selectedVoteSnapshots.isEmpty && !selectedBiasIds.isEmpty
         case .image:
             let hasText = !textContent.isEmpty
             let hasBias = !selectedBiasIds.isEmpty
@@ -61,6 +59,8 @@ class CreatePostViewModel: ObservableObject {
                    !goodsName.isEmpty &&
                    !goodsTags.isEmpty &&
                    !selectedBiasIds.isEmpty
+        case .collection:
+            result = false // Collections cannot be created from Community tab
         }
         return result
     }
@@ -92,13 +92,6 @@ class CreatePostViewModel: ObservableObject {
             print("📝 [CreatePostViewModel] Selected biasIds: \(selectedBiasIds)")
 
             switch selectedType {
-            case .voteShare:
-                content.voteIds = selectedVoteIds
-                content.voteSnapshots = selectedVoteSnapshots
-                if !textContent.isEmpty {
-                    content.text = textContent
-                }
-                print("📝 [CreatePostViewModel] Vote share - vote count: \(selectedVoteIds.count), text: \(textContent.isEmpty ? "none" : "\(textContent.count) chars")")
             case .image:
                 content.text = textContent
                 print("📝 [CreatePostViewModel] Image post - text length: \(textContent.count) characters")
@@ -153,6 +146,11 @@ class CreatePostViewModel: ObservableObject {
                     status: "available"
                 )
                 content.goodsTrade = goodsTrade
+            case .collection:
+                // Collections are not created from Community tab
+                errorMessage = "コレクションはVOTESタブから作成してください"
+                isSubmitting = false
+                return
             }
 
             print("📤 [CreatePostViewModel] Creating post: type=\(selectedType.rawValue), biasIds count: \(selectedBiasIds.count)")

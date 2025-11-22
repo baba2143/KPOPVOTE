@@ -42,6 +42,18 @@ struct CreateCollectionView: View {
             .sheet(isPresented: $viewModel.showImagePicker) {
                 ImagePicker(selectedImage: $viewModel.coverImage)
             }
+            .alert("コレクションを作成しました", isPresented: $viewModel.showCommunityShareDialog) {
+                Button("はい") {
+                    // Show bias selection and share to community
+                    // TODO: Implement BiasSelectionSheet and API call
+                    dismiss()
+                }
+                Button("いいえ") {
+                    dismiss()
+                }
+            } message: {
+                Text("コミュニティに投稿しますか？")
+            }
             .onAppear {
                 Task {
                     await viewModel.loadUserTasks()
@@ -214,10 +226,8 @@ struct CreateCollectionView: View {
                             // Create Button
                             Button(action: {
                                 Task {
-                                    let success = await viewModel.createCollection()
-                                    if success {
-                                        dismiss()
-                                    }
+                                    await viewModel.createCollection()
+                                    // Dialog will be shown by viewModel.showCommunityShareDialog
                                 }
                             }) {
                                 Text("コレクションを作成")

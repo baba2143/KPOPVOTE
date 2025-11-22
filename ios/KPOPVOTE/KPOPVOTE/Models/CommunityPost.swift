@@ -9,21 +9,21 @@ import Foundation
 
 // MARK: - Post Type
 enum PostType: String, Codable {
-    case voteShare = "vote_share"
     case image = "image"
     case myVotes = "my_votes"
     case goodsTrade = "goods_trade"
+    case collection = "collection"
 
     var displayName: String {
         switch self {
-        case .voteShare:
-            return "投票共有"
         case .image:
             return "画像投稿"
         case .myVotes:
             return "マイ投票"
         case .goodsTrade:
             return "グッズ交換"
+        case .collection:
+            return "コレクション"
         }
     }
 }
@@ -63,20 +63,31 @@ struct PostContent: Codable {
     var voteSnapshots: [InAppVote]?
     var myVotes: [MyVoteItem]?
     var goodsTrade: GoodsTradeContent?
+    var collectionId: String?
+    var collectionTitle: String?
+    var collectionDescription: String?
+    var collectionCoverImage: String?
+    var collectionTaskCount: Int?
 
     enum CodingKeys: String, CodingKey {
         case text, images, voteIds, voteSnapshots, myVotes, goodsTrade
+        case collectionId, collectionTitle, collectionDescription, collectionCoverImage, collectionTaskCount
         case voteId  // For backward compatibility
         case voteSnapshot  // For backward compatibility
     }
 
-    init(text: String? = nil, images: [String]? = nil, voteIds: [String]? = nil, voteSnapshots: [InAppVote]? = nil, myVotes: [MyVoteItem]? = nil, goodsTrade: GoodsTradeContent? = nil) {
+    init(text: String? = nil, images: [String]? = nil, voteIds: [String]? = nil, voteSnapshots: [InAppVote]? = nil, myVotes: [MyVoteItem]? = nil, goodsTrade: GoodsTradeContent? = nil, collectionId: String? = nil, collectionTitle: String? = nil, collectionDescription: String? = nil, collectionCoverImage: String? = nil, collectionTaskCount: Int? = nil) {
         self.text = text
         self.images = images
         self.voteIds = voteIds
         self.voteSnapshots = voteSnapshots
         self.myVotes = myVotes
         self.goodsTrade = goodsTrade
+        self.collectionId = collectionId
+        self.collectionTitle = collectionTitle
+        self.collectionDescription = collectionDescription
+        self.collectionCoverImage = collectionCoverImage
+        self.collectionTaskCount = collectionTaskCount
     }
 
     // Custom decoding for backward compatibility
@@ -87,6 +98,11 @@ struct PostContent: Codable {
         images = try container.decodeIfPresent([String].self, forKey: .images)
         myVotes = try container.decodeIfPresent([MyVoteItem].self, forKey: .myVotes)
         goodsTrade = try container.decodeIfPresent(GoodsTradeContent.self, forKey: .goodsTrade)
+        collectionId = try container.decodeIfPresent(String.self, forKey: .collectionId)
+        collectionTitle = try container.decodeIfPresent(String.self, forKey: .collectionTitle)
+        collectionDescription = try container.decodeIfPresent(String.self, forKey: .collectionDescription)
+        collectionCoverImage = try container.decodeIfPresent(String.self, forKey: .collectionCoverImage)
+        collectionTaskCount = try container.decodeIfPresent(Int.self, forKey: .collectionTaskCount)
 
         // Try to decode new format first (arrays)
         if let voteIds = try? container.decodeIfPresent([String].self, forKey: .voteIds) {
@@ -117,6 +133,11 @@ struct PostContent: Codable {
         try container.encodeIfPresent(voteSnapshots, forKey: .voteSnapshots)
         try container.encodeIfPresent(myVotes, forKey: .myVotes)
         try container.encodeIfPresent(goodsTrade, forKey: .goodsTrade)
+        try container.encodeIfPresent(collectionId, forKey: .collectionId)
+        try container.encodeIfPresent(collectionTitle, forKey: .collectionTitle)
+        try container.encodeIfPresent(collectionDescription, forKey: .collectionDescription)
+        try container.encodeIfPresent(collectionCoverImage, forKey: .collectionCoverImage)
+        try container.encodeIfPresent(collectionTaskCount, forKey: .collectionTaskCount)
     }
 }
 
