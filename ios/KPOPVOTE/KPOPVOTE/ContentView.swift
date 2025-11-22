@@ -54,7 +54,7 @@ struct HomeView: View {
                     // Active Tasks Section
                     VStack(alignment: .leading, spacing: Constants.Spacing.small) {
                         HStack {
-                            Text("開催中の推し投票")
+                            Text("参加中の推し投票")
                                 .font(.system(size: Constants.Typography.titleSize, weight: .bold))
                                 .foregroundColor(Constants.Colors.textWhite)
                             Spacer()
