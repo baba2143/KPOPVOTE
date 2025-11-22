@@ -144,7 +144,6 @@ struct SearchBarView: View {
                 .foregroundColor(Constants.Colors.textGray)
 
             TextField("コレクションを検索", text: $searchQuery)
-                .foregroundColor(Constants.Colors.textWhite)
                 .autocapitalization(.none)
 
             if !searchQuery.isEmpty {

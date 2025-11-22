@@ -28,12 +28,9 @@ struct TagInputView: View {
             // タグ入力欄
             HStack(spacing: Constants.Spacing.small) {
                 TextField("タグを入力（例: うちわ、トレカ）", text: $inputText)
-                    .padding(12)
-                    .background(Color.white.opacity(0.05))
-                    .cornerRadius(8)
-                    .foregroundColor(Constants.Colors.textWhite)
+                    .textFieldStyle(UnifiedTextFieldStyle())
                     .overlay(
-                        RoundedRectangle(cornerRadius: 8)
+                        RoundedRectangle(cornerRadius: 12)
                             .stroke(Constants.Colors.accentPink.opacity(0.3), lineWidth: 1)
                     )
                     .onSubmit {

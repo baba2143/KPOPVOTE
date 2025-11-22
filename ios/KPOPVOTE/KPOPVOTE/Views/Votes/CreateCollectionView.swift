@@ -118,8 +118,7 @@ struct CreateCollectionView: View {
                                     .foregroundColor(Constants.Colors.textWhite)
 
                                 TextField("コレクションのタイトル（最大50文字）", text: $viewModel.title)
-                                    .textFieldStyle(CustomTextFieldStyle())
-                                    .foregroundColor(Constants.Colors.textWhite)
+                                    .textFieldStyle(UnifiedTextFieldStyle())
 
                                 HStack {
                                     Spacer()
@@ -425,15 +424,6 @@ struct VisibilityOptionRow: View {
     }
 }
 
-// MARK: - Custom Text Field Style
-struct CustomTextFieldStyle: TextFieldStyle {
-    func _body(configuration: TextField<Self._Label>) -> some View {
-        configuration
-            .padding(12)
-            .background(Constants.Colors.cardDark)
-            .cornerRadius(12)
-    }
-}
 
 // MARK: - Visibility Description Extension
 extension CollectionVisibility {

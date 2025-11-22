@@ -353,10 +353,7 @@ struct CreatePostView: View {
 
                 TextField("例: うちわ、トレカ、ペンライト", text: $viewModel.goodsName)
                     .font(.system(size: Constants.Typography.bodySize))
-                    .foregroundColor(Constants.Colors.textWhite)
-                    .padding(12)
-                    .background(Color.white.opacity(0.05))
-                    .cornerRadius(12)
+                    .textFieldStyle(UnifiedTextFieldStyle())
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
                             .stroke(Constants.Colors.accentPink.opacity(0.3), lineWidth: 1)

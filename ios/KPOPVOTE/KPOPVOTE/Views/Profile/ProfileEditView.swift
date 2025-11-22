@@ -123,10 +123,7 @@ struct ProfileEditView: View {
 
             TextField("表示名を入力", text: $viewModel.displayName)
                 .font(.system(size: Constants.Typography.bodySize))
-                .foregroundColor(Constants.Colors.textWhite)
-                .padding()
-                .background(Color.white.opacity(0.05))
-                .cornerRadius(12)
+                .textFieldStyle(UnifiedTextFieldStyle())
                 .autocorrectionDisabled()
 
             if let error = viewModel.displayNameError {
@@ -296,10 +293,9 @@ struct BiasPickerView: View {
                         Image(systemName: "magnifyingglass")
                             .foregroundColor(Constants.Colors.textGray)
                         TextField("アイドルを検索", text: $searchText)
-                            .foregroundColor(Constants.Colors.textWhite)
                     }
-                    .padding()
-                    .background(Color.white.opacity(0.05))
+                    .padding(12)
+                    .background(Constants.Colors.cardDark)
                     .cornerRadius(12)
                     .padding()
 

@@ -46,10 +46,7 @@ struct TaskRegistrationView: View {
 
                         TextField("例: MAMA 2024 投票", text: $viewModel.title)
                             .font(.system(size: Constants.Typography.bodySize))
-                            .padding()
-                            .background(Constants.Colors.backgroundDark)
-                            .foregroundColor(Constants.Colors.textWhite)
-                            .cornerRadius(12)
+                            .textFieldStyle(UnifiedTextFieldStyle())
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)
                                     .stroke(Constants.Colors.accentPink.opacity(0.3), lineWidth: 1)
@@ -70,10 +67,7 @@ struct TaskRegistrationView: View {
 
                         TextField("https://vote.example.com", text: $viewModel.url)
                             .font(.system(size: Constants.Typography.bodySize))
-                            .padding()
-                            .background(Constants.Colors.backgroundDark)
-                            .foregroundColor(Constants.Colors.textWhite)
-                            .cornerRadius(12)
+                            .textFieldStyle(UnifiedTextFieldStyle())
                             .autocapitalization(.none)
                             .keyboardType(.URL)
                             .overlay(
@@ -157,10 +151,7 @@ struct TaskRegistrationView: View {
 
                         TextField("例: blackpink, twice, bts（カンマ区切り）", text: $viewModel.biasIdsText)
                             .font(.system(size: Constants.Typography.bodySize))
-                            .padding()
-                            .background(Constants.Colors.backgroundDark)
-                            .foregroundColor(Constants.Colors.textWhite)
-                            .cornerRadius(12)
+                            .textFieldStyle(UnifiedTextFieldStyle())
                             .autocapitalization(.none)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)

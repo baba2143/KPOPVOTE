@@ -51,7 +51,7 @@ struct LoginView: View {
                                     .foregroundColor(Constants.Colors.textSecondary)
 
                                 TextField("example@email.com", text: $viewModel.email)
-                                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                                    .unifiedInputStyle()
                                     .textInputAutocapitalization(.never)
                                     .keyboardType(.emailAddress)
                                     .autocorrectionDisabled()
@@ -64,7 +64,7 @@ struct LoginView: View {
                                     .foregroundColor(Constants.Colors.textSecondary)
 
                                 SecureField("6文字以上", text: $viewModel.password)
-                                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                                    .unifiedInputStyle()
                             }
 
                             // Login Button

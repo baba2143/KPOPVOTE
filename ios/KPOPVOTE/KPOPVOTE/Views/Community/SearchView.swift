@@ -88,7 +88,6 @@ struct SearchView: View {
                 .foregroundColor(Constants.Colors.textGray)
             
             TextField("検索", text: $searchText)
-                .foregroundColor(Constants.Colors.textWhite)
                 .autocapitalization(.none)
                 .onChange(of: searchText) { newValue in
                     Task {

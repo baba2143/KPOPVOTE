@@ -49,7 +49,7 @@ struct RegisterView: View {
                                     .foregroundColor(Constants.Colors.textSecondary)
 
                                 TextField("example@email.com", text: $viewModel.email)
-                                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                                    .unifiedInputStyle()
                                     .textInputAutocapitalization(.never)
                                     .keyboardType(.emailAddress)
                                     .autocorrectionDisabled()
@@ -68,7 +68,7 @@ struct RegisterView: View {
                                     .foregroundColor(Constants.Colors.textSecondary)
 
                                 SecureField("6文字以上", text: $viewModel.password)
-                                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                                    .unifiedInputStyle()
 
                                 if !viewModel.password.isEmpty && !viewModel.isValidPassword {
                                     Text("パスワードは6文字以上である必要があります")
@@ -84,7 +84,7 @@ struct RegisterView: View {
                                     .foregroundColor(Constants.Colors.textSecondary)
 
                                 SecureField("もう一度入力", text: $viewModel.confirmPassword)
-                                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                                    .unifiedInputStyle()
 
                                 if !viewModel.confirmPassword.isEmpty && viewModel.password != viewModel.confirmPassword {
                                     Text("パスワードが一致しません")
