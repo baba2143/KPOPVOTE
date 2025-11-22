@@ -155,15 +155,10 @@ class CreateCollectionViewModel: ObservableObject {
                 description: description,
                 tags: tags,
                 coverImage: coverImageUrl,
-                tasks: selectedTasks.map { task in
+                tasks: selectedTasks.enumerated().map { (index, task) in
                     CreateCollectionRequest.TaskInput(
-                        title: task.title,
-                        url: task.url,
-                        deadline: task.deadline,
-                        externalAppId: task.externalAppId,
-                        externalAppName: task.externalAppName,
-                        externalAppIconUrl: task.externalAppIconUrl,
-                        coverImage: task.coverImage
+                        taskId: task.id,
+                        orderIndex: index
                     )
                 },
                 visibility: visibility.rawValue
@@ -339,13 +334,8 @@ struct CreateCollectionRequest: Codable {
     let visibility: String
 
     struct TaskInput: Codable {
-        let title: String
-        let url: String
-        let deadline: Date
-        let externalAppId: String?
-        let externalAppName: String?
-        let externalAppIconUrl: String?
-        let coverImage: String?
+        let taskId: String
+        let orderIndex: Int
     }
 }
 
