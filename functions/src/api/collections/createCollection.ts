@@ -201,7 +201,9 @@ export async function createCollection(
     res.status(201).json({
       success: true,
       data: {
-        collection: collectionData,
+        collectionId: collectionRef.id,
+        title: collectionData.title,
+        createdAt: collectionData.createdAt.toDate().toISOString(),
       },
     });
   } catch (error) {
