@@ -31,10 +31,13 @@ class CreateCollectionViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var showImagePicker: Bool = false
     @Published var showCommunityShareDialog: Bool = false
+    @Published var showBiasSelectionSheet: Bool = false
+    @Published var isSharing: Bool = false
     @Published var createdCollectionId: String?
 
     // MARK: - Private Properties
     private let taskService = TaskService()
+    private let collectionService = CollectionService.shared
 
     // MARK: - Validation
 
@@ -276,6 +279,52 @@ class CreateCollectionViewModel: ObservableObject {
         coverImage = nil
         selectedTasks = []
         visibility = .public
+    }
+
+    // MARK: - Share to Community
+
+    /// Share collection to community timeline
+    /// - Parameters:
+    ///   - biasIds: Selected bias (idol) IDs for post targeting
+    ///   - text: Optional message text
+    func shareToCommunity(biasIds: [String], text: String? = nil) async {
+        guard let collectionId = createdCollectionId else {
+            errorMessage = "コレクションIDが見つかりません"
+            showError = true
+            return
+        }
+
+        guard !biasIds.isEmpty else {
+            errorMessage = "推しを選択してください"
+            showError = true
+            return
+        }
+
+        isSharing = true
+        errorMessage = nil
+
+        do {
+            print("📤 [CreateCollectionViewModel] Sharing collection to community...")
+            print("   CollectionId: \(collectionId)")
+            print("   BiasIds: \(biasIds)")
+
+            _ = try await collectionService.shareCollectionToCommunity(
+                collectionId: collectionId,
+                biasIds: biasIds,
+                text: text
+            )
+
+            print("✅ [CreateCollectionViewModel] Successfully shared to community")
+            isSharing = false
+
+            // Success - the view will dismiss automatically
+
+        } catch {
+            print("❌ [CreateCollectionViewModel] Failed to share: \(error.localizedDescription)")
+            errorMessage = "コミュニティへの投稿に失敗しました: \(error.localizedDescription)"
+            showError = true
+            isSharing = false
+        }
     }
 }
 

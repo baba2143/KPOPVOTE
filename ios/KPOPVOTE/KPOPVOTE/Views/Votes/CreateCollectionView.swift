@@ -42,17 +42,47 @@ struct CreateCollectionView: View {
             .sheet(isPresented: $viewModel.showImagePicker) {
                 ImagePicker(selectedImage: $viewModel.coverImage)
             }
+            .sheet(isPresented: $viewModel.showBiasSelectionSheet) {
+                BiasSelectionSheet { selectedBiasIds in
+                    Task {
+                        await viewModel.shareToCommunity(biasIds: selectedBiasIds)
+                        // If sharing succeeded, dismiss the create collection view
+                        if !viewModel.showError {
+                            dismiss()
+                        }
+                    }
+                }
+            }
             .alert("コレクションを作成しました", isPresented: $viewModel.showCommunityShareDialog) {
                 Button("はい") {
-                    // Show bias selection and share to community
-                    // TODO: Implement BiasSelectionSheet and API call
-                    dismiss()
+                    viewModel.showBiasSelectionSheet = true
                 }
                 Button("いいえ") {
                     dismiss()
                 }
             } message: {
                 Text("コミュニティに投稿しますか？")
+            }
+            .overlay {
+                if viewModel.isSharing {
+                    ZStack {
+                        Color.black.opacity(0.5)
+                            .ignoresSafeArea()
+
+                        VStack(spacing: 16) {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: Constants.Colors.accentPink))
+                                .scaleEffect(1.5)
+
+                            Text("コミュニティに投稿中...")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(Constants.Colors.textWhite)
+                        }
+                        .padding(32)
+                        .background(Constants.Colors.cardDark)
+                        .cornerRadius(16)
+                    }
+                }
             }
             .onAppear {
                 Task {
