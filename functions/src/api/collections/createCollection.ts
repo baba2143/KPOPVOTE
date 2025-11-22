@@ -127,9 +127,14 @@ export async function createCollection(
 
     const userData = userDoc.data()!;
 
-    // Get task details
+    // Get task details from user's tasks subcollection
     const taskPromises = body.tasks.map(async (taskRef) => {
-      const taskDoc = await db.collection("tasks").doc(taskRef.taskId).get();
+      const taskDoc = await db
+        .collection("users")
+        .doc(userId)
+        .collection("tasks")
+        .doc(taskRef.taskId)
+        .get();
       if (!taskDoc.exists) {
         return null;
       }
