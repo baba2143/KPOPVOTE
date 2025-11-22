@@ -15,10 +15,7 @@ struct UnifiedTextFieldStyle: TextFieldStyle {
             .background(Constants.Colors.cardDark)
             .cornerRadius(12)
             .tint(Constants.Colors.accentPink)
-            .onAppear {
-                // Set global text color for all UITextField instances
-                UITextField.appearance().textColor = UIColor(Constants.Colors.textWhite)
-            }
+            .foregroundStyle(.white) // iOS 16+ more reliable than foregroundColor
     }
 }
 
@@ -30,9 +27,7 @@ struct UnifiedInputStyle: ViewModifier {
             .background(Constants.Colors.cardDark)
             .cornerRadius(12)
             .tint(Constants.Colors.accentPink)
-            .onAppear {
-                UITextField.appearance().textColor = UIColor(Constants.Colors.textWhite)
-            }
+            .foregroundStyle(.white) // iOS 16+ more reliable than foregroundColor
     }
 }
 
