@@ -208,8 +208,8 @@ struct PostDetailView: View {
     private func postContent(post: CommunityPost) -> some View {
         VStack(alignment: .leading, spacing: Constants.Spacing.medium) {
             switch post.type {
-            case .voteShare:
-                voteShareContent(post: post)
+            case .collection:
+                collectionContent(post: post)
             case .image:
                 imageContent(post: post)
             case .myVotes:
@@ -220,11 +220,11 @@ struct PostDetailView: View {
         }
     }
 
-    // MARK: - Vote Share Content
+    // MARK: - Collection Content
     @ViewBuilder
-    private func voteShareContent(post: CommunityPost) -> some View {
+    private func collectionContent(post: CommunityPost) -> some View {
         VStack(alignment: .leading, spacing: Constants.Spacing.medium) {
-            // Comment text (if exists)
+            // Optional text
             if let text = post.content.text, !text.isEmpty {
                 Text(text)
                     .font(.system(size: Constants.Typography.bodySize))
@@ -232,84 +232,74 @@ struct PostDetailView: View {
                     .lineSpacing(6)
             }
 
-            // Vote cards
-            if let voteSnapshots = post.content.voteSnapshots, !voteSnapshots.isEmpty {
-                ForEach(voteSnapshots, id: \.id) { voteSnapshot in
-                    NavigationLink(destination: VoteDetailView(voteId: voteSnapshot.id)) {
-                        // Vote Card
-                        VStack(alignment: .leading, spacing: 12) {
-                            if let coverImageUrl = voteSnapshot.coverImageUrl, !coverImageUrl.isEmpty, let url = URL(string: coverImageUrl) {
-                                AsyncImage(url: url) { phase in
-                                    switch phase {
-                                    case .success(let image):
-                                        image
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fill)
-                                            .frame(maxHeight: 300)
-                                            .clipped()
-                                            .cornerRadius(12)
-                                    case .failure(_), .empty:
-                                        Rectangle()
-                                            .fill(Constants.Colors.backgroundDark)
-                                            .frame(height: 200)
-                                            .cornerRadius(12)
-                                            .overlay(
-                                                Image(systemName: "photo")
-                                                    .font(.system(size: 60))
-                                                    .foregroundColor(Constants.Colors.textGray)
-                                            )
-                                    @unknown default:
-                                        EmptyView()
-                                    }
-                                }
-                            } else {
-                                // Placeholder for missing cover image
-                                Rectangle()
-                                    .fill(Constants.Colors.backgroundDark)
-                                    .frame(height: 200)
-                                    .cornerRadius(12)
-                                    .overlay(
-                                        Image(systemName: "photo")
-                                            .font(.system(size: 60))
-                                            .foregroundColor(Constants.Colors.textGray)
-                                    )
-                            }
-
-                            Text(voteSnapshot.title)
-                                .font(.system(size: Constants.Typography.titleSize, weight: .bold))
-                                .foregroundColor(Constants.Colors.textWhite)
-
-                            Text(voteSnapshot.description)
-                                .font(.system(size: Constants.Typography.bodySize))
-                                .foregroundColor(Constants.Colors.textGray)
-                                .lineSpacing(4)
-
-                            // Vote Stats
-                            HStack(spacing: 16) {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "chart.bar")
-                                        .font(.system(size: 14))
-                                    Text("\(voteSnapshot.totalVotes)票")
-                                        .font(.system(size: Constants.Typography.captionSize))
-                                }
-                                .foregroundColor(Constants.Colors.textGray)
-
-                                HStack(spacing: 4) {
-                                    Image(systemName: "flame")
-                                        .font(.system(size: 14))
-                                    Text("\(voteSnapshot.requiredPoints)P")
-                                        .font(.system(size: Constants.Typography.captionSize))
-                                }
-                                .foregroundColor(Constants.Colors.accentBlue)
-                            }
+            // Collection Card
+            VStack(alignment: .leading, spacing: 12) {
+                // Cover Image
+                if let coverImageUrl = post.content.collectionCoverImage, !coverImageUrl.isEmpty, let url = URL(string: coverImageUrl) {
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(maxHeight: 300)
+                                .clipped()
+                                .cornerRadius(12)
+                        case .failure(_), .empty:
+                            Rectangle()
+                                .fill(Constants.Colors.backgroundDark)
+                                .frame(height: 200)
+                                .cornerRadius(12)
+                                .overlay(
+                                    Image(systemName: "rectangle.stack")
+                                        .font(.system(size: 60))
+                                        .foregroundColor(Constants.Colors.textGray)
+                                )
+                        @unknown default:
+                            EmptyView()
                         }
-                        .padding()
-                        .background(Color.white.opacity(0.05))
-                        .cornerRadius(16)
                     }
-                    .buttonStyle(.plain)
+                } else {
+                    // Placeholder
+                    Rectangle()
+                        .fill(Constants.Colors.backgroundDark)
+                        .frame(height: 200)
+                        .cornerRadius(12)
+                        .overlay(
+                            Image(systemName: "rectangle.stack")
+                                .font(.system(size: 60))
+                                .foregroundColor(Constants.Colors.textGray)
+                        )
+                }
+
+                // Collection Info
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(post.content.collectionTitle ?? "")
+                        .font(.system(size: Constants.Typography.titleSize, weight: .bold))
+                        .foregroundColor(Constants.Colors.textWhite)
+
+                    if let description = post.content.collectionDescription, !description.isEmpty {
+                        Text(description)
+                            .font(.system(size: Constants.Typography.bodySize))
+                            .foregroundColor(Constants.Colors.textGray)
+                            .lineSpacing(4)
+                    }
+
+                    // Task count
+                    if let taskCount = post.content.collectionTaskCount {
+                        HStack(spacing: 6) {
+                            Image(systemName: "checklist")
+                                .font(.system(size: 14))
+                            Text("\(taskCount)個のタスク")
+                                .font(.system(size: Constants.Typography.captionSize))
+                        }
+                        .foregroundColor(Constants.Colors.accentPink)
+                    }
                 }
             }
+            .padding()
+            .background(Color.white.opacity(0.05))
+            .cornerRadius(16)
         }
     }
 

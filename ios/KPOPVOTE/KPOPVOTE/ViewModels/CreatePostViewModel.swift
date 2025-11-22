@@ -188,35 +188,6 @@ class CreatePostViewModel: ObservableObject {
         isSubmitting = false
     }
 
-    // MARK: - Select Votes
-    /// Add vote to voteShare type
-    func addVote(vote: InAppVote) {
-        guard !selectedVoteIds.contains(vote.id) else { return }
-        selectedVoteIds.append(vote.id)
-        selectedVoteSnapshots.append(vote)
-        selectedType = .voteShare
-
-        print("🎯 [CreatePostViewModel] Added vote: \(vote.title), total: \(selectedVoteIds.count)")
-    }
-
-    /// Remove vote from voteShare type
-    func removeVote(voteId: String) {
-        if let index = selectedVoteIds.firstIndex(of: voteId) {
-            selectedVoteIds.remove(at: index)
-            selectedVoteSnapshots.remove(at: index)
-            print("🎯 [CreatePostViewModel] Removed vote ID: \(voteId), remaining: \(selectedVoteIds.count)")
-        }
-    }
-
-    /// Set selected votes for voteShare type (used by VoteSelectionSheet)
-    func selectVotes(votes: [InAppVote]) {
-        selectedVoteIds = votes.map { $0.id }
-        selectedVoteSnapshots = votes
-        selectedType = .voteShare
-
-        print("🎯 [CreatePostViewModel] Selected \(votes.count) votes")
-    }
-
     // MARK: - Select My Votes
     /// Set my votes for myVotes type
     func selectMyVotes(myVotes: [MyVoteItem]) {

@@ -188,8 +188,8 @@ struct PostThumbnail: View {
         switch post.type {
         case .image:
             return "photo"
-        case .voteShare:
-            return "chart.bar.fill"
+        case .collection:
+            return "rectangle.stack"
         case .myVotes:
             return "checkmark.circle.fill"
         case .goodsTrade:
