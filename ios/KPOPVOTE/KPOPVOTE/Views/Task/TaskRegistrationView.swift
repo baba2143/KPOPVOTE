@@ -291,13 +291,10 @@ struct TaskRegistrationView: View {
                 }
 
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: {
+                    Button("キャンセル") {
                         dismiss()
-                    }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 24))
-                            .foregroundColor(Constants.Colors.textGray)
                     }
+                    .foregroundColor(Constants.Colors.textWhite)
                 }
             }
             .toolbarBackground(Constants.Colors.cardDark, for: .navigationBar)

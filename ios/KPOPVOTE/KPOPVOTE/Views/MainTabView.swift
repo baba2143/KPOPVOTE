@@ -102,7 +102,9 @@ struct MainTabView: View {
             CreateCollectionView()
         }
         .sheet(isPresented: $showCreatePost) {
-            CreatePostView()
+            NavigationView {
+                CreatePostView()
+            }
         }
     }
 }
