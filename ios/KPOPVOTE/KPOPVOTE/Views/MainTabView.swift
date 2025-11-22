@@ -10,7 +10,10 @@ import SwiftUI
 struct MainTabView: View {
     @EnvironmentObject var authService: AuthService
     @StateObject private var tabCoordinator = TabCoordinator()
+    @State private var showCreateMenu = false
     @State private var showingTaskSheet = false
+    @State private var showCreateCollection = false
+    @State private var showCreatePost = false
 
     var body: some View {
         ZStack {
@@ -40,7 +43,8 @@ struct MainTabView: View {
                     .toolbar(.hidden, for: .tabBar)
 
                 // Community Tab
-                CommunityView()
+                CommunityView(showCreatePost: $showCreatePost)
+                    .environmentObject(authService)
                     .tag(4)
                     .toolbar(.hidden, for: .tabBar)
 
@@ -55,14 +59,32 @@ struct MainTabView: View {
             VStack {
                 Spacer()
                 CustomTabBar(selectedTab: $tabCoordinator.selectedTab) {
-                    showingTaskSheet = true
+                    showCreateMenu = true
                 }
                 .padding(.bottom, 0)
             }
             .edgesIgnoringSafeArea(.bottom)
         }
+        .confirmationDialog("新規作成", isPresented: $showCreateMenu, titleVisibility: .visible) {
+            Button("📋 投票タスクを登録") {
+                showingTaskSheet = true
+            }
+            Button("📦 コレクションを作成") {
+                showCreateCollection = true
+            }
+            Button("💬 コミュニティ投稿") {
+                showCreatePost = true
+            }
+            Button("キャンセル", role: .cancel) {}
+        }
         .sheet(isPresented: $showingTaskSheet) {
             TaskRegistrationView()
+        }
+        .sheet(isPresented: $showCreateCollection) {
+            CreateCollectionView()
+        }
+        .sheet(isPresented: $showCreatePost) {
+            CreatePostView()
         }
     }
 }

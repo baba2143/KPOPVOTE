@@ -57,7 +57,6 @@ struct DiscoverContentView: View {
     @StateObject private var viewModel = CollectionViewModel()
     @State private var selectedCollectionId: String?
     @State private var showCollectionDetail = false
-    @State private var showCreateCollection = false
 
     var body: some View {
         ZStack {
@@ -145,15 +144,6 @@ struct DiscoverContentView: View {
                 }
             }
         }
-        .navigationBarItems(trailing:
-            Button(action: {
-                showCreateCollection = true
-            }) {
-                Image(systemName: "plus")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(Constants.Colors.accentPink)
-            }
-        )
         .sheet(isPresented: $showCollectionDetail) {
             if let collectionId = selectedCollectionId {
                 NavigationView {
@@ -161,9 +151,6 @@ struct DiscoverContentView: View {
                         .environmentObject(tabCoordinator)
                 }
             }
-        }
-        .sheet(isPresented: $showCreateCollection) {
-            CreateCollectionView()
         }
         .onAppear {
             Task {
@@ -267,7 +254,6 @@ struct MyCollectionsContentView: View {
     @StateObject private var viewModel = CollectionViewModel()
     @State private var selectedCollectionId: String?
     @State private var showCollectionDetail = false
-    @State private var showCreateCollection = false
 
     var body: some View {
         ZStack {
@@ -291,28 +277,11 @@ struct MyCollectionsContentView: View {
                     Spacer()
                 } else if viewModel.myCollections.isEmpty {
                     Spacer()
-                    VStack(spacing: 24) {
-                        EmptyStateView(
-                            icon: "square.stack.3d.up",
-                            message: "作成したコレクションがありません",
-                            description: "投票タスクをまとめたコレクションを作成しましょう"
-                        )
-
-                        Button(action: {
-                            showCreateCollection = true
-                        }) {
-                            HStack {
-                                Image(systemName: "plus.circle.fill")
-                                Text("コレクションを作成")
-                            }
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 24)
-                            .padding(.vertical, 12)
-                            .background(Constants.Colors.accentPink)
-                            .cornerRadius(24)
-                        }
-                    }
+                    EmptyStateView(
+                        icon: "square.stack.3d.up",
+                        message: "作成したコレクションがありません",
+                        description: "画面下部の中央 + ボタンから\nコレクションを作成できます"
+                    )
                     Spacer()
                 } else {
                     ScrollView {
@@ -357,18 +326,6 @@ struct MyCollectionsContentView: View {
                         .environmentObject(tabCoordinator)
                 }
             }
-        }
-        .navigationBarItems(trailing:
-            Button(action: {
-                showCreateCollection = true
-            }) {
-                Image(systemName: "plus")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(Constants.Colors.accentPink)
-            }
-        )
-        .sheet(isPresented: $showCreateCollection) {
-            CreateCollectionView()
         }
         .onAppear {
             Task {

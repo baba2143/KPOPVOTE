@@ -14,11 +14,11 @@ struct CommunityView: View {
     @StateObject private var biasViewModel = BiasViewModel()
     @StateObject private var activityViewModel = SearchViewModel()
     @State private var selectedPost: IdentifiableString?
-    @State private var showCreatePost = false
     @State private var showLoginPrompt = false
     @State private var showDeleteSuccess = false
     @State private var showSearch = false
     @State private var selectedUser: IdentifiableString?
+    @Binding var showCreatePost: Bool
 
     var body: some View {
         NavigationView {
@@ -142,18 +142,13 @@ struct CommunityView: View {
                                 .foregroundColor(Constants.Colors.textWhite)
                         }
 
-                        // Create post button
+                        // Search button
                         Button(action: {
-                            // Check if user is guest
-                            if authService.isGuest {
-                                showLoginPrompt = true
-                            } else {
-                                showCreatePost = true
-                            }
+                            showSearch = true
                         }) {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.system(size: 24))
-                                .foregroundColor(Constants.Colors.accentPink)
+                            Image(systemName: "magnifyingglass")
+                                .font(.system(size: 20))
+                                .foregroundColor(Constants.Colors.textWhite)
                         }
                     }
                 }
