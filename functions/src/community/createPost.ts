@@ -41,7 +41,7 @@ export const createPost = functions.https.onRequest(async (req, res) => {
       return;
     }
 
-    if (!["vote_share", "image", "my_votes", "goods_trade"].includes(type)) {
+    if (!["image", "my_votes", "goods_trade", "collection"].includes(type)) {
       res.status(400).json({ success: false, error: "Invalid post type" } as ApiResponse<null>);
       return;
     }
@@ -52,18 +52,18 @@ export const createPost = functions.https.onRequest(async (req, res) => {
     }
 
     // Type-specific validation
-    if (type === "vote_share") {
-      if (!content.voteIds || !Array.isArray(content.voteIds) || content.voteIds.length === 0) {
+    if (type === "collection") {
+      if (!content.collectionId) {
         res.status(400).json({
           success: false,
-          error: "voteIds must be a non-empty array for vote_share",
+          error: "collectionId required for collection posts",
         } as ApiResponse<null>);
         return;
       }
-      if (!content.voteSnapshots || !Array.isArray(content.voteSnapshots) || content.voteSnapshots.length === 0) {
+      if (!content.collectionTitle) {
         res.status(400).json({
           success: false,
-          error: "voteSnapshots must be a non-empty array for vote_share",
+          error: "collectionTitle required for collection posts",
         } as ApiResponse<null>);
         return;
       }

@@ -352,6 +352,11 @@ export interface PostContent {
   voteSnapshots?: InAppVote[];
   myVotes?: MyVoteItem[];
   goodsTrade?: GoodsTradeContent;
+  collectionId?: string;
+  collectionTitle?: string;
+  collectionDescription?: string;
+  collectionCoverImage?: string;
+  collectionTaskCount?: number;
 }
 
 export interface MyVoteItem {
@@ -367,7 +372,7 @@ export interface MyVoteItem {
 export interface Post {
   id: string;
   userId: string;
-  type: "vote_share" | "image" | "my_votes" | "goods_trade";
+  type: "image" | "my_votes" | "goods_trade" | "collection";
   content: PostContent;
   biasIds: string[];
   likesCount: number;
@@ -380,7 +385,7 @@ export interface Post {
 }
 
 export interface CreatePostRequest {
-  type: "vote_share" | "image" | "my_votes" | "goods_trade";
+  type: "image" | "my_votes" | "goods_trade" | "collection";
   content: PostContent;
   biasIds: string[];
 }

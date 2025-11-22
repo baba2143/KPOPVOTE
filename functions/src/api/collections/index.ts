@@ -15,6 +15,7 @@ import { saveCollection } from "./saveCollection";
 import { addToTasks } from "./addToTasks";
 import { getSavedCollections } from "./getSavedCollections";
 import { getMyCollections } from "./getMyCollections";
+import { shareToCoommunity } from "./shareToCoommunity";
 import { authMiddleware } from "../../middleware/auth";
 
 const router = Router();
@@ -31,6 +32,8 @@ router.put("/:collectionId", authMiddleware, updateCollection); // PUT /api/coll
 router.delete("/:collectionId", authMiddleware, deleteCollection); // DELETE /api/collections/:id
 router.post("/:collectionId/save", authMiddleware, saveCollection); // POST /api/collections/:id/save
 router.post("/:collectionId/add-to-tasks", authMiddleware, addToTasks); // POST /api/collections/:id/add-to-tasks
+// POST /api/collections/:id/share-to-community
+router.post("/:collectionId/share-to-community", authMiddleware, shareToCoommunity);
 
 // User collection routes
 router.get("/users/me/saved", authMiddleware, getSavedCollections); // GET /api/collections/users/me/saved
