@@ -136,11 +136,15 @@ struct CreatePostView: View {
 
             TextEditor(text: $viewModel.textContent)
                 .font(.system(size: Constants.Typography.bodySize))
-                .foregroundColor(.black)
+                .scrollContentBackground(.hidden)
                 .padding(8)
                 .frame(minHeight: 120)
-                .background(Color.white.opacity(0.9))
+                .background(Constants.Colors.cardDark)
                 .cornerRadius(12)
+                .tint(Constants.Colors.accentPink)
+                .onAppear {
+                    UITextView.appearance().textColor = UIColor(Constants.Colors.textWhite)
+                }
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
                         .stroke(Constants.Colors.accentPink.opacity(0.3), lineWidth: 1)
@@ -203,16 +207,19 @@ struct CreatePostView: View {
 
             TextEditor(text: $viewModel.textContent)
                 .font(.system(size: Constants.Typography.bodySize))
-                .foregroundColor(Constants.Colors.textWhite)
+                .scrollContentBackground(.hidden)
                 .padding(8)
                 .frame(minHeight: 80)
-                .scrollContentBackground(.hidden)
-                .background(Color.white.opacity(0.05))
+                .background(Constants.Colors.cardDark)
                 .cornerRadius(12)
+                .tint(Constants.Colors.accentPink)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
                         .stroke(Constants.Colors.accentPink.opacity(0.3), lineWidth: 1)
                 )
+                .onAppear {
+                    UITextView.appearance().textColor = UIColor(Constants.Colors.textWhite)
+                }
 
             Text("投票履歴を選択")
                 .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
@@ -412,16 +419,19 @@ struct CreatePostView: View {
 
                 TextEditor(text: $viewModel.goodsDescription)
                     .font(.system(size: Constants.Typography.bodySize))
-                    .foregroundColor(Constants.Colors.textWhite)
+                    .scrollContentBackground(.hidden)
                     .padding(8)
                     .frame(minHeight: 80)
-                    .scrollContentBackground(.hidden)
-                    .background(Color.white.opacity(0.05))
+                    .background(Constants.Colors.cardDark)
                     .cornerRadius(12)
+                    .tint(Constants.Colors.accentPink)
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
                             .stroke(Constants.Colors.accentPink.opacity(0.3), lineWidth: 1)
                     )
+                    .onAppear {
+                        UITextView.appearance().textColor = UIColor(Constants.Colors.textWhite)
+                    }
             }
         }
         .sheet(isPresented: $showImagePicker) {

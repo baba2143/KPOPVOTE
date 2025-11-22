@@ -138,10 +138,14 @@ struct CreateCollectionView: View {
 
                                 TextEditor(text: $viewModel.description)
                                     .frame(height: 120)
+                                    .scrollContentBackground(.hidden)
                                     .padding(12)
                                     .background(Constants.Colors.cardDark)
                                     .cornerRadius(12)
-                                    .foregroundColor(Constants.Colors.textWhite)
+                                    .tint(Constants.Colors.accentPink)
+                                    .onAppear {
+                                        UITextView.appearance().textColor = UIColor(Constants.Colors.textWhite)
+                                    }
 
                                 HStack {
                                     Spacer()

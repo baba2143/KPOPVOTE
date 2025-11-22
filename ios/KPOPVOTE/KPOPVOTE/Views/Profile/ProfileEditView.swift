@@ -163,12 +163,15 @@ struct ProfileEditView: View {
 
                 TextEditor(text: $viewModel.bio)
                     .font(.system(size: Constants.Typography.bodySize))
-                    .foregroundColor(Constants.Colors.textWhite)
+                    .scrollContentBackground(.hidden)
                     .padding(8)
                     .frame(minHeight: 100)
-                    .scrollContentBackground(.hidden)
-                    .background(Color.white.opacity(0.05))
+                    .background(Constants.Colors.cardDark)
                     .cornerRadius(12)
+                    .tint(Constants.Colors.accentPink)
+                    .onAppear {
+                        UITextView.appearance().textColor = UIColor(Constants.Colors.textWhite)
+                    }
             }
 
             if let error = viewModel.bioError {

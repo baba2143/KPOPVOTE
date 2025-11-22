@@ -40,11 +40,14 @@ struct PostEditView: View {
 
                         TextEditor(text: $editedText)
                             .frame(minHeight: 150)
+                            .scrollContentBackground(.hidden)
                             .padding(Constants.Spacing.medium)
                             .background(Constants.Colors.cardDark)
                             .cornerRadius(12)
-                            .foregroundColor(Constants.Colors.textWhite)
-                            .scrollContentBackground(.hidden)
+                            .tint(Constants.Colors.accentPink)
+                            .onAppear {
+                                UITextView.appearance().textColor = UIColor(Constants.Colors.textWhite)
+                            }
                     }
 
                     // Error Message
