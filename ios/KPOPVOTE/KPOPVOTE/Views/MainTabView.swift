@@ -65,6 +65,8 @@ struct MainTabView: View {
             }
             .edgesIgnoringSafeArea(.bottom)
         }
+        // MARK: - Rollback Point: Uncomment below to restore original confirmationDialog
+        /*
         .confirmationDialog("新規作成", isPresented: $showCreateMenu, titleVisibility: .visible) {
             Button("📋 投票タスクを登録") {
                 showingTaskSheet = true
@@ -76,6 +78,22 @@ struct MainTabView: View {
                 showCreatePost = true
             }
             Button("キャンセル", role: .cancel) {}
+        }
+        */
+        // Custom Glassmorphism Menu
+        .fullScreenCover(isPresented: $showCreateMenu) {
+            CreateMenuView(
+                onTaskCreate: {
+                    showingTaskSheet = true
+                },
+                onCollectionCreate: {
+                    showCreateCollection = true
+                },
+                onPostCreate: {
+                    showCreatePost = true
+                }
+            )
+            .background(BackgroundClearView())
         }
         .sheet(isPresented: $showingTaskSheet) {
             TaskRegistrationView()
@@ -560,6 +578,19 @@ struct SettingsRow: View {
         .padding()
         .background(Color.clear)
     }
+}
+
+// MARK: - Background Clear View Helper
+struct BackgroundClearView: UIViewRepresentable {
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        DispatchQueue.main.async {
+            view.superview?.superview?.backgroundColor = .clear
+        }
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {}
 }
 
 // MARK: - Preview
