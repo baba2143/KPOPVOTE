@@ -55,8 +55,7 @@ struct VotesTabView: View {
 struct DiscoverContentView: View {
     @EnvironmentObject var tabCoordinator: TabCoordinator
     @StateObject private var viewModel = CollectionViewModel()
-    @State private var selectedCollectionId: String?
-    @State private var showCollectionDetail = false
+    @State private var sheetContent: SheetContent?
 
     var body: some View {
         ZStack {
@@ -114,8 +113,7 @@ struct DiscoverContentView: View {
                                 TrendingSectionView(
                                     collections: viewModel.trendingCollections,
                                     onSelectCollection: { collection in
-                                        selectedCollectionId = collection.id
-                                        showCollectionDetail = true
+                                        sheetContent = .collectionDetail(collectionId: collection.id)
                                     }
                                 )
                             }
@@ -125,8 +123,7 @@ struct DiscoverContentView: View {
                                 title: viewModel.searchQuery.isEmpty ? "最新のコレクション" : "検索結果",
                                 collections: viewModel.searchQuery.isEmpty ? viewModel.latestCollections : viewModel.searchResults,
                                 onSelectCollection: { collection in
-                                    selectedCollectionId = collection.id
-                                    showCollectionDetail = true
+                                    sheetContent = .collectionDetail(collectionId: collection.id)
                                 },
                                 onLoadMore: {
                                     Task {
@@ -144,8 +141,8 @@ struct DiscoverContentView: View {
                 }
             }
         }
-        .sheet(isPresented: $showCollectionDetail) {
-            if let collectionId = selectedCollectionId {
+        .sheet(item: $sheetContent) { content in
+            if case .collectionDetail(let collectionId) = content {
                 NavigationView {
                     CollectionDetailView(collectionId: collectionId)
                         .environmentObject(tabCoordinator)
@@ -165,8 +162,7 @@ struct DiscoverContentView: View {
 struct SavedCollectionsContentView: View {
     @EnvironmentObject var tabCoordinator: TabCoordinator
     @StateObject private var viewModel = CollectionViewModel()
-    @State private var selectedCollectionId: String?
-    @State private var showCollectionDetail = false
+    @State private var sheetContent: SheetContent?
 
     var body: some View {
         ZStack {
@@ -202,8 +198,7 @@ struct SavedCollectionsContentView: View {
                             ForEach(viewModel.savedCollections) { collection in
                                 CollectionCardView(collection: collection)
                                     .onTapGesture {
-                                        selectedCollectionId = collection.id
-                                        showCollectionDetail = true
+                                        sheetContent = .collectionDetail(collectionId: collection.id)
                                     }
                                     .onAppear {
                                         if collection.id == viewModel.savedCollections.last?.id && viewModel.hasNextPage {
@@ -232,8 +227,8 @@ struct SavedCollectionsContentView: View {
                 }
             }
         }
-        .sheet(isPresented: $showCollectionDetail) {
-            if let collectionId = selectedCollectionId {
+        .sheet(item: $sheetContent) { content in
+            if case .collectionDetail(let collectionId) = content {
                 NavigationView {
                     CollectionDetailView(collectionId: collectionId)
                         .environmentObject(tabCoordinator)
@@ -252,8 +247,7 @@ struct SavedCollectionsContentView: View {
 struct MyCollectionsContentView: View {
     @EnvironmentObject var tabCoordinator: TabCoordinator
     @StateObject private var viewModel = CollectionViewModel()
-    @State private var selectedCollectionId: String?
-    @State private var showCollectionDetail = false
+    @State private var sheetContent: SheetContent?
 
     var body: some View {
         ZStack {
@@ -289,8 +283,7 @@ struct MyCollectionsContentView: View {
                             ForEach(viewModel.myCollections) { collection in
                                 CollectionCardView(collection: collection)
                                     .onTapGesture {
-                                        selectedCollectionId = collection.id
-                                        showCollectionDetail = true
+                                        sheetContent = .collectionDetail(collectionId: collection.id)
                                     }
                                     .onAppear {
                                         if collection.id == viewModel.myCollections.last?.id && viewModel.hasNextPage {
@@ -319,8 +312,8 @@ struct MyCollectionsContentView: View {
                 }
             }
         }
-        .sheet(isPresented: $showCollectionDetail) {
-            if let collectionId = selectedCollectionId {
+        .sheet(item: $sheetContent) { content in
+            if case .collectionDetail(let collectionId) = content {
                 NavigationView {
                     CollectionDetailView(collectionId: collectionId)
                         .environmentObject(tabCoordinator)

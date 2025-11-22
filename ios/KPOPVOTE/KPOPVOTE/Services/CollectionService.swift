@@ -455,6 +455,41 @@ class CollectionService {
         return result
     }
 
+    /// Add single task from collection to user's TASKS tab
+    /// - Parameters:
+    ///   - collectionId: Collection ID
+    ///   - taskId: Task ID within the collection
+    /// - Returns: Add single task response
+    func addSingleTaskToTasks(collectionId: String, taskId: String) async throws -> AddSingleTaskResponse {
+        guard let token = try await Auth.auth().currentUser?.getIDToken() else {
+            throw CollectionError.notAuthenticated
+        }
+
+        let url = URL(string: "\(Constants.API.collections)/\(collectionId)/tasks/\(taskId)/add")!
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        print("📥 [CollectionService] Adding single task: \(taskId) from collection: \(collectionId)")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw CollectionError.invalidResponse
+        }
+
+        guard httpResponse.statusCode == 200 else {
+            throw CollectionError.addToTasksFailed
+        }
+
+        let result = try JSONDecoder().decode(AddSingleTaskResponse.self, from: data)
+        print("✅ [CollectionService] Add single task result: \(result.data.message)")
+
+        return result
+    }
+
     // MARK: - Share Collection to Community
 
     /// Share collection to community timeline
@@ -575,6 +610,17 @@ struct ShareCollectionResponse: Codable {
 struct ShareCollectionData: Codable {
     let postId: String
     let collectionId: String
+}
+
+struct AddSingleTaskResponse: Codable {
+    let success: Bool
+    let data: AddSingleTaskData
+}
+
+struct AddSingleTaskData: Codable {
+    let taskId: String
+    let alreadyAdded: Bool
+    let message: String
 }
 
 // MARK: - Error Types

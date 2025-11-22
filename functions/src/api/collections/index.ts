@@ -13,6 +13,7 @@ import { updateCollection } from "./updateCollection";
 import { deleteCollection } from "./deleteCollection";
 import { saveCollection } from "./saveCollection";
 import { addToTasks } from "./addToTasks";
+import { addSingleTask } from "./addSingleTask";
 import { getSavedCollections } from "./getSavedCollections";
 import { getMyCollections } from "./getMyCollections";
 import { shareToCoommunity } from "./shareToCoommunity";
@@ -30,10 +31,18 @@ router.get("/:collectionId", getCollectionDetail); // GET /api/collections/:id
 router.post("/", authMiddleware, createCollection); // POST /api/collections
 router.put("/:collectionId", authMiddleware, updateCollection); // PUT /api/collections/:id
 router.delete("/:collectionId", authMiddleware, deleteCollection); // DELETE /api/collections/:id
-router.post("/:collectionId/save", authMiddleware, saveCollection); // POST /api/collections/:id/save
-router.post("/:collectionId/add-to-tasks", authMiddleware, addToTasks); // POST /api/collections/:id/add-to-tasks
-// POST /api/collections/:id/share-to-community
-router.post("/:collectionId/share-to-community", authMiddleware, shareToCoommunity);
+router.post("/:collectionId/save", authMiddleware, saveCollection);
+router.post("/:collectionId/add-to-tasks", authMiddleware, addToTasks);
+router.post(
+  "/:collectionId/tasks/:taskId/add",
+  authMiddleware,
+  addSingleTask
+);
+router.post(
+  "/:collectionId/share-to-community",
+  authMiddleware,
+  shareToCoommunity
+);
 
 // User collection routes
 router.get("/users/me/saved", authMiddleware, getSavedCollections); // GET /api/collections/users/me/saved

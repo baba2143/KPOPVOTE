@@ -304,6 +304,23 @@ class CollectionViewModel: ObservableObject {
         }
     }
 
+    /// Add single task from collection to user's task list
+    func addSingleTask(collectionId: String, task: VoteTaskInCollection) async -> AddSingleTaskData? {
+        do {
+            let response = try await collectionService.addSingleTaskToTasks(
+                collectionId: collectionId,
+                taskId: task.id
+            )
+
+            print("✅ [CollectionViewModel] Add single task result: \(response.data.message)")
+            return response.data
+        } catch {
+            errorMessage = NetworkErrorHandler.getUserMessage(for: error)
+            print("❌ [CollectionViewModel] Add single task failed: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
     // MARK: - Filter Methods
 
     /// Apply tag filter

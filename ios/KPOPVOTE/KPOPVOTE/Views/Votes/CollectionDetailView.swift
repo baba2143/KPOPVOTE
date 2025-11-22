@@ -16,6 +16,11 @@ struct CollectionDetailView: View {
     @State private var showAddToTasksConfirmation = false
     @State private var addToTasksResult: AddToTasksData?
 
+    @State private var showSingleTaskConfirmation = false
+    @State private var selectedTask: VoteTaskInCollection?
+    @State private var singleTaskResult: AddSingleTaskData?
+    @State private var showSingleTaskSuccess = false
+
     var body: some View {
         ZStack {
             Constants.Colors.backgroundDark
@@ -99,8 +104,14 @@ struct CollectionDetailView: View {
                         .padding(.horizontal)
 
                         // Tasks Section
-                        CollectionTasksListView(tasks: collection.tasks)
-                            .padding(.horizontal)
+                        CollectionTasksListView(
+                            tasks: collection.tasks,
+                            onTaskTap: { task in
+                                selectedTask = task
+                                showSingleTaskConfirmation = true
+                            }
+                        )
+                        .padding(.horizontal)
 
                         // Creator Info Section
                         CreatorInfoView(collection: collection)
@@ -119,6 +130,13 @@ struct CollectionDetailView: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button("キャンセル") {
+                    dismiss()
+                }
+                .foregroundColor(Constants.Colors.textWhite)
+            }
+
             ToolbarItem(placement: .navigationBarTrailing) {
                 if let collection = viewModel.currentCollection {
                     Menu {
@@ -166,6 +184,47 @@ struct CollectionDetailView: View {
         } message: {
             if let result = addToTasksResult {
                 Text("\(result.addedCount)個のタスクを追加しました\n（\(result.skippedCount)個は既に登録済みのためスキップ）")
+            }
+        }
+        .alert("タスクを追加", isPresented: $showSingleTaskConfirmation) {
+            Button("追加", role: .none) {
+                Task {
+                    guard let task = selectedTask else { return }
+                    if let result = await viewModel.addSingleTask(
+                        collectionId: collectionId,
+                        task: task
+                    ) {
+                        singleTaskResult = result
+
+                        // Haptic feedback
+                        let generator = UINotificationFeedbackGenerator()
+                        generator.notificationOccurred(.success)
+
+                        showSingleTaskSuccess = true
+                    }
+                }
+            }
+            Button("キャンセル", role: .cancel) { }
+        } message: {
+            if let task = selectedTask {
+                Text("「\(task.title)」をTASKSに追加しますか？")
+            }
+        }
+        .alert("タスク追加完了", isPresented: $showSingleTaskSuccess) {
+            Button("TASKSで確認", role: .none) {
+                dismiss()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    tabCoordinator.navigateToTasks()
+                }
+            }
+            Button("閉じる", role: .cancel) { }
+        } message: {
+            if let result = singleTaskResult {
+                if result.alreadyAdded {
+                    Text("このタスクは既に追加されています")
+                } else {
+                    Text("TASKSに追加しました。TASKSで確認しますか？")
+                }
             }
         }
         .onAppear {
@@ -306,6 +365,7 @@ struct ActionButtonsView: View {
 // MARK: - Tasks List View
 struct CollectionTasksListView: View {
     let tasks: [VoteTaskInCollection]
+    let onTaskTap: (VoteTaskInCollection) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -337,6 +397,9 @@ struct CollectionTasksListView: View {
                 VStack(spacing: 12) {
                     ForEach(tasks.sorted(by: { $0.orderIndex < $1.orderIndex })) { task in
                         CollectionTaskCardView(task: task)
+                            .onTapGesture {
+                                onTaskTap(task)
+                            }
                     }
                 }
             }

@@ -7,11 +7,24 @@
 
 import SwiftUI
 
+// MARK: - Sheet Content Type
+enum SheetContent: Identifiable {
+    case collectionDetail(collectionId: String)
+    case createCollection
+
+    var id: String {
+        switch self {
+        case .collectionDetail(let id):
+            return "detail_\(id)"
+        case .createCollection:
+            return "create"
+        }
+    }
+}
+
 struct DiscoverView: View {
     @StateObject private var viewModel = CollectionViewModel()
-    @State private var selectedCollectionId: String?
-    @State private var showCollectionDetail = false
-    @State private var showCreateCollection = false
+    @State private var sheetContent: SheetContent?
 
     var body: some View {
         NavigationView {
@@ -70,9 +83,8 @@ struct DiscoverView: View {
                                     TrendingSectionView(
                                         collections: viewModel.trendingCollections,
                                         onSelectCollection: { collection in
-                                            print("🔍 [DiscoverView] Selected trending collection: \(collection.id) - \(collection.title)")
-                                            selectedCollectionId = collection.id
-                                            showCollectionDetail = true
+                                            print("🔍 [DiscoverView] Trending collection tapped: \(collection.id)")
+                                            sheetContent = .collectionDetail(collectionId: collection.id)
                                         }
                                     )
                                 }
@@ -82,9 +94,8 @@ struct DiscoverView: View {
                                     title: viewModel.searchQuery.isEmpty ? "最新のコレクション" : "検索結果",
                                     collections: viewModel.searchQuery.isEmpty ? viewModel.latestCollections : viewModel.searchResults,
                                     onSelectCollection: { collection in
-                                        print("🔍 [DiscoverView] Selected trending collection: \(collection.id) - \(collection.title)")
-                                        selectedCollectionId = collection.id
-                                        showCollectionDetail = true
+                                        print("🔍 [DiscoverView] Collection tapped: \(collection.id)")
+                                        sheetContent = .collectionDetail(collectionId: collection.id)
                                     },
                                     onLoadMore: {
                                         Task {
@@ -107,7 +118,7 @@ struct DiscoverView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
-                        showCreateCollection = true
+                        sheetContent = .createCollection
                     }) {
                         Image(systemName: "plus.circle.fill")
                             .foregroundColor(Constants.Colors.accentPink)
@@ -115,15 +126,15 @@ struct DiscoverView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showCreateCollection) {
-                // TODO: Create Collection View (Week 3)
-                Text("コレクション作成画面（Week 3で実装）")
-            }
-            .sheet(isPresented: $showCollectionDetail) {
-                if let collectionId = selectedCollectionId {
+            .sheet(item: $sheetContent) { content in
+                switch content {
+                case .collectionDetail(let collectionId):
                     NavigationView {
                         CollectionDetailView(collectionId: collectionId)
                     }
+                case .createCollection:
+                    // TODO: Create Collection View (Week 3)
+                    Text("コレクション作成画面（Week 3で実装）")
                 }
             }
             .onAppear {
@@ -278,10 +289,12 @@ struct TrendingSectionView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
                     ForEach(collections) { collection in
-                        TrendingCollectionCard(collection: collection)
-                            .onTapGesture {
-                                onSelectCollection(collection)
-                            }
+                        Button(action: {
+                            onSelectCollection(collection)
+                        }) {
+                            TrendingCollectionCard(collection: collection)
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
                 }
                 .padding(.horizontal)
@@ -377,16 +390,18 @@ struct CollectionsListSectionView: View {
             } else {
                 LazyVStack(spacing: 16) {
                     ForEach(collections) { collection in
-                        CollectionCardView(collection: collection)
-                            .onTapGesture {
-                                onSelectCollection(collection)
+                        Button(action: {
+                            onSelectCollection(collection)
+                        }) {
+                            CollectionCardView(collection: collection)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .onAppear {
+                            // Load more when reaching last item
+                            if collection.id == collections.last?.id && hasNextPage {
+                                onLoadMore()
                             }
-                            .onAppear {
-                                // Load more when reaching last item
-                                if collection.id == collections.last?.id && hasNextPage {
-                                    onLoadMore()
-                                }
-                            }
+                        }
                     }
                 }
                 .padding(.horizontal)
