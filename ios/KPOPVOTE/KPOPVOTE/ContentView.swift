@@ -41,11 +41,13 @@ struct HomeView: View {
     @EnvironmentObject var authService: AuthService
     @StateObject private var viewModel = HomeViewModel()
     @StateObject private var biasViewModel = BiasViewModel()
+    @StateObject private var pointsViewModel = PointsViewModel()
     @Binding var selectedTab: Int
     @State private var showLogoutConfirm = false
     @State private var selectedVoteId: String?
     @State private var showVoteDetail = false
     @State private var selectedPostId: IdentifiableString?
+    @State private var showPointsHistory = false
 
     var body: some View {
         NavigationView {
@@ -165,19 +167,67 @@ struct HomeView: View {
                 }
 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        // Navigate to notifications
-                    }) {
-                        ZStack(alignment: .topTrailing) {
-                            Image(systemName: "bell.fill")
-                                .font(.system(size: 20))
-                                .foregroundColor(Constants.Colors.textWhite)
+                    HStack(spacing: 12) {
+                        // Multi-Point Display Button
+                        Button(action: {
+                            showPointsHistory = true
+                        }) {
+                            HStack(spacing: 6) {
+                                // Premium Points (Red)
+                                HStack(spacing: 2) {
+                                    Circle()
+                                        .fill(Color.red)
+                                        .frame(width: 6, height: 6)
+                                    if pointsViewModel.isLoading {
+                                        ProgressView()
+                                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                            .scaleEffect(0.6)
+                                    } else {
+                                        Text("\(pointsViewModel.premiumPoints)")
+                                            .font(.system(size: 12, weight: .bold))
+                                            .foregroundColor(.white)
+                                    }
+                                }
 
-                            // Notification badge
-                            Circle()
-                                .fill(Constants.Colors.statusUrgent)
-                                .frame(width: 8, height: 8)
-                                .offset(x: 4, y: -4)
+                                // Regular Points (Blue)
+                                HStack(spacing: 2) {
+                                    Circle()
+                                        .fill(Color.blue)
+                                        .frame(width: 6, height: 6)
+                                    if pointsViewModel.isLoading {
+                                        ProgressView()
+                                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                            .scaleEffect(0.6)
+                                    } else {
+                                        Text("\(pointsViewModel.regularPoints)")
+                                            .font(.system(size: 12, weight: .bold))
+                                            .foregroundColor(.white)
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.white.opacity(0.1))
+                            )
+                        }
+
+                        // Notification Button
+                        Button(action: {
+                            // Navigate to notifications
+                        }) {
+                            ZStack(alignment: .topTrailing) {
+                                Image(systemName: "bell.fill")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(Constants.Colors.textWhite)
+
+                                // Notification badge
+                                Circle()
+                                    .fill(Constants.Colors.statusUrgent)
+                                    .frame(width: 8, height: 8)
+                                    .offset(x: 4, y: -4)
+                            }
                         }
                     }
                 }
@@ -194,6 +244,11 @@ struct HomeView: View {
                 await viewModel.loadFeaturedVotes()
                 await biasViewModel.loadIdols()
                 await biasViewModel.loadCurrentBias()
+                await pointsViewModel.loadPoints()
+                await pointsViewModel.claimDailyLoginBonus()
+            }
+            .sheet(isPresented: $showPointsHistory) {
+                PointsHistoryView()
             }
             .sheet(isPresented: $showVoteDetail) {
                 if let voteId = selectedVoteId {
