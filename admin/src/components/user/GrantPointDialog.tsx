@@ -10,9 +10,14 @@ import {
   Typography,
   Alert,
   CircularProgress,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
+  FormLabel,
 } from '@mui/material';
 import { UserListItem } from '../../types/user';
-import { grantPoints } from '../../services/userService';
+import { grantPoints } from '../../services/rewardService';
+import { PointType } from '../../types/reward';
 
 interface GrantPointDialogProps {
   open: boolean;
@@ -28,6 +33,7 @@ export const GrantPointDialog: React.FC<GrantPointDialogProps> = ({
   onSuccess,
 }) => {
   const [points, setPoints] = useState<string>('');
+  const [pointType, setPointType] = useState<PointType>('regular');
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +41,7 @@ export const GrantPointDialog: React.FC<GrantPointDialogProps> = ({
 
   const handleClose = () => {
     setPoints('');
+    setPointType('regular');
     setReason('');
     setError(null);
     setSuccess(false);
@@ -63,6 +70,7 @@ export const GrantPointDialog: React.FC<GrantPointDialogProps> = ({
       await grantPoints({
         uid: user.uid,
         points: pointsNum,
+        pointType,
         reason: reason.trim(),
       });
       setSuccess(true);
@@ -81,7 +89,7 @@ export const GrantPointDialog: React.FC<GrantPointDialogProps> = ({
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
       <form onSubmit={handleSubmit}>
-        <DialogTitle>ポイント付与・減算</DialogTitle>
+        <DialogTitle>ポイント付与・減算（マルチポイント対応）</DialogTitle>
         <DialogContent>
           {user && (
             <Box mb={2}>
@@ -89,7 +97,10 @@ export const GrantPointDialog: React.FC<GrantPointDialogProps> = ({
                 ユーザー: {user.email}
               </Typography>
               <Typography variant="body2" color="textSecondary">
-                現在のポイント: {user.points}
+                🔴 プレミアムポイント: {user.premiumPoints || 0}
+              </Typography>
+              <Typography variant="body2" color="textSecondary">
+                🔵 通常ポイント: {user.regularPoints || user.points || 0}
               </Typography>
             </Box>
           )}
@@ -105,6 +116,28 @@ export const GrantPointDialog: React.FC<GrantPointDialogProps> = ({
               ポイントを付与しました
             </Alert>
           )}
+
+          <Box sx={{ mb: 2 }}>
+            <FormLabel component="legend">ポイントタイプ</FormLabel>
+            <RadioGroup
+              row
+              value={pointType}
+              onChange={(e) => setPointType(e.target.value as PointType)}
+            >
+              <FormControlLabel
+                value="regular"
+                control={<Radio />}
+                label="🔵 通常ポイント"
+                disabled={loading || success}
+              />
+              <FormControlLabel
+                value="premium"
+                control={<Radio />}
+                label="🔴 プレミアムポイント"
+                disabled={loading || success}
+              />
+            </RadioGroup>
+          </Box>
 
           <TextField
             label="ポイント数"

@@ -2,11 +2,15 @@
  * User management type definitions
  */
 
+export type PointType = "premium" | "regular";
+
 export interface UserListItem {
   uid: string;
   email: string;
   displayName: string | null;
   points: number;
+  premiumPoints?: number; // マルチポイント対応
+  regularPoints?: number; // マルチポイント対応
   isSuspended: boolean;
   createdAt: string;
 }
@@ -16,6 +20,8 @@ export interface UserDetail {
   email: string;
   displayName: string | null;
   points: number;
+  premiumPoints?: number; // マルチポイント対応
+  regularPoints?: number; // マルチポイント対応
   isSuspended: boolean;
   createdAt: string;
   taskCount: number;
@@ -27,13 +33,16 @@ export interface UserDetail {
 export interface GrantPointsRequest {
   uid: string;
   points: number;
+  pointType: PointType; // 🆕 マルチポイント対応
   reason: string;
 }
 
 export interface GrantPointsResponse {
   uid: string;
   pointsGranted: number;
-  currentPoints: number;
+  pointType: PointType; // 🆕 マルチポイント対応
+  currentPremiumPoints: number; // 🆕 マルチポイント対応
+  currentRegularPoints: number; // 🆕 マルチポイント対応
   reason: string;
 }
 

@@ -310,6 +310,7 @@ export interface UserSearchRequest {
 export interface PointGrantRequest {
   uid: string;
   points: number;
+  pointType: PointType;
   reason: string;
 }
 
@@ -452,4 +453,75 @@ export interface GetMyVotesRequest {
 export interface ShareMyVotesRequest {
   voteIds: string[];
   message?: string;
+}
+
+// Point System related types (Phase 1 - Week 1)
+export type PointType = "premium" | "regular" | "event" | "gift";
+
+export interface PointBalance {
+  premiumPoints: number;
+  regularPoints: number;
+  eventPoints?: number;
+  giftPoints?: number;
+  isPremium: boolean;
+  lastUpdated: string | null;
+}
+
+export interface PointTransaction {
+  id: string;
+  userId: string;
+  pointType: PointType;
+  points: number; // Positive for earning, negative for spending
+  type:
+    | "daily_login"
+    | "task_completion"
+    | "community_post"
+    | "community_like"
+    | "community_comment"
+    | "vote"
+    | "purchase"
+    | "subscription_first"
+    | "subscription_monthly"
+    | "subscription_conversion"
+    | "grant"
+    | "deduct"
+    | "campaign_bonus"
+    | "coupon";
+  relatedId?: string; // Post ID, Vote ID, Task ID, etc.
+  voteCount?: number; // For vote transactions
+  conversionRate?: number; // For subscription_conversion (e.g., 5:1)
+  reason?: string;
+  createdAt: Date;
+}
+
+export interface DailyLoginRequest {
+  // No parameters needed - uses authenticated user
+}
+
+export interface DailyLoginResponse {
+  pointsGranted: number;
+  pointType: PointType;
+  loginStreak: number;
+  isFirstTimeToday: boolean;
+  message: string;
+}
+
+export interface PointSelectionMode {
+  mode: "auto" | "premium" | "regular";
+}
+
+export interface VoteExecuteRequestWithPoints extends VoteExecuteRequest {
+  voteCount: number; // Number of votes to cast
+  pointSelection: "auto" | "premium" | "regular"; // Point selection mode
+}
+
+export interface ConvertPointsRequest {
+  // No parameters needed - triggered automatically on subscription cancellation
+}
+
+export interface ConvertPointsResponse {
+  premiumPointsConverted: number;
+  regularPointsGranted: number;
+  conversionRate: number;
+  message: string;
 }

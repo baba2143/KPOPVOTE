@@ -1,5 +1,6 @@
 /**
- * Search users
+ * Get all reward settings
+ * 報酬設定一覧取得（管理者専用）
  */
 
 import * as functions from "firebase-functions";
@@ -7,7 +8,16 @@ import * as admin from "firebase-admin";
 import { ApiResponse } from "../types";
 import { verifyToken, verifyAdmin, AuthenticatedRequest } from "../middleware/auth";
 
-export const searchUsers = functions.https.onRequest(async (req, res) => {
+export interface RewardSetting {
+  id: string;
+  actionType: string;
+  basePoints: number;
+  description: string;
+  isActive: boolean;
+  updatedAt: Date;
+}
+
+export const getRewardSettings = functions.https.onRequest(async (req, res) => {
   res.set("Access-Control-Allow-Origin", "*");
   res.set("Access-Control-Allow-Methods", "GET");
   res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
@@ -22,50 +32,51 @@ export const searchUsers = functions.https.onRequest(async (req, res) => {
     return;
   }
 
+  // 認証チェック
   await new Promise<void>((resolve, reject) => {
     verifyToken(req as AuthenticatedRequest, res, (error?: unknown) => error ? reject(error) : resolve());
   });
 
+  // 管理者チェック
   await new Promise<void>((resolve, reject) => {
     verifyAdmin(req as AuthenticatedRequest, res, (error?: unknown) => error ? reject(error) : resolve());
   });
 
   try {
-    const query = req.query.query as string | undefined;
-    const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
-
     const db = admin.firestore();
-    let usersQuery = db.collection("users").limit(limit);
+    const snapshot = await db.collection("rewardSettings").get();
 
-    // Simple search by email or displayName prefix
-    if (query) {
-      usersQuery = usersQuery
-        .where("email", ">=", query)
-        .where("email", "<=", query + "\uf8ff") as admin.firestore.Query<admin.firestore.DocumentData>;
+    if (snapshot.empty) {
+      // rewardSettingsが未作成の場合、空配列を返す
+      res.status(200).json({
+        success: true,
+        data: [],
+      } as ApiResponse<RewardSetting[]>);
+      return;
     }
 
-    const snapshot = await usersQuery.get();
+    const settings: RewardSetting[] = [];
 
-    const users = snapshot.docs.map((doc) => {
+    snapshot.forEach((doc) => {
       const data = doc.data();
-      return {
-        uid: doc.id,
-        email: data.email,
-        displayName: data.displayName || null,
-        points: data.points || 0,
-        premiumPoints: data.premiumPoints || 0,
-        regularPoints: data.regularPoints || 0,
-        isSuspended: data.isSuspended || false,
-        createdAt: data.createdAt?.toDate().toISOString() || null,
-      };
+      settings.push({
+        id: doc.id,
+        actionType: data.actionType,
+        basePoints: data.basePoints,
+        description: data.description,
+        isActive: data.isActive,
+        updatedAt: data.updatedAt?.toDate() || new Date(),
+      });
     });
+
+    console.log(`✅ [getRewardSettings] Retrieved ${settings.length} settings`);
 
     res.status(200).json({
       success: true,
-      data: { users, count: users.length },
-    } as ApiResponse<unknown>);
+      data: settings,
+    } as ApiResponse<RewardSetting[]>);
   } catch (error: unknown) {
-    console.error("Search users error:", error);
+    console.error("❌ [getRewardSettings] Error:", error);
     res.status(500).json({ success: false, error: "Internal server error" } as ApiResponse<null>);
   }
 });

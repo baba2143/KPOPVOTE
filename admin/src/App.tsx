@@ -11,6 +11,7 @@ import { ExternalAppListPage } from './pages/ExternalAppListPage';
 import { CommunityMonitorPage } from './pages/CommunityMonitorPage';
 import { UserListPage } from './pages/UserListPage';
 import { AdminLogPage } from './pages/AdminLogPage';
+import { RewardSettingsPage } from './pages/RewardSettingsPage';
 import { AppLayout } from './components/layout/AppLayout';
 import { PrivateRoute } from './components/layout/PrivateRoute';
 
@@ -116,6 +117,16 @@ function AppRoutes() {
           <PrivateRoute>
             <AppLayout>
               <AdminLogPage />
+            </AppLayout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/reward-settings"
+        element={
+          <PrivateRoute>
+            <AppLayout>
+              <RewardSettingsPage />
             </AppLayout>
           </PrivateRoute>
         }

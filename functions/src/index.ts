@@ -29,6 +29,10 @@ export { grantPoints } from "./admin/grantPoints";
 export { suspendUser } from "./admin/suspendUser";
 export { getAdminLogs } from "./admin/getAdminLogs";
 
+// Admin functions (Phase 1 - Week 1 - Reward Settings Management)
+export { getRewardSettings } from "./admin/getRewardSettings";
+export { updateRewardSetting } from "./admin/updateRewardSetting";
+
 // In-App Vote functions (Phase 0+)
 export { createInAppVote } from "./inAppVote/createInAppVote";
 export { listInAppVotes } from "./inAppVote/listInAppVotes";
@@ -55,6 +59,7 @@ export { seedExternalApps } from "./seedExternalApps";
 export { seedCommunityData } from "./community/seedCommunityData";
 export { fixUserBias } from "./community/fixUserBias";
 export { setTestUserBias } from "./community/setTestUserBias";
+export { seedRewardSettings } from "./seeds/seedRewardSettings";
 
 // Community functions (Phase 0+)
 export { getCommunityPosts } from "./community/getCommunityPosts";
@@ -88,6 +93,9 @@ export { deleteComment } from "./community/deleteComment";
 // Points functions (Phase 0 - Monetization)
 export { getPoints } from "./points/getPoints";
 export { getPointHistory } from "./points/getPointHistory";
+
+// Points functions (Phase 1 - Week 1 - Multi-Point System)
+export { dailyLogin } from "./points/dailyLogin";
 
 // IAP functions (Phase 1A - Consumable IAP)
 export { verifyPurchase } from "./iap/verifyPurchase";

@@ -142,7 +142,8 @@ export const UserListPage: React.FC = () => {
             <TableRow>
               <TableCell>メール</TableCell>
               <TableCell>表示名</TableCell>
-              <TableCell align="right">ポイント</TableCell>
+              <TableCell align="right">🔴 Premium</TableCell>
+              <TableCell align="right">🔵 Regular</TableCell>
               <TableCell>ステータス</TableCell>
               <TableCell>登録日</TableCell>
               <TableCell align="center">アクション</TableCell>
@@ -153,7 +154,8 @@ export const UserListPage: React.FC = () => {
               <TableRow key={user.uid}>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>{user.displayName || '-'}</TableCell>
-                <TableCell align="right">{user.points}</TableCell>
+                <TableCell align="right">{user.premiumPoints || 0}</TableCell>
+                <TableCell align="right">{user.regularPoints || user.points || 0}</TableCell>
                 <TableCell>
                   {user.isSuspended ? (
                     <Chip label="停止中" color="error" size="small" />
