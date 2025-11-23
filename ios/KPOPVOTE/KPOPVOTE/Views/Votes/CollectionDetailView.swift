@@ -21,6 +21,9 @@ struct CollectionDetailView: View {
     @State private var singleTaskResult: AddSingleTaskData?
     @State private var showSingleTaskSuccess = false
 
+    @State private var showEditSheet = false
+    @State private var showDeleteConfirmation = false
+
     var body: some View {
         ZStack {
             Constants.Colors.backgroundDark
@@ -148,13 +151,13 @@ struct CollectionDetailView: View {
 
                         if viewModel.isOwner {
                             Button(action: {
-                                // TODO: Edit functionality (Week 3)
+                                showEditSheet = true
                             }) {
                                 Label("編集", systemImage: "pencil")
                             }
 
                             Button(role: .destructive, action: {
-                                // TODO: Delete functionality
+                                showDeleteConfirmation = true
                             }) {
                                 Label("削除", systemImage: "trash")
                             }
@@ -226,6 +229,30 @@ struct CollectionDetailView: View {
                     Text("TASKSに追加しました。TASKSで確認しますか？")
                 }
             }
+        }
+        .sheet(isPresented: $showEditSheet) {
+            if let collection = viewModel.currentCollection {
+                EditCollectionView(collectionId: collection.id)
+                    .onDisappear {
+                        // Reload collection data after edit
+                        Task {
+                            await viewModel.loadCollectionDetail(collectionId: collectionId)
+                        }
+                    }
+            }
+        }
+        .alert("コレクションを削除", isPresented: $showDeleteConfirmation) {
+            Button("削除", role: .destructive) {
+                Task {
+                    let success = await viewModel.deleteCollection(collectionId: collectionId)
+                    if success {
+                        dismiss()
+                    }
+                }
+            }
+            Button("キャンセル", role: .cancel) { }
+        } message: {
+            Text("このコレクションを削除してもよろしいですか？この操作は取り消せません。")
         }
         .onAppear {
             print("📱 [CollectionDetailView] onAppear - collectionId: \(collectionId)")

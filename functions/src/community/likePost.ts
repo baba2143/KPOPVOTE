@@ -1,11 +1,13 @@
 /**
  * Like/Unlike post (toggle)
+ * いいね獲得時に投稿者にポイント報酬を付与
  */
 
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { ApiResponse } from "../types";
 import { verifyToken, AuthenticatedRequest } from "../middleware/auth";
+import { grantRewardPoints } from "../utils/rewardHelper";
 
 export const likePost = functions.https.onRequest(async (req, res) => {
   res.set("Access-Control-Allow-Origin", "*");
@@ -103,6 +105,28 @@ export const likePost = functions.https.onRequest(async (req, res) => {
           relatedPostId: postId,
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
         });
+
+        // いいね獲得報酬を投稿者に付与
+        try {
+          const postOwnerDoc = await db.collection("users").doc(postData.userId).get();
+          const postOwnerData = postOwnerDoc.data();
+          const isPremium = postOwnerData?.isPremium || false;
+
+          const pointsGranted = await grantRewardPoints(
+            postData.userId,
+            "community_like",
+            isPremium,
+            postId,
+          );
+
+          console.log(
+            "✅ [likePost] Like reward granted to post owner: " +
+              `owner=${postData.userId}, post=${postId}, points=${pointsGranted}P, ` +
+              `type=${isPremium ? "premium" : "regular"}`,
+          );
+        } catch (rewardError) {
+          console.error("⚠️ [likePost] Failed to grant reward:", rewardError);
+        }
       }
 
       res.status(200).json({

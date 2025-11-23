@@ -127,6 +127,7 @@ enum Constants {
         // Points
         static let getPoints = "\(apiBaseURL)/getPoints"
         static let getPointHistory = "\(apiBaseURL)/getPointHistory"
+        static let dailyLogin = "\(apiBaseURL)/dailyLogin"
 
         // IAP (In-App Purchase)
         static let verifyPurchase = "\(apiBaseURL)/verifyPurchase"

@@ -1,12 +1,14 @@
 /**
  * Create comment on a post
  * Only followers of the post author can comment
+ * コメント投稿時に投稿者にポイント報酬を付与
  */
 
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { ApiResponse } from "../types";
 import { verifyToken, AuthenticatedRequest } from "../middleware/auth";
+import { grantRewardPoints } from "../utils/rewardHelper";
 
 interface CreateCommentRequest {
   postId: string;
@@ -130,6 +132,28 @@ export const createComment = functions.https.onRequest(async (req, res) => {
         read: false,
         createdAt: now,
       });
+
+      // コメント投稿報酬を投稿者に付与
+      try {
+        const postOwnerDoc = await db.collection("users").doc(postAuthorId).get();
+        const postOwnerData = postOwnerDoc.data();
+        const isPremium = postOwnerData?.isPremium || false;
+
+        const pointsGranted = await grantRewardPoints(
+          postAuthorId,
+          "community_comment",
+          isPremium,
+          postId,
+        );
+
+        console.log(
+          "✅ [createComment] Comment reward granted to post owner: " +
+            `owner=${postAuthorId}, post=${postId}, comment=${commentRef.id}, ` +
+            `points=${pointsGranted}P, type=${isPremium ? "premium" : "regular"}`,
+        );
+      } catch (rewardError) {
+        console.error("⚠️ [createComment] Failed to grant reward:", rewardError);
+      }
     }
 
     // Get updated comments count

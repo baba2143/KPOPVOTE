@@ -321,6 +321,26 @@ class CollectionViewModel: ObservableObject {
         }
     }
 
+    /// Delete collection
+    func deleteCollection(collectionId: String) async -> Bool {
+        do {
+            _ = try await collectionService.deleteCollection(collectionId: collectionId)
+
+            // Remove from local arrays if present
+            myCollections.removeAll { $0.id == collectionId }
+            savedCollections.removeAll { $0.id == collectionId }
+            latestCollections.removeAll { $0.id == collectionId }
+            trendingCollections.removeAll { $0.id == collectionId }
+
+            print("✅ [CollectionViewModel] Collection deleted successfully")
+            return true
+        } catch {
+            errorMessage = NetworkErrorHandler.getUserMessage(for: error)
+            print("❌ [CollectionViewModel] Delete collection failed: \(error.localizedDescription)")
+            return false
+        }
+    }
+
     // MARK: - Filter Methods
 
     /// Apply tag filter

@@ -1,11 +1,13 @@
 /**
  * Create community post
+ * 投稿作成時にポイント報酬を付与
  */
 
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { CreatePostRequest, ApiResponse } from "../types";
 import { verifyToken, AuthenticatedRequest } from "../middleware/auth";
+import { grantRewardPoints } from "../utils/rewardHelper";
 
 export const createPost = functions.https.onRequest(async (req, res) => {
   res.set("Access-Control-Allow-Origin", "*");
@@ -149,6 +151,26 @@ export const createPost = functions.https.onRequest(async (req, res) => {
     // Get user info to include in response
     const userDoc = await userRef.get();
     const userData = userDoc.exists ? userDoc.data() : null;
+
+    // 投稿作成報酬を付与
+    let pointsGranted = 0;
+    try {
+      const isPremium = userData?.isPremium || false;
+      pointsGranted = await grantRewardPoints(
+        currentUser.uid,
+        "community_post",
+        isPremium,
+        postRef.id,
+      );
+
+      console.log(
+        "✅ [createPost] Post creation reward granted: " +
+          `user=${currentUser.uid}, post=${postRef.id}, points=${pointsGranted}P, ` +
+          `type=${isPremium ? "premium" : "regular"}`,
+      );
+    } catch (rewardError) {
+      console.error("⚠️ [createPost] Failed to grant reward:", rewardError);
+    }
 
     // Build user object for response
     const userObject = {

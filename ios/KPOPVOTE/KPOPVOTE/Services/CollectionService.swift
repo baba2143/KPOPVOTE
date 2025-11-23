@@ -537,6 +537,109 @@ class CollectionService {
 
         return result
     }
+
+    // MARK: - Update Collection
+
+    /// Update existing collection
+    /// - Parameters:
+    ///   - collectionId: Collection ID to update
+    ///   - title: New title (1-50 characters)
+    ///   - description: New description (max 500 characters)
+    ///   - coverImage: New cover image URL (optional)
+    ///   - tags: New tags array (max 10 tags)
+    ///   - taskIds: Array of task IDs to include (max 50 tasks)
+    ///   - visibility: New visibility setting (public/followers/private)
+    /// - Returns: Updated collection response
+    func updateCollection(
+        collectionId: String,
+        title: String,
+        description: String,
+        coverImage: String?,
+        tags: [String],
+        taskIds: [String],
+        visibility: String
+    ) async throws -> UpdateCollectionResponse {
+        guard let token = try await Auth.auth().currentUser?.getIDToken() else {
+            throw CollectionError.notAuthenticated
+        }
+
+        let url = URL(string: "\(Constants.API.collections)/\(collectionId)")!
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "PUT"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        // Prepare tasks array with taskId and orderIndex
+        let tasks = taskIds.enumerated().map { (index, taskId) in
+            return [
+                "taskId": taskId,
+                "orderIndex": index
+            ]
+        }
+
+        let requestBody: [String: Any] = [
+            "title": title,
+            "description": description,
+            "coverImage": coverImage as Any,
+            "tags": tags,
+            "tasks": tasks,
+            "visibility": visibility
+        ]
+
+        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+
+        print("🔄 [CollectionService] Updating collection: \(collectionId)")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw CollectionError.invalidResponse
+        }
+
+        guard httpResponse.statusCode == 200 else {
+            throw CollectionError.updateFailed
+        }
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+
+        let result = try decoder.decode(UpdateCollectionResponse.self, from: data)
+        print("✅ [CollectionService] Collection updated successfully")
+
+        return result
+    }
+
+    /// Delete a collection
+    func deleteCollection(collectionId: String) async throws -> DeleteCollectionResponse {
+        guard let token = try await Auth.auth().currentUser?.getIDToken() else {
+            throw CollectionError.notAuthenticated
+        }
+
+        let url = URL(string: "\(Constants.API.collections)/\(collectionId)")!
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        print("🔄 [CollectionService] Deleting collection: \(collectionId)")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw CollectionError.invalidResponse
+        }
+
+        guard httpResponse.statusCode == 200 else {
+            throw CollectionError.deleteFailed
+        }
+
+        let decoder = JSONDecoder()
+        let result = try decoder.decode(DeleteCollectionResponse.self, from: data)
+        print("✅ [CollectionService] Collection deleted successfully")
+
+        return result
+    }
 }
 
 // MARK: - Response Models
@@ -623,6 +726,24 @@ struct AddSingleTaskData: Codable {
     let message: String
 }
 
+struct UpdateCollectionResponse: Codable {
+    let success: Bool
+    let data: UpdateCollectionData
+}
+
+struct UpdateCollectionData: Codable {
+    let collection: VoteCollection
+}
+
+struct DeleteCollectionResponse: Codable {
+    let success: Bool
+    let data: DeleteCollectionData
+}
+
+struct DeleteCollectionData: Codable {
+    let message: String
+}
+
 // MARK: - Error Types
 
 enum CollectionError: Error, LocalizedError {
@@ -633,6 +754,8 @@ enum CollectionError: Error, LocalizedError {
     case saveFailed
     case addToTasksFailed
     case shareFailed
+    case updateFailed
+    case deleteFailed
 
     var errorDescription: String? {
         switch self {
@@ -650,6 +773,10 @@ enum CollectionError: Error, LocalizedError {
             return "タスクの追加に失敗しました"
         case .shareFailed:
             return "コミュニティへの投稿に失敗しました"
+        case .updateFailed:
+            return "コレクションの更新に失敗しました"
+        case .deleteFailed:
+            return "コレクションの削除に失敗しました"
         }
     }
 }

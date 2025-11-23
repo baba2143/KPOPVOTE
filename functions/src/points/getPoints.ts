@@ -7,8 +7,11 @@ import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { ApiResponse } from "../types";
 
-interface GetPointsResponse {
-  points: number;
+interface MultiPointBalanceResponse {
+  premiumPoints: number;
+  regularPoints: number;
+  eventPoints: number;
+  giftPoints: number;
   isPremium: boolean;
   lastUpdated: string | null;
 }
@@ -49,8 +52,11 @@ export const getPoints = functions.https.onRequest(async (req, res) => {
 
     const userData = userDoc.data()!;
 
-    const response: GetPointsResponse = {
-      points: userData.points || 0,
+    const response: MultiPointBalanceResponse = {
+      premiumPoints: userData.premiumPoints || 0,
+      regularPoints: userData.regularPoints || 0,
+      eventPoints: userData.eventPoints || 0,
+      giftPoints: userData.giftPoints || 0,
       isPremium: userData.isPremium || false,
       lastUpdated: userData.updatedAt ? userData.updatedAt.toDate().toISOString() : null,
     };
@@ -58,7 +64,7 @@ export const getPoints = functions.https.onRequest(async (req, res) => {
     res.status(200).json({
       success: true,
       data: response,
-    } as ApiResponse<GetPointsResponse>);
+    } as ApiResponse<MultiPointBalanceResponse>);
   } catch (error: unknown) {
     console.error("Get points error:", error);
     res.status(500).json({ success: false, error: "Internal server error" } as ApiResponse<null>);
