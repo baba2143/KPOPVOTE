@@ -10,8 +10,16 @@ import SwiftUI
 
 @MainActor
 class PointsViewModel: ObservableObject {
+    // マルチポイント対応
+    @Published var premiumPoints: Int = 0
+    @Published var regularPoints: Int = 0
+    @Published var eventPoints: Int = 0
+    @Published var giftPoints: Int = 0
+
+    // 後方互換性
     @Published var points: Int = 0
     @Published var isPremium: Bool = false
+
     @Published var transactions: [PointTransaction] = []
     @Published var totalCount: Int = 0
     @Published var isLoading = false
@@ -20,21 +28,32 @@ class PointsViewModel: ObservableObject {
     @Published var showError = false
     @Published var hasMore = false
 
+    // デイリーログインボーナス
+    @Published var showDailyLoginBonus = false
+    @Published var dailyLoginBonus: DailyLoginResponse?
+
     private let pointsService = PointsService.shared
     private let limit = 20
     private var currentOffset = 0
 
-    // MARK: - Load Points Balance
+    // MARK: - Load Points Balance (Multi-Point)
     func loadPoints() async {
         isLoading = true
         errorMessage = nil
 
         do {
-            print("📡 [PointsViewModel] Loading points balance...")
-            let balance = try await pointsService.fetchPoints()
-            points = balance.points
+            print("📡 [PointsViewModel] Loading multi-point balance...")
+            let balance = try await pointsService.fetchMultiPointBalance()
+            premiumPoints = balance.premiumPoints
+            regularPoints = balance.regularPoints
+            eventPoints = balance.eventPoints ?? 0
+            giftPoints = balance.giftPoints ?? 0
             isPremium = balance.isPremium
-            print("✅ [PointsViewModel] Loaded points: \(points), isPremium: \(isPremium)")
+
+            // 後方互換性: 合計を points に設定
+            points = premiumPoints + regularPoints + eventPoints + giftPoints
+
+            print("✅ [PointsViewModel] Loaded: premium=\(premiumPoints), regular=\(regularPoints)")
         } catch {
             print("❌ [PointsViewModel] Failed to load points: \(error.localizedDescription)")
             errorMessage = "ポイント残高の取得に失敗しました"
@@ -42,6 +61,27 @@ class PointsViewModel: ObservableObject {
         }
 
         isLoading = false
+    }
+
+    // MARK: - Daily Login Bonus
+    func claimDailyLoginBonus() async {
+        do {
+            print("📡 [PointsViewModel] Claiming daily login bonus...")
+            let bonus = try await pointsService.claimDailyLoginBonus()
+            dailyLoginBonus = bonus
+
+            // ボーナス取得後、ポイント残高を更新
+            if bonus.isFirstTimeToday {
+                showDailyLoginBonus = true
+                await loadPoints()
+                print("✅ [PointsViewModel] Daily login bonus claimed: +\(bonus.pointsGranted)P")
+            } else {
+                print("ℹ️ [PointsViewModel] Already claimed today")
+            }
+        } catch {
+            print("❌ [PointsViewModel] Failed to claim daily login: \(error.localizedDescription)")
+            // デイリーログインエラーは表示しない（任意機能のため）
+        }
     }
 
     // MARK: - Load Point History

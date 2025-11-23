@@ -13,7 +13,9 @@ struct User: Codable, Identifiable {
     var displayName: String?
     var photoURL: String?
     var bio: String?
-    var points: Int
+    var points: Int  // 🆕 後方互換性のため残す
+    var premiumPoints: Int?  // 🆕 プレミアムポイント（赤ポイント）
+    var regularPoints: Int?  // 🆕 レギュラーポイント（青ポイント）
     var biasIds: [String]
     var followingCount: Int
     var followersCount: Int
@@ -30,6 +32,8 @@ struct User: Codable, Identifiable {
         case photoURL
         case bio
         case points
+        case premiumPoints
+        case regularPoints
         case biasIds
         case followingCount
         case followersCount
@@ -49,6 +53,8 @@ struct User: Codable, Identifiable {
         photoURL = try container.decodeIfPresent(String.self, forKey: .photoURL)
         bio = try container.decodeIfPresent(String.self, forKey: .bio)
         points = try container.decode(Int.self, forKey: .points)
+        premiumPoints = try container.decodeIfPresent(Int.self, forKey: .premiumPoints)
+        regularPoints = try container.decodeIfPresent(Int.self, forKey: .regularPoints)
         biasIds = try container.decodeIfPresent([String].self, forKey: .biasIds) ?? []
         followingCount = try container.decodeIfPresent(Int.self, forKey: .followingCount) ?? 0
         followersCount = try container.decodeIfPresent(Int.self, forKey: .followersCount) ?? 0
