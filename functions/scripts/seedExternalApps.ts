@@ -27,6 +27,7 @@ const externalApps = [
     appName: "IDOL CHAMP",
     appUrl: "https://www.idolchamp.com",
     iconUrl: "https://firebasestorage.googleapis.com/v0/b/kpopvote-9de2b.appspot.com/o/app-icons%2Fidol_champ.png?alt=media",
+    defaultCoverImageUrl: "https://firebasestorage.googleapis.com/v0/b/kpopvote-9de2b.appspot.com/o/app-covers%2Fidol_champ_cover.jpg?alt=media",
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
   },
@@ -35,6 +36,7 @@ const externalApps = [
     appName: "Mnet Plus",
     appUrl: "https://www.mnetplus.world",
     iconUrl: "https://firebasestorage.googleapis.com/v0/b/kpopvote-9de2b.appspot.com/o/app-icons%2Fmnet_plus.png?alt=media",
+    defaultCoverImageUrl: "https://firebasestorage.googleapis.com/v0/b/kpopvote-9de2b.appspot.com/o/app-covers%2Fmnet_plus_cover.jpg?alt=media",
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
   },
@@ -43,6 +45,7 @@ const externalApps = [
     appName: "MUBEAT",
     appUrl: "https://www.mubeat.io",
     iconUrl: "https://firebasestorage.googleapis.com/v0/b/kpopvote-9de2b.appspot.com/o/app-icons%2Fmubeat.png?alt=media",
+    defaultCoverImageUrl: "https://firebasestorage.googleapis.com/v0/b/kpopvote-9de2b.appspot.com/o/app-covers%2Fmubeat_cover.jpg?alt=media",
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
   },
@@ -60,7 +63,12 @@ async function seedExternalApps() {
       const doc = await docRef.get();
 
       if (doc.exists) {
-        console.log(`⚠️  External app "${app.appName}" (${appId}) already exists, skipping...`);
+        // Update existing app with new defaultCoverImageUrl
+        await docRef.update({
+          defaultCoverImageUrl: appData.defaultCoverImageUrl,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        console.log(`🔄 Updated external app "${app.appName}" (${appId}) with defaultCoverImageUrl`);
       } else {
         await docRef.set(appData);
         console.log(`✅ Created external app "${app.appName}" (${appId})`);
