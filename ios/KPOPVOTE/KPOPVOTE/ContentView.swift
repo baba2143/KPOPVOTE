@@ -186,6 +186,13 @@ struct HomeView: View {
 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 12) {
+                        // Store Button
+                        NavigationLink(destination: StoreView()) {
+                            Image(systemName: "cart.fill")
+                                .font(.system(size: 20))
+                                .foregroundColor(Constants.Colors.textWhite)
+                        }
+
                         // Multi-Point Display Button
                         Button(action: {
                             showPointsHistory = true

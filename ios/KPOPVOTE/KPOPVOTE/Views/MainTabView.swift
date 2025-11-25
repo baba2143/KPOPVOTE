@@ -37,21 +37,16 @@ struct MainTabView: View {
                     .tag(2)
                     .toolbar(.hidden, for: .tabBar)
 
-                // Store Tab
-                StoreView()
-                    .tag(3)
-                    .toolbar(.hidden, for: .tabBar)
-
                 // Community Tab
                 CommunityView(showCreatePost: $showCreatePost)
                     .environmentObject(authService)
-                    .tag(4)
+                    .tag(3)
                     .toolbar(.hidden, for: .tabBar)
 
                 // Profile Tab
                 ProfileView()
                     .environmentObject(authService)
-                    .tag(5)
+                    .tag(4)
                     .toolbar(.hidden, for: .tabBar)
             }
 
