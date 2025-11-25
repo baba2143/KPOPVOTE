@@ -31,106 +31,7 @@ struct VoteListView: View {
                 .padding(.vertical, 12)
 
                 // Content
-                if viewModel.isLoading {
-                    Spacer()
-                    ProgressView("読み込み中...")
-                        .progressViewStyle(CircularProgressViewStyle(tint: Constants.Colors.accentPink))
-                        .foregroundColor(Constants.Colors.textWhite)
-                    Spacer()
-                } else if let errorMessage = viewModel.errorMessage {
-                    Spacer()
-                    VoteErrorView(message: errorMessage) {
-                        Task {
-                            await viewModel.refresh()
-                        }
-                    }
-                    Spacer()
-                } else if viewModel.votes.isEmpty {
-                    Spacer()
-                    VoteEmptyStateView(status: viewModel.selectedStatus)
-                    Spacer()
-                } else {
-                    ScrollView {
-                        LazyVStack(spacing: 24) {
-                            // App Votes Section
-                            if !viewModel.votes.isEmpty {
-                                VStack(alignment: .leading, spacing: 16) {
-                                    Text("アプリ内投票")
-                                        .font(.system(size: 18, weight: .bold))
-                                        .foregroundColor(Constants.Colors.textWhite)
-                                        .padding(.horizontal)
-
-                                    LazyVStack(spacing: 16) {
-                                        ForEach(viewModel.votes) { vote in
-                                            VoteCardView(vote: vote) {
-                                                print("🎯 [VoteListView] VoteCard callback - vote.id: \(vote.id)")
-                                                selectedVoteId = vote.id
-                                                print("🎯 [VoteListView] Set selectedVoteId: \(String(describing: selectedVoteId))")
-                                                showVoteDetail = true
-                                                print("🎯 [VoteListView] Set showVoteDetail: \(showVoteDetail)")
-                                            }
-                                        }
-                                    }
-                                    .padding(.horizontal)
-                                }
-                            }
-
-                            // User Tasks Section
-                            VStack(alignment: .leading, spacing: 16) {
-                                Text("登録したタスク")
-                                    .font(.system(size: 18, weight: .bold))
-                                    .foregroundColor(Constants.Colors.textWhite)
-                                    .padding(.horizontal)
-
-                                // Task Filter
-                                TaskFilterView(
-                                    selectedFilter: viewModel.selectedTaskFilter,
-                                    onFilterChange: { filter in
-                                        viewModel.changeTaskFilter(filter)
-                                    }
-                                )
-                                .padding(.horizontal)
-
-                                // Task List
-                                if viewModel.isLoadingTasks {
-                                    HStack {
-                                        Spacer()
-                                        ProgressView()
-                                            .tint(Constants.Colors.accentPink)
-                                            .padding()
-                                        Spacer()
-                                    }
-                                } else if viewModel.filteredTasks.isEmpty {
-                                    VStack(spacing: 12) {
-                                        Image(systemName: "checkmark.circle")
-                                            .font(.system(size: 40))
-                                            .foregroundColor(Constants.Colors.textGray)
-                                        Text(emptyTaskMessage)
-                                            .font(.system(size: 14))
-                                            .foregroundColor(Constants.Colors.textGray)
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 32)
-                                } else {
-                                    LazyVStack(spacing: 16) {
-                                        ForEach(viewModel.filteredTasks) { task in
-                                            TaskCard(task: task, showCompleteButton: viewModel.selectedTaskFilter == .active) {
-                                                Task {
-                                                    await viewModel.completeTask(task)
-                                                }
-                                            }
-                                        }
-                                    }
-                                    .padding(.horizontal)
-                                }
-                            }
-                        }
-                        .padding(.vertical)
-                    }
-                    .refreshable {
-                        await viewModel.refreshAll()
-                    }
-                }
+                contentView
             }
         }
         .navigationTitle("投票")
@@ -164,6 +65,129 @@ struct VoteListView: View {
             Task {
                 await viewModel.loadUserTasks()
             }
+        }
+    }
+
+    @ViewBuilder
+    private var contentView: some View {
+        if viewModel.isLoading {
+            Spacer()
+            ProgressView("読み込み中...")
+                .progressViewStyle(CircularProgressViewStyle(tint: Constants.Colors.accentPink))
+                .foregroundColor(Constants.Colors.textWhite)
+            Spacer()
+        } else if let errorMessage = viewModel.errorMessage {
+            Spacer()
+            VoteErrorView(message: errorMessage) {
+                Task {
+                    await viewModel.refresh()
+                }
+            }
+            Spacer()
+        } else if viewModel.votes.isEmpty {
+            Spacer()
+            VoteEmptyStateView(status: viewModel.selectedStatus)
+            Spacer()
+        } else {
+            voteListContent
+        }
+    }
+
+    @ViewBuilder
+    private var voteListContent: some View {
+        ScrollView {
+            LazyVStack(spacing: 24) {
+                // App Votes Section
+                if !viewModel.votes.isEmpty {
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("アプリ内投票")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(Constants.Colors.textWhite)
+                            .padding(.horizontal)
+
+                        LazyVStack(spacing: 16) {
+                            ForEach(viewModel.votes) { vote in
+                                VoteCardView(vote: vote) {
+                                    print("🎯 [VoteListView] VoteCard callback - vote.id: \(vote.id)")
+                                    selectedVoteId = vote.id
+                                    print("🎯 [VoteListView] Set selectedVoteId: \(String(describing: selectedVoteId))")
+                                    showVoteDetail = true
+                                    print("🎯 [VoteListView] Set showVoteDetail: \(showVoteDetail)")
+                                }
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+                }
+
+                // User Tasks Section
+                tasksSection
+            }
+            .padding(.vertical)
+        }
+        .refreshable {
+            await viewModel.refreshAll()
+        }
+    }
+
+    @ViewBuilder
+    private var tasksSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("登録したタスク")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(Constants.Colors.textWhite)
+                .padding(.horizontal)
+
+            // Task Filter
+            TaskFilterView(
+                selectedFilter: viewModel.selectedTaskFilter,
+                onFilterChange: { filter in
+                    viewModel.changeTaskFilter(filter)
+                }
+            )
+            .padding(.horizontal)
+
+            // Task List
+            taskList
+        }
+    }
+
+    @ViewBuilder
+    private var taskList: some View {
+        if viewModel.isLoadingTasks {
+            HStack {
+                Spacer()
+                ProgressView()
+                    .tint(Constants.Colors.accentPink)
+                    .padding()
+                Spacer()
+            }
+        } else if viewModel.filteredTasks.isEmpty {
+            VStack(spacing: 12) {
+                Image(systemName: "checkmark.circle")
+                    .font(.system(size: 40))
+                    .foregroundColor(Constants.Colors.textGray)
+                Text(emptyTaskMessage)
+                    .font(.system(size: 14))
+                    .foregroundColor(Constants.Colors.textGray)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 32)
+        } else {
+            LazyVStack(spacing: 16) {
+                ForEach(viewModel.filteredTasks) { task in
+                    TaskCard(task: task, showCompleteButton: viewModel.selectedTaskFilter == .active, onComplete: {
+                        Task {
+                            await viewModel.completeTask(task)
+                        }
+                    }, onDelete: {
+                        Task {
+                            await viewModel.deleteTask(task)
+                        }
+                    })
+                }
+            }
+            .padding(.horizontal)
         }
     }
 

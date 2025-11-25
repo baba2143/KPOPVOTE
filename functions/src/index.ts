@@ -19,6 +19,8 @@ export { registerTask } from "./task/registerTask";
 export { getUserTasks } from "./task/getUserTasks";
 export { fetchTaskOGP } from "./task/fetchTaskOGP";
 export { updateTaskStatus } from "./task/updateTaskStatus";
+export { updateTask } from "./task/updateTask";
+export { deleteTask } from "./task/deleteTask";
 
 // Admin functions (Phase 0+)
 export { setAdmin } from "./admin/setAdmin";

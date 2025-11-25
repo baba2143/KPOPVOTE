@@ -8,8 +8,12 @@
 import SwiftUI
 
 struct TaskRegistrationView: View {
-    @StateObject private var viewModel = TaskRegistrationViewModel()
+    @ObservedObject var viewModel: TaskRegistrationViewModel
     @Environment(\.dismiss) var dismiss
+
+    init(task: VoteTask? = nil) {
+        self.viewModel = TaskRegistrationViewModel(task: task)
+    }
 
     // MARK: - Computed Properties
     private var buttonGradient: LinearGradient {
@@ -98,6 +102,8 @@ struct TaskRegistrationView: View {
                         .labelsHidden()
                         .tint(Constants.Colors.accentPink)
                         .colorScheme(.dark)
+                        .environment(\.locale, Locale(identifier: "ja_JP"))
+                        .environment(\.calendar, Calendar(identifier: .japanese))
                         .padding()
                         .background(Constants.Colors.cardDark)
                         .cornerRadius(12)
@@ -143,22 +149,75 @@ struct TaskRegistrationView: View {
                             .foregroundColor(Constants.Colors.textGray)
                     }
 
-                    // Bias IDs Input (Optional, MVP version)
+                    // Member Selection (Optional)
                     VStack(alignment: .leading, spacing: Constants.Spacing.small) {
                         Text("対象メンバー（任意）")
                             .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
                             .foregroundColor(Constants.Colors.textWhite)
 
-                        TextField("例: blackpink, twice, bts（カンマ区切り）", text: $viewModel.biasIdsText)
-                            .font(.system(size: Constants.Typography.bodySize))
-                            .textFieldStyle(UnifiedTextFieldStyle())
-                            .autocapitalization(.none)
+                        // Selected members chips
+                        if !viewModel.selectedMemberNames.isEmpty {
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 8) {
+                                    ForEach(Array(viewModel.selectedMemberNames.enumerated()), id: \.offset) { index, name in
+                                        HStack(spacing: 6) {
+                                            Text(name)
+                                                .font(.system(size: 14))
+                                                .foregroundColor(Constants.Colors.textWhite)
+
+                                            Button(action: {
+                                                viewModel.selectedMemberNames.remove(at: index)
+                                                viewModel.selectedMemberIds.remove(at: index)
+                                            }) {
+                                                Image(systemName: "xmark.circle.fill")
+                                                    .font(.system(size: 16))
+                                                    .foregroundColor(Constants.Colors.textGray)
+                                            }
+                                        }
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 8)
+                                        .background(Constants.Colors.accentPink.opacity(0.2))
+                                        .cornerRadius(16)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 16)
+                                                .stroke(Constants.Colors.accentPink, lineWidth: 1)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // Add member button
+                        Button(action: {
+                            viewModel.showBiasSelection = true
+                        }) {
+                            HStack {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.system(size: 16))
+                                Text("メンバーを選択")
+                                    .font(.system(size: Constants.Typography.bodySize))
+                            }
+                            .foregroundColor(Constants.Colors.accentBlue)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Constants.Colors.cardDark)
+                            .cornerRadius(12)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Constants.Colors.textGray.opacity(0.3), lineWidth: 1)
+                                    .stroke(Constants.Colors.accentBlue.opacity(0.3), lineWidth: 1)
                             )
+                        }
+                        .sheet(isPresented: $viewModel.showBiasSelection) {
+                            BiasSelectionSheet { selectedIds in
+                                // Get idol names from IDs
+                                Task {
+                                    viewModel.selectedMemberIds = selectedIds
+                                    await viewModel.loadMemberNames(for: selectedIds)
+                                }
+                            }
+                        }
 
-                        Text("複数のメンバーを指定する場合はカンマで区切ってください")
+                        Text("推し設定から対象メンバーを選択できます")
                             .font(.system(size: 12))
                             .foregroundColor(Constants.Colors.textGray)
                     }
@@ -216,7 +275,7 @@ struct TaskRegistrationView: View {
                         } else {
                             // Placeholder for image selection
                             Button(action: {
-                                // TODO: Implement image picker
+                                viewModel.showImagePicker = true
                             }) {
                                 VStack {
                                     Image(systemName: "photo")
@@ -230,11 +289,29 @@ struct TaskRegistrationView: View {
                                 .background(Color.white.opacity(0.05))
                                 .cornerRadius(12)
                             }
+                            .sheet(isPresented: $viewModel.showImagePicker) {
+                                ImagePicker(selectedImage: $viewModel.selectedCoverImage)
+                                    .onDisappear {
+                                        if viewModel.selectedCoverImage != nil {
+                                            Task {
+                                                await viewModel.uploadCoverImage()
+                                            }
+                                        }
+                                    }
+                            }
                         }
 
-                        Text(coverImageHelpText)
-                            .font(.system(size: 12))
-                            .foregroundColor(Constants.Colors.textGray)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(coverImageHelpText)
+                                .font(.system(size: 12))
+                                .foregroundColor(Constants.Colors.textGray)
+
+                            if viewModel.coverImageURL == nil {
+                                Text("推奨サイズ: 800×600px（アスペクト比 4:3）")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(Constants.Colors.textGray.opacity(0.8))
+                            }
+                        }
                     }
 
                     Spacer(minLength: 20)
@@ -252,7 +329,7 @@ struct TaskRegistrationView: View {
                                     .padding(.trailing, 8)
                             }
 
-                            Text(viewModel.isLoading ? "登録中..." : "タスクを登録")
+                            Text(viewModel.isLoading ? (viewModel.isEditMode ? "更新中..." : "登録中...") : (viewModel.isEditMode ? "タスクを更新" : "タスクを登録"))
                                 .font(.system(size: Constants.Typography.bodySize, weight: .bold))
                                 .foregroundColor(.white)
                         }
@@ -272,11 +349,11 @@ struct TaskRegistrationView: View {
                 .padding()
             }
             .background(Constants.Colors.cardDark)
-            .navigationTitle("VOTE登録")
+            .navigationTitle(viewModel.isEditMode ? "VOTE編集" : "VOTE登録")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    Text("VOTE登録")
+                    Text(viewModel.isEditMode ? "VOTE編集" : "VOTE登録")
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(Constants.Colors.textWhite)
                 }
@@ -297,13 +374,13 @@ struct TaskRegistrationView: View {
             } message: {
                 Text(viewModel.errorMessage ?? "エラーが発生しました")
             }
-            .alert("登録完了", isPresented: $viewModel.showSuccess) {
+            .alert(viewModel.isEditMode ? "更新完了" : "登録完了", isPresented: $viewModel.showSuccess) {
                 Button("OK") {
                     viewModel.showSuccess = false
                     dismiss()
                 }
             } message: {
-                Text("タスクが正常に登録されました")
+                Text(viewModel.isEditMode ? "タスクが正常に更新されました" : "タスクが正常に登録されました")
             }
             .onAppear {
                 Task {

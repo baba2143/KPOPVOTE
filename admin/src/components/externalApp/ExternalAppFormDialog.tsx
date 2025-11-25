@@ -307,6 +307,8 @@ export const ExternalAppFormDialog: React.FC<ExternalAppFormDialogProps> = ({
                 sx={{ mt: 1, display: 'block' }}
               >
                 対応形式: JPEG, PNG, WebP, SVG（最大10MB）
+                <br />
+                推奨サイズ: 800×600px（アスペクト比 4:3）
               </Typography>
             </TabPanel>
           </Box>

@@ -98,16 +98,34 @@ struct HomeView: View {
                             }
                         }
 
-                        // Tasks Pending Badge
+                        // Tasks Pending Badge - Tappable
                         if !viewModel.activeTasks.isEmpty {
-                            HStack(spacing: 4) {
-                                Image(systemName: "exclamationmark.triangle.fill")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(Constants.Colors.statusUrgent)
-                                Text("\(viewModel.activeTasks.count) Tasks Pending")
-                                    .font(.system(size: Constants.Typography.captionSize, weight: .semibold))
-                                    .foregroundColor(Constants.Colors.statusUrgent)
+                            NavigationLink(destination: TasksListView()) {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(Constants.Colors.statusUrgent)
+
+                                    Text("\(viewModel.activeTasks.count)個のタスクがあります。")
+                                        .font(.system(size: Constants.Typography.captionSize, weight: .semibold))
+                                        .foregroundColor(Constants.Colors.statusUrgent)
+
+                                    Spacer()
+
+                                    Text("一覧を見る")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(Constants.Colors.accentBlue)
+
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 10))
+                                        .foregroundColor(Constants.Colors.accentBlue)
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                .background(Constants.Colors.statusUrgent.opacity(0.1))
+                                .cornerRadius(12)
                             }
+                            .buttonStyle(.plain)
                             .padding(.horizontal)
                         }
                     }

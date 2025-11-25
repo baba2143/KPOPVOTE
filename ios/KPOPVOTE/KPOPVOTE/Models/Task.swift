@@ -153,11 +153,7 @@ extension VoteTask {
     }
 
     var formattedDeadline: String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        formatter.locale = Locale(identifier: "ja_JP")
-        return formatter.string(from: deadline)
+        return deadline.japaneseEraDateTimeString
     }
 
     var statusColor: String {

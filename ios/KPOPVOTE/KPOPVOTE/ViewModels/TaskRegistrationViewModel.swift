@@ -13,7 +13,8 @@ class TaskRegistrationViewModel: ObservableObject {
     @Published var title: String = ""
     @Published var url: String = ""
     @Published var deadline: Date = Date().addingTimeInterval(86400) // Default: 24 hours from now
-    @Published var biasIdsText: String = "" // Comma-separated bias IDs
+    @Published var selectedMemberIds: [String] = [] // Selected member IDs
+    @Published var selectedMemberNames: [String] = [] // Selected member names for display
 
     // External App Selection
     @Published var externalApps: [ExternalAppMaster] = []
@@ -24,14 +25,42 @@ class TaskRegistrationViewModel: ObservableObject {
     @Published var coverImageURL: String? = nil
     @Published var coverImageSource: CoverImageSource? = nil
     @Published var isUploadingImage = false
+    @Published var showImagePicker = false
+    @Published var showBiasSelection = false // For member selection sheet
 
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var showError = false
     @Published var showSuccess = false
 
+    // Edit Mode Properties
+    @Published var isEditMode: Bool = false
+    private var editingTaskId: String?
+
     private let taskService = TaskService()
     private let externalAppService = ExternalAppService()
+    private let idolService = IdolService.shared
+
+    // MARK: - Initializer
+    init(task: VoteTask? = nil) {
+        if let task = task {
+            // Edit mode - pre-populate with existing task data
+            self.isEditMode = true
+            self.editingTaskId = task.id
+            self.title = task.title
+            self.url = task.url
+            self.deadline = task.deadline
+            self.selectedMemberIds = task.biasIds
+            self.selectedAppId = task.externalAppId
+            self.coverImageURL = task.coverImage
+            self.coverImageSource = task.coverImageSource
+
+            // Load member names asynchronously
+            Task {
+                await loadMemberNames(for: task.biasIds)
+            }
+        }
+    }
 
     // MARK: - Load External Apps
     func loadExternalApps() async {
@@ -105,7 +134,7 @@ class TaskRegistrationViewModel: ObservableObject {
         return url.scheme == "http" || url.scheme == "https"
     }
 
-    // MARK: - Register Task
+    // MARK: - Register or Update Task
     func registerTask() async {
         guard isFormValid else {
             errorMessage = "入力内容を確認してください"
@@ -131,43 +160,65 @@ class TaskRegistrationViewModel: ObservableObject {
                 }
             }
 
-            // Parse bias IDs from comma-separated text
-            let biasIds = biasIdsText
-                .split(separator: ",")
-                .map { $0.trimmingCharacters(in: .whitespaces) }
-                .filter { !$0.isEmpty }
+            if isEditMode, let taskId = editingTaskId {
+                // Edit mode - update existing task
+                print("📡 [TaskRegistrationViewModel] Updating task: \(taskId)")
+                if let appId = selectedAppId {
+                    print("📱 [TaskRegistrationViewModel] Selected external app: \(appId)")
+                }
+                if let coverImage = coverImageURL {
+                    print("🖼️ [TaskRegistrationViewModel] Cover image: \(coverImage)")
+                    print("📍 [TaskRegistrationViewModel] Cover image source: \(coverImageSource?.rawValue ?? "nil")")
+                }
 
-            print("📡 [TaskRegistrationViewModel] Registering task: \(title)")
-            if let appId = selectedAppId {
-                print("📱 [TaskRegistrationViewModel] Selected external app: \(appId)")
+                let task = try await taskService.updateTask(
+                    taskId: taskId,
+                    title: title,
+                    url: url,
+                    deadline: deadline,
+                    biasIds: selectedMemberIds,
+                    externalAppId: selectedAppId,
+                    coverImage: coverImageURL,
+                    coverImageSource: coverImageSource
+                )
+
+                print("✅ [TaskRegistrationViewModel] Task updated successfully: \(task.id)")
+            } else {
+                // Create mode - register new task
+                print("📡 [TaskRegistrationViewModel] Registering task: \(title)")
+                if let appId = selectedAppId {
+                    print("📱 [TaskRegistrationViewModel] Selected external app: \(appId)")
+                }
+                if let coverImage = coverImageURL {
+                    print("🖼️ [TaskRegistrationViewModel] Cover image: \(coverImage)")
+                    print("📍 [TaskRegistrationViewModel] Cover image source: \(coverImageSource?.rawValue ?? "nil")")
+                }
+
+                let task = try await taskService.registerTask(
+                    title: title,
+                    url: url,
+                    deadline: deadline,
+                    biasIds: selectedMemberIds,
+                    externalAppId: selectedAppId,
+                    coverImage: coverImageURL,
+                    coverImageSource: coverImageSource
+                )
+
+                print("✅ [TaskRegistrationViewModel] Task registered successfully: \(task.id)")
             }
-            if let coverImage = coverImageURL {
-                print("🖼️ [TaskRegistrationViewModel] Cover image: \(coverImage)")
-                print("📍 [TaskRegistrationViewModel] Cover image source: \(coverImageSource?.rawValue ?? "nil")")
-            }
 
-            let task = try await taskService.registerTask(
-                title: title,
-                url: url,
-                deadline: deadline,
-                biasIds: biasIds,
-                externalAppId: selectedAppId,
-                coverImage: coverImageURL,
-                coverImageSource: coverImageSource
-            )
-
-            print("✅ [TaskRegistrationViewModel] Task registered successfully: \(task.id)")
-
-            // Notify HomeView to refresh
+            // Notify to refresh task list
             NotificationCenter.default.post(name: NSNotification.Name("taskRegisteredNotification"), object: nil)
 
             // Show success and reset form
             showSuccess = true
-            resetForm()
+            if !isEditMode {
+                resetForm()
+            }
 
         } catch {
-            print("❌ [TaskRegistrationViewModel] Failed to register task: \(error.localizedDescription)")
-            errorMessage = "タスクの登録に失敗しました: \(error.localizedDescription)"
+            print("❌ [TaskRegistrationViewModel] Failed to \(isEditMode ? "update" : "register") task: \(error.localizedDescription)")
+            errorMessage = "タスクの\(isEditMode ? "更新" : "登録")に失敗しました: \(error.localizedDescription)"
             showError = true
         }
 
@@ -179,7 +230,8 @@ class TaskRegistrationViewModel: ObservableObject {
         title = ""
         url = ""
         deadline = Date().addingTimeInterval(86400)
-        biasIdsText = ""
+        selectedMemberIds = []
+        selectedMemberNames = []
         selectedAppId = nil
         selectedCoverImage = nil
         coverImageURL = nil
@@ -197,5 +249,18 @@ class TaskRegistrationViewModel: ObservableObject {
 
     var deadlineError: String? {
         deadline <= Date() ? "期限は現在時刻より後に設定してください" : nil
+    }
+
+    // MARK: - Load Member Names
+    func loadMemberNames(for memberIds: [String]) async {
+        do {
+            let allIdols = try await idolService.fetchIdols()
+            let idolDict = Dictionary(uniqueKeysWithValues: allIdols.map { ($0.id, $0.name) })
+
+            selectedMemberNames = memberIds.compactMap { idolDict[$0] }
+            print("✅ [TaskRegistrationViewModel] Loaded names for \(selectedMemberNames.count) members")
+        } catch {
+            print("❌ [TaskRegistrationViewModel] Failed to load member names: \(error)")
+        }
     }
 }

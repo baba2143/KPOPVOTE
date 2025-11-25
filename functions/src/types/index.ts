@@ -66,6 +66,17 @@ export interface TaskRegisterRequest {
   coverImageSource?: string;
 }
 
+export interface TaskUpdateRequest {
+  taskId: string;
+  title: string;
+  url: string;
+  deadline: string; // ISO 8601 format
+  targetMembers?: string[];
+  externalAppId?: string;
+  coverImage?: string;
+  coverImageSource?: string;
+}
+
 export interface TaskUpdateStatusRequest {
   taskId: string;
   isCompleted: boolean;
@@ -116,6 +127,17 @@ export interface TaskOGPResponse {
   taskId: string;
   ogpTitle: string | null;
   ogpImage: string | null;
+}
+
+export interface TaskUpdateResponse {
+  taskId: string;
+  title: string;
+  url: string;
+  deadline: string;
+  targetMembers: string[];
+  externalAppId: string | null;
+  coverImage: string | null;
+  coverImageSource: string | null;
 }
 
 export interface TaskStatusResponse {

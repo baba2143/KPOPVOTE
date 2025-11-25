@@ -71,6 +71,25 @@ class TasksListViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Delete Task
+    func deleteTask(_ task: VoteTask) async {
+        do {
+            print("📡 [TasksListViewModel] Deleting task: \(task.id)")
+            try await taskService.deleteTask(taskId: task.id)
+
+            // Remove from local array immediately for better UX
+            allTasks.removeAll { $0.id == task.id }
+            print("✅ [TasksListViewModel] Task deleted: \(task.id)")
+        } catch {
+            print("❌ [TasksListViewModel] Failed to delete task: \(error.localizedDescription)")
+            errorMessage = "タスクの削除に失敗しました"
+            showError = true
+
+            // Reload to ensure consistency
+            await loadAllTasks()
+        }
+    }
+
     // MARK: - Refresh
     func refresh() async {
         await loadAllTasks()

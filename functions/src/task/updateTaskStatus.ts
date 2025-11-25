@@ -15,7 +15,7 @@ import { grantRewardPoints } from "../utils/rewardHelper";
 export const updateTaskStatus = functions.https.onRequest(async (req, res) => {
   // Enable CORS
   res.set("Access-Control-Allow-Origin", "*");
-  res.set("Access-Control-Allow-Methods", "PATCH");
+  res.set("Access-Control-Allow-Methods", "POST, PATCH");
   res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
   // Handle preflight request
@@ -24,11 +24,11 @@ export const updateTaskStatus = functions.https.onRequest(async (req, res) => {
     return;
   }
 
-  // Only accept PATCH requests
-  if (req.method !== "PATCH") {
+  // Accept both POST and PATCH requests
+  if (req.method !== "PATCH" && req.method !== "POST") {
     res.status(405).json({
       success: false,
-      error: "Method not allowed. Use PATCH.",
+      error: "Method not allowed. Use POST or PATCH.",
     } as ApiResponse<null>);
     return;
   }

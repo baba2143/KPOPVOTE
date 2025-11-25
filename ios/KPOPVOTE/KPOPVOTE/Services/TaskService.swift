@@ -325,6 +325,140 @@ class TaskService: ObservableObject {
             coverImageSource: result.data.coverImageSource
         )
     }
+
+    // MARK: - Delete Task
+    func deleteTask(taskId: String) async throws {
+        guard let token = try await Auth.auth().currentUser?.getIDToken() else {
+            throw TaskError.notAuthenticated
+        }
+
+        let urlString = Constants.API.deleteTask
+        guard let url = URL(string: urlString) else {
+            throw TaskError.invalidURL
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        let body: [String: Any] = [
+            "taskId": taskId
+        ]
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        print("📡 [TaskService] Deleting task: \(taskId)")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw TaskError.invalidResponse
+        }
+
+        print("📥 [TaskService] HTTP Status: \(httpResponse.statusCode)")
+
+        guard httpResponse.statusCode == 200 else {
+            if let errorString = String(data: data, encoding: .utf8) {
+                print("❌ [TaskService] Error response: \(errorString)")
+            }
+            throw TaskError.serverError(httpResponse.statusCode)
+        }
+
+        print("✅ [TaskService] Task deleted successfully: \(taskId)")
+    }
+
+    // MARK: - Update Existing Task
+    func updateTask(
+        taskId: String,
+        title: String,
+        url: String,
+        deadline: Date,
+        biasIds: [String],
+        externalAppId: String? = nil,
+        coverImage: String? = nil,
+        coverImageSource: CoverImageSource? = nil
+    ) async throws -> VoteTask {
+        guard let token = try await Auth.auth().currentUser?.getIDToken() else {
+            throw TaskError.notAuthenticated
+        }
+
+        let urlString = Constants.API.updateTask
+        guard let requestUrl = URL(string: urlString) else {
+            throw TaskError.invalidURL
+        }
+
+        var request = URLRequest(url: requestUrl)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        // Convert deadline to ISO 8601 format
+        let isoFormatter = ISO8601DateFormatter()
+        isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let deadlineString = isoFormatter.string(from: deadline)
+
+        var body: [String: Any] = [
+            "taskId": taskId,
+            "title": title,
+            "url": url,
+            "deadline": deadlineString,
+            "targetMembers": biasIds
+        ]
+
+        // Add optional fields
+        if let externalAppId = externalAppId {
+            body["externalAppId"] = externalAppId
+        }
+        if let coverImage = coverImage {
+            body["coverImage"] = coverImage
+        }
+        if let coverImageSource = coverImageSource {
+            body["coverImageSource"] = coverImageSource.rawValue
+        }
+
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        print("📡 [TaskService] Updating task: \(taskId)")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw TaskError.invalidResponse
+        }
+
+        print("📥 [TaskService] HTTP Status: \(httpResponse.statusCode)")
+
+        guard httpResponse.statusCode == 200 else {
+            if let errorString = String(data: data, encoding: .utf8) {
+                print("❌ [TaskService] Error response: \(errorString)")
+            }
+            throw TaskError.serverError(httpResponse.statusCode)
+        }
+
+        // Decode response
+        let result = try JSONDecoder().decode(UpdateTaskResponse.self, from: data)
+        print("✅ [TaskService] Task updated: \(result.data.taskId)")
+
+        // Return updated VoteTask
+        guard let userId = Auth.auth().currentUser?.uid else {
+            throw TaskError.notAuthenticated
+        }
+
+        return VoteTask(
+            id: result.data.taskId,
+            userId: userId,
+            title: result.data.title,
+            url: result.data.url,
+            deadline: deadline,
+            status: .pending,
+            biasIds: result.data.targetMembers,
+            externalAppId: result.data.externalAppId,
+            externalAppName: nil,
+            externalAppIconUrl: nil,
+            coverImage: result.data.coverImage,
+            coverImageSource: result.data.coverImageSource
+        )
+    }
 }
 
 // MARK: - Task Errors
@@ -411,5 +545,22 @@ struct GetUserTasksResponse: Codable {
             let createdAt: String?         // ISO 8601文字列
             let updatedAt: String?         // ISO 8601文字列
         }
+    }
+}
+
+// updateTask Cloud Functionのレスポンス構造
+struct UpdateTaskResponse: Codable {
+    let success: Bool
+    let data: UpdateTaskData
+
+    struct UpdateTaskData: Codable {
+        let taskId: String
+        let title: String
+        let url: String
+        let deadline: String
+        let targetMembers: [String]
+        let externalAppId: String?
+        let coverImage: String?
+        let coverImageSource: CoverImageSource?
     }
 }

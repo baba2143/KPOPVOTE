@@ -120,9 +120,9 @@ struct TasksListView: View {
             VStack(spacing: 0) {
                 // Tab Picker
                 Picker("Filter", selection: $selectedTab) {
-                    Text("Active").tag(0)
-                    Text("Archived").tag(1)
-                    Text("Completed").tag(2)
+                    Text("参加中").tag(0)
+                    Text("アーカイブ").tag(1)
+                    Text("完了").tag(2)
                 }
                 .pickerStyle(.segmented)
                 .padding()
@@ -163,12 +163,34 @@ struct TasksListView: View {
                         ScrollView {
                             LazyVStack(spacing: Constants.Spacing.medium) {
                                 ForEach(tasks) { task in
-                                    TaskCard(task: task, showCompleteButton: selectedTab == 0) {
-                                        Task {
-                                            await viewModel.completeTask(task)
+                                    if selectedTab == 0 {
+                                        // Active tasks - wrap in NavigationLink for editing
+                                        NavigationLink(destination: TaskRegistrationView(task: task)) {
+                                            TaskCard(task: task, showCompleteButton: true, onComplete: {
+                                                Task {
+                                                    await viewModel.completeTask(task)
+                                                }
+                                            }, onDelete: {
+                                                Task {
+                                                    await viewModel.deleteTask(task)
+                                                }
+                                            })
                                         }
+                                        .buttonStyle(.plain)
+                                        .padding(.horizontal)
+                                    } else {
+                                        // Archived/Completed tasks - no navigation
+                                        TaskCard(task: task, showCompleteButton: false, onComplete: {
+                                            Task {
+                                                await viewModel.completeTask(task)
+                                            }
+                                        }, onDelete: {
+                                            Task {
+                                                await viewModel.deleteTask(task)
+                                            }
+                                        })
+                                        .padding(.horizontal)
                                     }
-                                    .padding(.horizontal)
                                 }
                             }
                             .padding(.vertical)
@@ -210,6 +232,7 @@ struct TaskCard: View {
     let task: VoteTask
     let showCompleteButton: Bool
     let onComplete: () -> Void
+    let onDelete: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: Constants.Spacing.small) {
@@ -300,6 +323,16 @@ struct TaskCard: View {
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
                         .background(Constants.Colors.accentPink.opacity(0.2))
+                        .cornerRadius(8)
+                }
+
+                // Delete Button
+                Button(action: onDelete) {
+                    Image(systemName: "trash")
+                        .font(.system(size: 14))
+                        .foregroundColor(.red)
+                        .padding(8)
+                        .background(Color.red.opacity(0.1))
                         .cornerRadius(8)
                 }
             }

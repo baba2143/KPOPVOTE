@@ -78,6 +78,8 @@ enum Constants {
         static let getUserTasks = "\(apiBaseURL)/getUserTasks"
         static let fetchTaskOGP = "\(apiBaseURL)/fetchTaskOGP"
         static let updateTaskStatus = "\(apiBaseURL)/updateTaskStatus"
+        static let updateTask = "\(apiBaseURL)/updateTask"
+        static let deleteTask = "\(apiBaseURL)/deleteTask"
 
         // External App Master
         static let listExternalApps = "\(apiBaseURL)/listExternalApps"
