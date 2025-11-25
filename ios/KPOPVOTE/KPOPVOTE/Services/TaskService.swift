@@ -148,7 +148,7 @@ class TaskService: ObservableObject {
     }
 
     // MARK: - Mark Task as Completed
-    func markTaskAsCompleted(taskId: String) async throws {
+    func markTaskAsCompleted(taskId: String) async throws -> Int? {
         guard let token = try await Auth.auth().currentUser?.getIDToken() else {
             throw TaskError.notAuthenticated
         }
@@ -186,7 +186,17 @@ class TaskService: ObservableObject {
             throw TaskError.serverError(httpResponse.statusCode)
         }
 
+        // レスポンスからpointsGrantedを取得
+        var pointsGranted: Int? = nil
+        if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let dataDict = json["data"] as? [String: Any],
+           let points = dataDict["pointsGranted"] as? Int {
+            pointsGranted = points
+            print("✅ [TaskService] Task completed with \(points) points granted")
+        }
+
         print("✅ [TaskService] Task marked as completed: \(taskId)")
+        return pointsGranted
     }
 
     // MARK: - Upload Cover Image

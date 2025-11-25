@@ -15,6 +15,10 @@ class TasksListViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var showError = false
 
+    // Success Message
+    @Published var showSuccessMessage = false
+    @Published var successMessageText = ""
+
     private let taskService = TaskService()
 
     // MARK: - Computed Properties
@@ -59,10 +63,19 @@ class TasksListViewModel: ObservableObject {
     func completeTask(_ task: VoteTask) async {
         do {
             print("📡 [TasksListViewModel] Marking task as completed: \(task.id)")
-            try await taskService.markTaskAsCompleted(taskId: task.id)
+            let points = try await taskService.markTaskAsCompleted(taskId: task.id)
 
             // Reload all tasks
             await loadAllTasks()
+
+            // Show success message
+            if let points = points {
+                successMessageText = "タスクを完了しました！\n\n+\(points)ポイント獲得"
+            } else {
+                successMessageText = "タスクを完了しました！"
+            }
+            showSuccessMessage = true
+
             print("✅ [TasksListViewModel] Task completed: \(task.id)")
         } catch {
             print("❌ [TasksListViewModel] Failed to complete task: \(error.localizedDescription)")

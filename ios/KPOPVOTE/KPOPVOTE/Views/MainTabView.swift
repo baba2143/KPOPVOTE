@@ -223,6 +223,13 @@ struct TasksListView: View {
             } message: {
                 Text(viewModel.errorMessage ?? "エラーが発生しました")
             }
+            .alert("完了", isPresented: $viewModel.showSuccessMessage) {
+                Button("OK", role: .cancel) {
+                    viewModel.showSuccessMessage = false
+                }
+            } message: {
+                Text(viewModel.successMessageText)
+            }
         }
     }
 }

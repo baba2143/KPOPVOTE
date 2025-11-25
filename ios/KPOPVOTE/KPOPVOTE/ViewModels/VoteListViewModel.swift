@@ -21,6 +21,10 @@ class VoteListViewModel: ObservableObject {
     @Published var selectedTaskFilter: TaskFilter = .active
     @Published var isLoadingTasks = false
 
+    // Success Message
+    @Published var showSuccessMessage = false
+    @Published var successMessageText = ""
+
     private let taskService = TaskService()
 
     // MARK: - Task Filter Enum
@@ -127,8 +131,16 @@ class VoteListViewModel: ObservableObject {
     /// Complete a task
     func completeTask(_ task: VoteTask) async {
         do {
-            try await taskService.markTaskAsCompleted(taskId: task.id)
+            let points = try await taskService.markTaskAsCompleted(taskId: task.id)
             await loadUserTasks()
+
+            // Show success message
+            if let points = points {
+                successMessageText = "タスクを完了しました！\n\n+\(points)ポイント獲得"
+            } else {
+                successMessageText = "タスクを完了しました！"
+            }
+            showSuccessMessage = true
         } catch {
             print("❌ [VoteListViewModel] Failed to complete task: \(error)")
             errorMessage = "タスクの完了処理に失敗しました"

@@ -66,6 +66,13 @@ struct VoteListView: View {
                 await viewModel.loadUserTasks()
             }
         }
+        .alert("完了", isPresented: $viewModel.showSuccessMessage) {
+            Button("OK", role: .cancel) {
+                viewModel.showSuccessMessage = false
+            }
+        } message: {
+            Text(viewModel.successMessageText)
+        }
     }
 
     @ViewBuilder
