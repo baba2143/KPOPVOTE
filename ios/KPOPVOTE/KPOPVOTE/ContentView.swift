@@ -186,13 +186,6 @@ struct HomeView: View {
 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 12) {
-                        // Store Button
-                        NavigationLink(destination: StoreView()) {
-                            Image(systemName: "cart.fill")
-                                .font(.system(size: 20))
-                                .foregroundColor(Constants.Colors.textWhite)
-                        }
-
                         // Multi-Point Display Button
                         Button(action: {
                             showPointsHistory = true
@@ -236,6 +229,13 @@ struct HomeView: View {
                                 RoundedRectangle(cornerRadius: 12)
                                     .fill(Color.white.opacity(0.1))
                             )
+                        }
+
+                        // Store Button
+                        NavigationLink(destination: StoreView()) {
+                            Image(systemName: "cart.fill")
+                                .font(.system(size: 20))
+                                .foregroundColor(Constants.Colors.textWhite)
                         }
 
                         // Notification Button
