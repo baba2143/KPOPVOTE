@@ -243,6 +243,33 @@ struct TaskCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Constants.Spacing.small) {
+            // Cover Image
+            if let coverImageUrl = task.coverImage, let url = URL(string: coverImageUrl) {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFill()
+                            .frame(height: 120)
+                            .clipped()
+                            .cornerRadius(8)
+                    case .failure(_), .empty:
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.2))
+                            .frame(height: 120)
+                            .cornerRadius(8)
+                            .overlay(
+                                Image(systemName: "photo")
+                                    .font(.system(size: 32))
+                                    .foregroundColor(.gray)
+                            )
+                    @unknown default:
+                        EmptyView()
+                    }
+                }
+            }
+
             // External App Badge
             if let iconUrl = task.externalAppIconUrl, let appName = task.externalAppName {
                 HStack(spacing: 6) {

@@ -78,7 +78,7 @@ export const ExternalAppFormDialog: React.FC<ExternalAppFormDialogProps> = ({
     if (app) {
       setAppName(app.appName);
       setAppUrl(app.appUrl || '');
-      setIconUrl(app.iconUrl || '');
+      setIconUrl(app.defaultCoverImageUrl || app.iconUrl || '');
     }
   }, [app]);
 
@@ -158,7 +158,7 @@ export const ExternalAppFormDialog: React.FC<ExternalAppFormDialogProps> = ({
         const updateData: ExternalAppUpdateRequest = {
           appName: appName.trim(),
           appUrl: appUrl.trim() || undefined,
-          iconUrl: finalIconUrl || undefined,
+          defaultCoverImageUrl: finalIconUrl || undefined,
         };
         await updateExternalApp(app.appId, updateData);
       } else {
@@ -166,7 +166,7 @@ export const ExternalAppFormDialog: React.FC<ExternalAppFormDialogProps> = ({
         const createData: ExternalAppCreateRequest = {
           appName: appName.trim(),
           appUrl: appUrl.trim() || undefined,
-          iconUrl: finalIconUrl || undefined,
+          defaultCoverImageUrl: finalIconUrl || undefined,
         };
         await createExternalApp(createData);
       }

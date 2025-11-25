@@ -31,7 +31,7 @@ export const createExternalApp = functions.https.onRequest(async (req, res) => {
   });
 
   try {
-    const { appName, appUrl, iconUrl } = req.body as ExternalAppCreateRequest;
+    const { appName, appUrl, iconUrl, defaultCoverImageUrl } = req.body as ExternalAppCreateRequest;
 
     if (!appName || !appUrl) {
       res.status(400).json({ success: false, error: "appName and appUrl are required" } as ApiResponse<null>);
@@ -42,6 +42,7 @@ export const createExternalApp = functions.https.onRequest(async (req, res) => {
       appName: appName.trim(),
       appUrl: appUrl.trim(),
       iconUrl: iconUrl || null,
+      defaultCoverImageUrl: defaultCoverImageUrl || null,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };

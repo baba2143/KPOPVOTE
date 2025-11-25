@@ -76,6 +76,9 @@ class TaskRegistrationViewModel: ObservableObject {
 
     // MARK: - Handle External App Selection
     func handleExternalAppSelection(_ appId: String?) {
+        print("🔍 [TaskRegistrationViewModel] handleExternalAppSelection called with appId: \(appId ?? "nil")")
+        print("🔍 [TaskRegistrationViewModel] Total externalApps loaded: \(externalApps.count)")
+
         selectedAppId = appId
 
         // Auto-set cover image from external app's defaultCoverImageUrl
@@ -84,13 +87,27 @@ class TaskRegistrationViewModel: ObservableObject {
            let defaultCoverImageUrl = selectedApp.defaultCoverImageUrl,
            !defaultCoverImageUrl.isEmpty {
             print("🖼️ [TaskRegistrationViewModel] Auto-setting cover image from external app: \(defaultCoverImageUrl)")
+            print("🖼️ [TaskRegistrationViewModel] Selected app: \(selectedApp.appName)")
+            print("🖼️ [TaskRegistrationViewModel] defaultCoverImageUrl from selectedApp: \(selectedApp.defaultCoverImageUrl ?? "nil")")
             coverImageURL = defaultCoverImageUrl
             coverImageSource = .externalApp
             selectedCoverImage = nil // Clear user-selected image
-        } else if appId == nil {
-            // Clear cover image when no external app is selected
-            coverImageURL = nil
-            coverImageSource = nil
+        } else {
+            print("⚠️ [TaskRegistrationViewModel] Did not set cover image. Reason:")
+            if appId == nil {
+                print("   - appId is nil")
+            } else if externalApps.first(where: { $0.id == appId }) == nil {
+                print("   - No app found with id: \(appId!)")
+            } else if let app = externalApps.first(where: { $0.id == appId }) {
+                print("   - App found: \(app.appName), but defaultCoverImageUrl is: \(app.defaultCoverImageUrl ?? "nil")")
+            }
+
+            // 外部アプリが選択されていない場合、
+            // 外部アプリから設定された画像のみクリア（ユーザーアップロード画像は保持）
+            if coverImageSource == .externalApp {
+                coverImageURL = nil
+                coverImageSource = nil
+            }
             selectedCoverImage = nil
         }
     }

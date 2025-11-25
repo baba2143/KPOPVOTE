@@ -39,6 +39,7 @@ export const listExternalApps = functions.https.onRequest(async (req, res) => {
         appName: data.appName,
         appUrl: data.appUrl,
         iconUrl: data.iconUrl,
+        defaultCoverImageUrl: data.defaultCoverImageUrl || null,
         createdAt: data.createdAt?.toDate().toISOString() || null,
         updatedAt: data.updatedAt?.toDate().toISOString() || null,
       };

@@ -31,7 +31,7 @@ export const updateExternalApp = functions.https.onRequest(async (req, res) => {
   });
 
   try {
-    const { appId, appName, appUrl, iconUrl } = req.body as ExternalAppUpdateRequest;
+    const { appId, appName, appUrl, iconUrl, defaultCoverImageUrl } = req.body as ExternalAppUpdateRequest;
 
     if (!appId) {
       res.status(400).json({ success: false, error: "appId is required" } as ApiResponse<null>);
@@ -53,6 +53,7 @@ export const updateExternalApp = functions.https.onRequest(async (req, res) => {
     if (appName) updateData.appName = appName.trim();
     if (appUrl) updateData.appUrl = appUrl.trim();
     if (iconUrl !== undefined) updateData.iconUrl = iconUrl;
+    if (defaultCoverImageUrl !== undefined) updateData.defaultCoverImageUrl = defaultCoverImageUrl;
 
     await appRef.update(updateData);
 

@@ -267,6 +267,7 @@ export interface ExternalAppCreateRequest {
   appName: string;
   appUrl: string;
   iconUrl?: string;
+  defaultCoverImageUrl?: string;
 }
 
 export interface ExternalAppUpdateRequest {
@@ -274,6 +275,7 @@ export interface ExternalAppUpdateRequest {
   appName?: string;
   appUrl?: string;
   iconUrl?: string;
+  defaultCoverImageUrl?: string;
 }
 
 export interface GroupMaster {

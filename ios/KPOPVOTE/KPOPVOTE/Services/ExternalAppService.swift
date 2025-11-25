@@ -57,6 +57,9 @@ class ExternalAppService {
             let createdAt = app.createdAt.flatMap { isoFormatter.date(from: $0) }
             let updatedAt = app.updatedAt.flatMap { isoFormatter.date(from: $0) }
 
+            // デバッグ: 各アプリのdefaultCoverImageUrlを出力
+            print("🖼️ [ExternalAppService] App: \(app.appName), defaultCoverImageUrl: \(app.defaultCoverImageUrl ?? "nil")")
+
             return ExternalAppMaster(
                 id: app.appId,
                 appName: app.appName,
