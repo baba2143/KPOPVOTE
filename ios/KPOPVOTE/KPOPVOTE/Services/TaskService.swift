@@ -165,7 +165,7 @@ class TaskService: ObservableObject {
 
         let body: [String: Any] = [
             "taskId": taskId,
-            "status": "completed"
+            "isCompleted": true
         ]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
