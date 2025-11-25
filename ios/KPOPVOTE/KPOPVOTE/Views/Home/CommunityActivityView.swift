@@ -20,7 +20,7 @@ struct CommunityActivityView: View {
             VStack(alignment: .leading, spacing: Constants.Spacing.medium) {
                 // Section Header
                 HStack {
-                    Text("Community Activity")
+                    Text("コミュニティ")
                         .font(.system(size: Constants.Typography.titleSize, weight: .bold))
                         .foregroundColor(Constants.Colors.textWhite)
                     Spacer()
