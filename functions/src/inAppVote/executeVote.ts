@@ -79,6 +79,26 @@ export const executeVote = functions.https.onRequest(async (req, res) => {
       return;
     }
 
+    // 🆕 投票ごとの制限設定
+    const restrictions = voteData.restrictions || {};
+
+    // 🆕 最小/最大票数チェック
+    if (restrictions.minVoteCount && voteCount < restrictions.minVoteCount) {
+      res.status(400).json({
+        success: false,
+        error: `投票数は${restrictions.minVoteCount}票以上である必要があります`,
+      } as ApiResponse<null>);
+      return;
+    }
+
+    if (restrictions.maxVoteCount && voteCount > restrictions.maxVoteCount) {
+      res.status(400).json({
+        success: false,
+        error: `投票数は${restrictions.maxVoteCount}票以下である必要があります`,
+      } as ApiResponse<null>);
+      return;
+    }
+
     // ユーザー情報取得
     const userRef = db.collection("users").doc(uid);
     const userDoc = await userRef.get();
@@ -105,23 +125,26 @@ export const executeVote = functions.https.onRequest(async (req, res) => {
     const premiumPoints = userData.premiumPoints || 0;
     const regularPoints = userData.regularPoints || 0;
 
-    // 会員倍率（Premium: 1倍、Free: 5倍）
-    const memberMultiplier = isPremium ? 1 : 5;
+    // 🆕 カスタムポイントコスト（restrictions設定優先、なければデフォルト）
+    const premiumPointsPerVote = restrictions.premiumPointsPerVote !== undefined ?
+      restrictions.premiumPointsPerVote :
+      (voteData.requiredPoints || 1); // デフォルト: 1P/票
 
-    // requiredPoints: 投票ごとの基本コスト
-    const requiredPoints = voteData.requiredPoints || 0;
+    const regularPointsPerVote = restrictions.regularPointsPerVote !== undefined ?
+      restrictions.regularPointsPerVote :
+      (isPremium ? (voteData.requiredPoints || 1) : (voteData.requiredPoints || 5)); // デフォルト: Premium 1P, Free 5P
 
-    // 基本コスト計算（会員倍率適用前）
-    const baseCostPerVote = requiredPoints;
-    const totalBaseCost = baseCostPerVote * voteCount;
+    // 基本コスト計算
+    const totalPremiumCost = premiumPointsPerVote * voteCount;
+    const totalRegularCost = regularPointsPerVote * voteCount;
 
-    // ポイント消費計算
+    // ポイント消費計算（カスタムレート対応）
     let premiumUsed = 0;
     let regularUsed = 0;
 
     if (pointSelection === "premium") {
       // 赤ポイントのみ使用
-      premiumUsed = totalBaseCost;
+      premiumUsed = totalPremiumCost;
 
       if (premiumPoints < premiumUsed) {
         res.status(400).json({
@@ -131,8 +154,8 @@ export const executeVote = functions.https.onRequest(async (req, res) => {
         return;
       }
     } else if (pointSelection === "regular") {
-      // 青ポイントのみ使用（会員倍率適用）
-      regularUsed = totalBaseCost * memberMultiplier;
+      // 青ポイントのみ使用
+      regularUsed = totalRegularCost;
 
       if (regularPoints < regularUsed) {
         res.status(400).json({
@@ -143,12 +166,12 @@ export const executeVote = functions.https.onRequest(async (req, res) => {
       }
     } else {
       // 自動選択: 赤ポイント優先 → 足りなければ青ポイント
-      premiumUsed = Math.min(totalBaseCost, premiumPoints);
-      const remainingBaseCost = totalBaseCost - premiumUsed;
+      premiumUsed = Math.min(totalPremiumCost, premiumPoints);
+      const remainingVoteCount = voteCount - Math.floor(premiumUsed / premiumPointsPerVote);
 
-      if (remainingBaseCost > 0) {
-        // 残りのコストを青ポイントで賄う（会員倍率適用）
-        regularUsed = remainingBaseCost * memberMultiplier;
+      if (remainingVoteCount > 0) {
+        // 残りの投票を青ポイントで賄う
+        regularUsed = remainingVoteCount * regularPointsPerVote;
 
         if (regularPoints < regularUsed) {
           res.status(400).json({
@@ -174,6 +197,24 @@ export const executeVote = functions.https.onRequest(async (req, res) => {
     if (voteRecord.exists) {
       res.status(400).json({ success: false, error: "Already voted" } as ApiResponse<null>);
       return;
+    }
+
+    // 🆕 日次投票数制限チェック
+    if (restrictions.dailyVoteLimitPerUser) {
+      const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+      const dailyVoteHistoryRef = db.collection("dailyVoteHistory").doc(`${voteId}_${uid}_${today}`);
+      const dailyVoteHistory = await dailyVoteHistoryRef.get();
+
+      const currentDailyVoteCount = dailyVoteHistory.exists ? (dailyVoteHistory.data()!.voteCount || 0) : 0;
+      const newTotalVoteCount = currentDailyVoteCount + voteCount;
+
+      if (newTotalVoteCount > restrictions.dailyVoteLimitPerUser) {
+        res.status(400).json({
+          success: false,
+          error: `1日の投票数制限に達しました（制限: ${restrictions.dailyVoteLimitPerUser}票/日、現在: ${currentDailyVoteCount}票）`,
+        } as ApiResponse<null>);
+        return;
+      }
     }
 
     // トランザクション実行
@@ -257,6 +298,19 @@ export const executeVote = functions.https.onRequest(async (req, res) => {
           voteCount,
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
         });
+      }
+
+      // 🆕 日次投票履歴更新（dailyVoteLimitPerUser設定時のみ）
+      if (restrictions.dailyVoteLimitPerUser) {
+        const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+        const dailyVoteHistoryRef = db.collection("dailyVoteHistory").doc(`${voteId}_${uid}_${today}`);
+        transaction.set(dailyVoteHistoryRef, {
+          userId: uid,
+          voteId,
+          date: today,
+          voteCount: admin.firestore.FieldValue.increment(voteCount),
+          lastVotedAt: admin.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true }); // merge: true で既存ドキュメントがあれば更新、なければ作成
       }
     });
 

@@ -20,6 +20,13 @@ class VoteDetailViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var successMessage: String?
 
+    // Multiple vote support
+    @Published var voteCount: Int = 1
+    @Published var maxVoteCount: Int = 1
+    @Published var pointsToBeUsed: Int = 0
+    @Published var premiumPoints: Int = 0
+    @Published var regularPoints: Int = 0
+
     // MARK: - Properties
     let voteId: String
 
@@ -104,11 +111,12 @@ class VoteDetailViewModel: ObservableObject {
 
             let result = try await VoteService.shared.executeVote(
                 voteId: voteId,
-                choiceId: choiceId
+                choiceId: choiceId,
+                voteCount: voteCount
             )
 
             hasVoted = true
-            successMessage = "投票が完了しました（\(result.pointsDeducted)pt消費）"
+            successMessage = "投票が完了しました（\(result.voteCount)票、\(result.pointsDeducted)pt消費）"
 
             print("✅ [VoteDetailViewModel] Vote executed successfully")
 
@@ -139,5 +147,85 @@ class VoteDetailViewModel: ObservableObject {
     /// Refresh all data
     func refresh() async {
         await loadDetail()
+    }
+
+    // MARK: - Multiple Vote Support
+
+    /// Update points (should be called from View with PointsViewModel data)
+    func updatePoints(premium: Int, regular: Int) {
+        premiumPoints = premium
+        regularPoints = regular
+        calculateMaxVoteCount()
+        calculatePointsToBeUsed()
+    }
+
+    /// Calculate maximum vote count based on points and restrictions
+    func calculateMaxVoteCount() {
+        guard let vote = vote,
+              let restrictions = vote.restrictions else {
+            maxVoteCount = 1
+            return
+        }
+
+        let premiumCost = restrictions.premiumPointsPerVote ?? vote.requiredPoints
+        let regularCost = restrictions.regularPointsPerVote ?? vote.requiredPoints
+
+        // Calculate max votes from points
+        var maxFromPoints = 0
+        if premiumCost > 0 {
+            let premiumVotes = premiumPoints / premiumCost
+            let regularVotes = regularPoints / regularCost
+            maxFromPoints = premiumVotes + regularVotes
+        } else {
+            maxFromPoints = Int.max
+        }
+
+        // Apply restrictions
+        let minCount = restrictions.minVoteCount ?? 1
+        var maxCount = restrictions.maxVoteCount ?? maxFromPoints
+
+        // Limit by available points
+        maxCount = min(maxCount, maxFromPoints)
+
+        // Ensure at least minCount
+        maxVoteCount = max(minCount, maxCount)
+    }
+
+    /// Calculate points to be used for current vote count
+    func calculatePointsToBeUsed() {
+        guard let vote = vote,
+              let restrictions = vote.restrictions else {
+            pointsToBeUsed = vote?.requiredPoints ?? 0
+            return
+        }
+
+        let premiumCost = restrictions.premiumPointsPerVote ?? vote.requiredPoints
+        let regularCost = restrictions.regularPointsPerVote ?? vote.requiredPoints
+
+        // Auto selection: Premium first, then regular
+        let premiumUsed = min(voteCount * premiumCost, premiumPoints)
+        let premiumVotes = premiumUsed / premiumCost
+        let remainingVotes = voteCount - premiumVotes
+        let regularUsed = remainingVotes * regularCost
+
+        pointsToBeUsed = premiumUsed + regularUsed
+    }
+
+    /// Set vote count to maximum
+    func voteAll() {
+        voteCount = maxVoteCount
+        calculatePointsToBeUsed()
+    }
+
+    /// Update vote count (called when user changes stepper)
+    func updateVoteCount(_ newCount: Int) {
+        guard let restrictions = vote?.restrictions else {
+            voteCount = 1
+            return
+        }
+
+        let minCount = restrictions.minVoteCount ?? 1
+        voteCount = max(minCount, min(newCount, maxVoteCount))
+        calculatePointsToBeUsed()
     }
 }

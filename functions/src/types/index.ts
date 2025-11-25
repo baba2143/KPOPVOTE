@@ -144,6 +144,7 @@ export interface InAppVote {
   totalVotes: number;
   coverImageUrl?: string;
   isFeatured?: boolean;
+  restrictions?: VoteRestrictions; // 投票制限設定
   createdAt: Date;
   updatedAt: Date;
 }
@@ -152,6 +153,14 @@ export interface InAppVoteChoice {
   choiceId: string;
   label: string;
   voteCount: number;
+}
+
+export interface VoteRestrictions {
+  dailyVoteLimitPerUser?: number; // 1日の投票数制限（人/日）
+  minVoteCount?: number; // 1回あたりの最小票数
+  maxVoteCount?: number; // 1回あたりの最大票数
+  premiumPointsPerVote?: number; // Premiumポイントコスト（票/P）
+  regularPointsPerVote?: number; // Regularポイントコスト（票/P）
 }
 
 export interface InAppVoteCreateRequest {
@@ -163,6 +172,7 @@ export interface InAppVoteCreateRequest {
   requiredPoints: number;
   coverImageUrl?: string;
   isFeatured?: boolean;
+  restrictions?: VoteRestrictions; // 投票制限設定
 }
 
 export interface InAppVoteUpdateRequest {
@@ -174,6 +184,7 @@ export interface InAppVoteUpdateRequest {
   requiredPoints?: number;
   coverImageUrl?: string;
   isFeatured?: boolean;
+  restrictions?: VoteRestrictions; // 投票制限設定
 }
 
 export interface VoteExecuteRequest {

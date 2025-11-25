@@ -86,22 +86,50 @@ struct VoteDetailView: View {
                                         .frame(maxWidth: .infinity, alignment: .center)
                                 }
 
-                                VoteButton(
-                                    canVote: viewModel.canVote,
-                                    isExecuting: viewModel.isExecuting,
-                                    requiredPoints: vote.requiredPoints,
-                                    isPremium: pointsViewModel.isPremium,
-                                    onVote: {
-                                        // Check if user is guest
-                                        if authService.isGuest {
-                                            showLoginPrompt = true
-                                        } else {
-                                            Task {
-                                                await viewModel.executeVote()
+                                // Multiple vote support
+                                if let restrictions = vote.restrictions {
+                                    MultipleVoteSection(
+                                        voteCount: $viewModel.voteCount,
+                                        maxVoteCount: viewModel.maxVoteCount,
+                                        pointsToBeUsed: viewModel.pointsToBeUsed,
+                                        minVoteCount: restrictions.minVoteCount ?? 1,
+                                        canVote: viewModel.canVote,
+                                        isExecuting: viewModel.isExecuting,
+                                        isPremium: pointsViewModel.isPremium,
+                                        onVoteCountChange: { newCount in
+                                            viewModel.updateVoteCount(newCount)
+                                        },
+                                        onVoteAll: {
+                                            viewModel.voteAll()
+                                        },
+                                        onVote: {
+                                            if authService.isGuest {
+                                                showLoginPrompt = true
+                                            } else {
+                                                Task {
+                                                    await viewModel.executeVote()
+                                                }
                                             }
                                         }
-                                    }
-                                )
+                                    )
+                                } else {
+                                    VoteButton(
+                                        canVote: viewModel.canVote,
+                                        isExecuting: viewModel.isExecuting,
+                                        requiredPoints: vote.requiredPoints,
+                                        isPremium: pointsViewModel.isPremium,
+                                        onVote: {
+                                            // Check if user is guest
+                                            if authService.isGuest {
+                                                showLoginPrompt = true
+                                            } else {
+                                                Task {
+                                                    await viewModel.executeVote()
+                                                }
+                                            }
+                                        }
+                                    )
+                                }
                             }
                         }
 
@@ -166,6 +194,7 @@ struct VoteDetailView: View {
             print("🚀 [VoteDetailView] Task started - loading detail for voteId: \(voteId)")
             await viewModel.loadDetail()
             await pointsViewModel.loadPoints()
+            viewModel.updatePoints(premium: pointsViewModel.premiumPoints, regular: pointsViewModel.regularPoints)
             print("✅ [VoteDetailView] Task completed - vote loaded: \(viewModel.vote != nil), premium: \(pointsViewModel.isPremium)")
         }
         .onAppear {
@@ -444,6 +473,181 @@ struct ErrorDetailView: View {
             .background(Constants.Colors.accentPink)
             .cornerRadius(8)
         }
+    }
+}
+
+// MARK: - Multiple Vote Section
+struct MultipleVoteSection: View {
+    @Binding var voteCount: Int
+    let maxVoteCount: Int
+    let pointsToBeUsed: Int
+    let minVoteCount: Int
+    let canVote: Bool
+    let isExecuting: Bool
+    let isPremium: Bool
+    let onVoteCountChange: (Int) -> Void
+    let onVoteAll: () -> Void
+    let onVote: () -> Void
+
+    var body: some View {
+        VStack(spacing: 16) {
+            // Vote count selector
+            VoteCountSelector(
+                voteCount: $voteCount,
+                minCount: minVoteCount,
+                maxCount: maxVoteCount,
+                onChange: onVoteCountChange
+            )
+
+            // Points info
+            VotePointsInfo(
+                pointsToBeUsed: pointsToBeUsed,
+                maxVoteCount: maxVoteCount
+            )
+
+            // Buttons
+            HStack(spacing: 12) {
+                // Vote button
+                Button(action: onVote) {
+                    HStack {
+                        if isExecuting {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            Text("投票中...")
+                        } else {
+                            Image(systemName: "hand.thumbsup.fill")
+                            Text("投票する（\(pointsToBeUsed)pt）")
+                        }
+                    }
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: canVote ? [Constants.Colors.gradientPink, Constants.Colors.gradientPurple] : [Color.gray, Color.gray]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .cornerRadius(12)
+                }
+                .disabled(!canVote || isExecuting)
+
+                // Vote All button
+                if maxVoteCount > voteCount {
+                    Button(action: onVoteAll) {
+                        VStack(spacing: 4) {
+                            Image(systemName: "arrow.up.circle.fill")
+                                .font(.system(size: 20))
+                            Text("全部投票")
+                                .font(.system(size: 12, weight: .semibold))
+                        }
+                        .foregroundColor(.white)
+                        .frame(width: 80)
+                        .padding(.vertical, 12)
+                        .background(Constants.Colors.accentBlue)
+                        .cornerRadius(12)
+                    }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Vote Count Selector
+struct VoteCountSelector: View {
+    @Binding var voteCount: Int
+    let minCount: Int
+    let maxCount: Int
+    let onChange: (Int) -> Void
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Text("投票数")
+                .font(.system(size: 14))
+                .foregroundColor(Constants.Colors.textGray)
+
+            HStack(spacing: 20) {
+                // Minus button
+                Button(action: {
+                    if voteCount > minCount {
+                        voteCount -= 1
+                        onChange(voteCount)
+                    }
+                }) {
+                    Image(systemName: "minus.circle.fill")
+                        .font(.system(size: 32))
+                        .foregroundColor(voteCount > minCount ? Constants.Colors.accentPink : Color.gray)
+                }
+                .disabled(voteCount <= minCount)
+
+                // Count display
+                Text("\(voteCount)")
+                    .font(.system(size: 48, weight: .bold))
+                    .foregroundColor(Constants.Colors.textWhite)
+                    .frame(minWidth: 80)
+
+                // Plus button
+                Button(action: {
+                    if voteCount < maxCount {
+                        voteCount += 1
+                        onChange(voteCount)
+                    }
+                }) {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 32))
+                        .foregroundColor(voteCount < maxCount ? Constants.Colors.accentPink : Color.gray)
+                }
+                .disabled(voteCount >= maxCount)
+            }
+
+            Text("\(minCount)〜\(maxCount)票")
+                .font(.system(size: 12))
+                .foregroundColor(Constants.Colors.textGray)
+        }
+        .padding()
+        .background(Constants.Colors.cardDark)
+        .cornerRadius(12)
+    }
+}
+
+// MARK: - Vote Points Info
+struct VotePointsInfo: View {
+    let pointsToBeUsed: Int
+    let maxVoteCount: Int
+
+    var body: some View {
+        VStack(spacing: 8) {
+            HStack {
+                Image(systemName: "star.fill")
+                    .font(.system(size: 14))
+                    .foregroundColor(.yellow)
+                Text("消費ポイント:")
+                    .font(.system(size: 14))
+                    .foregroundColor(Constants.Colors.textGray)
+                Spacer()
+                Text("\(pointsToBeUsed)pt")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(Constants.Colors.accentPink)
+            }
+
+            HStack {
+                Image(systemName: "chart.bar.fill")
+                    .font(.system(size: 14))
+                    .foregroundColor(Constants.Colors.accentBlue)
+                Text("最大投票可能数:")
+                    .font(.system(size: 14))
+                    .foregroundColor(Constants.Colors.textGray)
+                Spacer()
+                Text("\(maxVoteCount)票")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(Constants.Colors.accentBlue)
+            }
+        }
+        .padding()
+        .background(Color.white.opacity(0.05))
+        .cornerRadius(12)
     }
 }
 

@@ -135,8 +135,10 @@ class VoteService {
     /// - Parameters:
     ///   - voteId: Vote ID
     ///   - choiceId: Choice ID to vote for
+    ///   - voteCount: Number of votes (default: 1)
+    ///   - pointSelection: Point selection mode (default: "auto")
     /// - Returns: VoteExecuteResult
-    func executeVote(voteId: String, choiceId: String) async throws -> VoteExecuteResult {
+    func executeVote(voteId: String, choiceId: String, voteCount: Int = 1, pointSelection: String = "auto") async throws -> VoteExecuteResult {
         guard let token = try await Auth.auth().currentUser?.getIDToken() else {
             throw VoteError.notAuthenticated
         }
@@ -147,8 +149,13 @@ class VoteService {
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        let body = ["voteId": voteId, "choiceId": choiceId]
-        request.httpBody = try JSONEncoder().encode(body)
+        let body: [String: Any] = [
+            "voteId": voteId,
+            "choiceId": choiceId,
+            "voteCount": voteCount,
+            "pointSelection": pointSelection
+        ]
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         print("📤 [VoteService] Executing vote")
         print("  URL: \(url.absoluteString)")
@@ -267,7 +274,19 @@ struct VoteExecuteResponse: Codable {
 struct VoteExecuteResult: Codable {
     let voteId: String
     let choiceId: String
+    let voteCount: Int
     let pointsDeducted: Int
+    let premiumPointsDeducted: Int
+    let regularPointsDeducted: Int
+
+    enum CodingKeys: String, CodingKey {
+        case voteId
+        case choiceId
+        case voteCount
+        case pointsDeducted = "totalPointsDeducted"
+        case premiumPointsDeducted
+        case regularPointsDeducted
+    }
 }
 
 struct RankingResponse: Codable {

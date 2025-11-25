@@ -2,6 +2,14 @@
  * Vote management types for admin panel
  */
 
+export interface VoteRestrictions {
+  dailyVoteLimitPerUser?: number; // 1日の投票数制限（人/日）
+  minVoteCount?: number; // 1回あたりの最小票数
+  maxVoteCount?: number; // 1回あたりの最大票数
+  premiumPointsPerVote?: number; // Premiumポイントコスト（票/P）
+  regularPointsPerVote?: number; // Regularポイントコスト（票/P）
+}
+
 export interface InAppVote {
   voteId: string;
   title: string;
@@ -14,6 +22,7 @@ export interface InAppVote {
   totalVotes: number;
   coverImageUrl?: string;
   isFeatured?: boolean;
+  restrictions?: VoteRestrictions; // 投票制限設定
   createdAt: string | null;
   updatedAt: string | null;
 }
@@ -33,6 +42,7 @@ export interface InAppVoteCreateRequest {
   requiredPoints: number;
   coverImageUrl?: string;
   isFeatured?: boolean;
+  restrictions?: VoteRestrictions; // 投票制限設定
 }
 
 export interface InAppVoteUpdateRequest {
@@ -44,6 +54,7 @@ export interface InAppVoteUpdateRequest {
   requiredPoints?: number;
   coverImageUrl?: string;
   isFeatured?: boolean;
+  restrictions?: VoteRestrictions; // 投票制限設定
 }
 
 export interface RankingData {

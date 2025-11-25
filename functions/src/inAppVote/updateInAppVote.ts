@@ -40,6 +40,7 @@ export const updateInAppVote = functions.https.onRequest(async (req, res) => {
       requiredPoints,
       coverImageUrl,
       isFeatured,
+      restrictions, // 🆕 投票制限設定
     } = req.body as InAppVoteUpdateRequest;
 
     if (!voteId) {
@@ -66,6 +67,7 @@ export const updateInAppVote = functions.https.onRequest(async (req, res) => {
     if (typeof requiredPoints === "number") updateData.requiredPoints = requiredPoints;
     if (coverImageUrl !== undefined) updateData.coverImageUrl = coverImageUrl;
     if (isFeatured !== undefined) updateData.isFeatured = isFeatured;
+    if (restrictions !== undefined) updateData.restrictions = restrictions; // 🆕 投票制限設定
 
     await voteRef.update(updateData);
 

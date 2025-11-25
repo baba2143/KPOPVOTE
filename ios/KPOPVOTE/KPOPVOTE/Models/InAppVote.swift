@@ -7,6 +7,15 @@
 
 import Foundation
 
+// MARK: - VoteRestrictions
+struct VoteRestrictions: Codable {
+    let dailyVoteLimitPerUser: Int?
+    let minVoteCount: Int?
+    let maxVoteCount: Int?
+    let premiumPointsPerVote: Int?
+    let regularPointsPerVote: Int?
+}
+
 struct InAppVote: Codable, Identifiable {
     let id: String
     let title: String
@@ -19,6 +28,7 @@ struct InAppVote: Codable, Identifiable {
     let totalVotes: Int
     let coverImageUrl: String?
     let isFeatured: Bool?
+    let restrictions: VoteRestrictions?
     let createdAt: Date?
     let updatedAt: Date?
 
@@ -34,6 +44,7 @@ struct InAppVote: Codable, Identifiable {
         case totalVotes
         case coverImageUrl
         case isFeatured
+        case restrictions
         case createdAt
         case updatedAt
     }
@@ -50,6 +61,7 @@ struct InAppVote: Codable, Identifiable {
         totalVotes = try container.decode(Int.self, forKey: .totalVotes)
         coverImageUrl = try container.decodeIfPresent(String.self, forKey: .coverImageUrl)
         isFeatured = try container.decodeIfPresent(Bool.self, forKey: .isFeatured)
+        restrictions = try container.decodeIfPresent(VoteRestrictions.self, forKey: .restrictions)
 
         // Parse ISO8601 dates
         let formatter = ISO8601DateFormatter()
@@ -92,6 +104,7 @@ struct InAppVote: Codable, Identifiable {
         totalVotes: Int,
         coverImageUrl: String? = nil,
         isFeatured: Bool? = nil,
+        restrictions: VoteRestrictions? = nil,
         createdAt: Date? = nil,
         updatedAt: Date? = nil
     ) {
@@ -106,6 +119,7 @@ struct InAppVote: Codable, Identifiable {
         self.totalVotes = totalVotes
         self.coverImageUrl = coverImageUrl
         self.isFeatured = isFeatured
+        self.restrictions = restrictions
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }

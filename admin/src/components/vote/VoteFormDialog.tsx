@@ -29,7 +29,7 @@ import {
 } from '@mui/icons-material';
 import { createVote, updateVote, uploadVoteCoverImage } from '../../services/voteService';
 import { listIdols } from '../../services/idolService';
-import { InAppVoteCreateRequest, InAppVoteUpdateRequest, InAppVote } from '../../types/vote';
+import { InAppVoteCreateRequest, InAppVoteUpdateRequest, InAppVote, VoteRestrictions } from '../../types/vote';
 import { IdolMaster } from '../../types/idol';
 
 interface VoteFormDialogProps {
@@ -56,6 +56,14 @@ export const VoteFormDialog: React.FC<VoteFormDialogProps> = ({
   const [endDate, setEndDate] = useState('');
   const [requiredPoints, setRequiredPoints] = useState(0);
   const [isFeatured, setIsFeatured] = useState(false);
+
+  // Vote restrictions
+  const [restrictions, setRestrictions] = useState<VoteRestrictions>({});
+  const [dailyVoteLimitPerUser, setDailyVoteLimitPerUser] = useState<number | ''>('');
+  const [minVoteCount, setMinVoteCount] = useState<number | ''>('');
+  const [maxVoteCount, setMaxVoteCount] = useState<number | ''>('');
+  const [premiumPointsPerVote, setPremiumPointsPerVote] = useState<number | ''>('');
+  const [regularPointsPerVote, setRegularPointsPerVote] = useState<number | ''>('');
 
   // Cover image
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -95,6 +103,15 @@ export const VoteFormDialog: React.FC<VoteFormDialogProps> = ({
       setIsFeatured(initialVote.isFeatured || false);
       if (initialVote.coverImageUrl) {
         setPreviewUrl(initialVote.coverImageUrl);
+      }
+      // Load restrictions
+      if (initialVote.restrictions) {
+        setRestrictions(initialVote.restrictions);
+        setDailyVoteLimitPerUser(initialVote.restrictions.dailyVoteLimitPerUser ?? '');
+        setMinVoteCount(initialVote.restrictions.minVoteCount ?? '');
+        setMaxVoteCount(initialVote.restrictions.maxVoteCount ?? '');
+        setPremiumPointsPerVote(initialVote.restrictions.premiumPointsPerVote ?? '');
+        setRegularPointsPerVote(initialVote.restrictions.regularPointsPerVote ?? '');
       }
       // Load existing choices for display (read-only in edit mode)
       if (initialVote.choices && initialVote.choices.length > 0) {
@@ -221,17 +238,52 @@ export const VoteFormDialog: React.FC<VoteFormDialogProps> = ({
     }
 
     // Validate choices
-    if (inputMode === 'manual') {
-      const validChoices = manualChoices.filter((c) => c.trim() !== '');
-      if (validChoices.length < 2) {
-        setError('選択肢は最低2つ必要です');
+    if (mode === 'create') {
+      if (inputMode === 'manual') {
+        const validChoices = manualChoices.filter((c) => c.trim() !== '');
+        if (validChoices.length < 2) {
+          setError('選択肢は最低2つ必要です');
+          return false;
+        }
+      } else {
+        if (selectedIdolIds.length < 2) {
+          setError('アイドルを最低2人選択してください');
+          return false;
+        }
+      }
+    }
+
+    // Validate restrictions
+    if (minVoteCount !== '' && maxVoteCount !== '') {
+      if (Number(minVoteCount) > Number(maxVoteCount)) {
+        setError('最小票数は最大票数以下である必要があります');
         return false;
       }
-    } else {
-      if (selectedIdolIds.length < 2) {
-        setError('アイドルを最低2人選択してください');
-        return false;
-      }
+    }
+
+    if (dailyVoteLimitPerUser !== '' && Number(dailyVoteLimitPerUser) < 1) {
+      setError('1日の投票数制限は1以上である必要があります');
+      return false;
+    }
+
+    if (minVoteCount !== '' && Number(minVoteCount) < 1) {
+      setError('最小票数は1以上である必要があります');
+      return false;
+    }
+
+    if (maxVoteCount !== '' && Number(maxVoteCount) < 1) {
+      setError('最大票数は1以上である必要があります');
+      return false;
+    }
+
+    if (premiumPointsPerVote !== '' && Number(premiumPointsPerVote) < 0) {
+      setError('Premiumポイントコストは0以上である必要があります');
+      return false;
+    }
+
+    if (regularPointsPerVote !== '' && Number(regularPointsPerVote) < 0) {
+      setError('Regularポイントコストは0以上である必要があります');
+      return false;
     }
 
     return true;
@@ -266,6 +318,26 @@ export const VoteFormDialog: React.FC<VoteFormDialogProps> = ({
         coverImageUrl = initialVote.coverImageUrl;
       }
 
+      // Build restrictions object
+      const restrictionsData: VoteRestrictions = {};
+      if (dailyVoteLimitPerUser !== '') {
+        restrictionsData.dailyVoteLimitPerUser = Number(dailyVoteLimitPerUser);
+      }
+      if (minVoteCount !== '') {
+        restrictionsData.minVoteCount = Number(minVoteCount);
+      }
+      if (maxVoteCount !== '') {
+        restrictionsData.maxVoteCount = Number(maxVoteCount);
+      }
+      if (premiumPointsPerVote !== '') {
+        restrictionsData.premiumPointsPerVote = Number(premiumPointsPerVote);
+      }
+      if (regularPointsPerVote !== '') {
+        restrictionsData.regularPointsPerVote = Number(regularPointsPerVote);
+      }
+
+      const hasRestrictions = Object.keys(restrictionsData).length > 0;
+
       if (mode === 'edit' && initialVote) {
         // Edit mode: update existing vote
         const updateData: InAppVoteUpdateRequest = {
@@ -277,6 +349,7 @@ export const VoteFormDialog: React.FC<VoteFormDialogProps> = ({
           requiredPoints,
           ...(coverImageUrl && { coverImageUrl }),
           isFeatured,
+          ...(hasRestrictions && { restrictions: restrictionsData }),
         };
 
         console.log('Updating vote with data:', updateData);
@@ -297,6 +370,7 @@ export const VoteFormDialog: React.FC<VoteFormDialogProps> = ({
           requiredPoints,
           ...(coverImageUrl && { coverImageUrl }),
           isFeatured,
+          ...(hasRestrictions && { restrictions: restrictionsData }),
         };
 
         await createVote(createData);
@@ -326,6 +400,12 @@ export const VoteFormDialog: React.FC<VoteFormDialogProps> = ({
     setManualChoices(['', '']);
     setSelectedIdolIds([]);
     setGroupFilter('all');
+    setDailyVoteLimitPerUser('');
+    setMinVoteCount('');
+    setMaxVoteCount('');
+    setPremiumPointsPerVote('');
+    setRegularPointsPerVote('');
+    setRestrictions({});
     setError(null);
     onClose();
   };
@@ -461,6 +541,101 @@ export const VoteFormDialog: React.FC<VoteFormDialogProps> = ({
             <Typography variant="body1">
               HOMEに表示（注目の投票として表示されます）
             </Typography>
+          </Box>
+
+          {/* Vote Restrictions Section */}
+          <Box sx={{ mt: 2, p: 2, border: '1px solid #ddd', borderRadius: 1, bgcolor: '#f9f9f9' }}>
+            <Typography variant="h6" gutterBottom>
+              投票制限設定（オプション）
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              以下の設定は任意です。設定しない場合はデフォルト値が使用されます。
+            </Typography>
+
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {/* Daily Vote Limit */}
+              <TextField
+                id="vote-daily-limit"
+                name="dailyVoteLimitPerUser"
+                label="1日の投票数制限（人/日）"
+                type="number"
+                fullWidth
+                value={dailyVoteLimitPerUser}
+                onChange={(e) => setDailyVoteLimitPerUser(e.target.value === '' ? '' : parseInt(e.target.value))}
+                inputProps={{ min: 1 }}
+                helperText="例: 3 → 1人のユーザーが1日に3回まで投票可能（空欄 = 制限なし）"
+              />
+
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                {/* Min Vote Count */}
+                <TextField
+                  id="vote-min-count"
+                  name="minVoteCount"
+                  label="1回あたりの最小票数"
+                  type="number"
+                  fullWidth
+                  value={minVoteCount}
+                  onChange={(e) => setMinVoteCount(e.target.value === '' ? '' : parseInt(e.target.value))}
+                  inputProps={{ min: 1 }}
+                  helperText="例: 5 → 1回の投票で最低5票（空欄 = 1票から可能）"
+                />
+
+                {/* Max Vote Count */}
+                <TextField
+                  id="vote-max-count"
+                  name="maxVoteCount"
+                  label="1回あたりの最大票数"
+                  type="number"
+                  fullWidth
+                  value={maxVoteCount}
+                  onChange={(e) => setMaxVoteCount(e.target.value === '' ? '' : parseInt(e.target.value))}
+                  inputProps={{ min: 1 }}
+                  helperText="例: 100 → 1回の投票で最大100票（空欄 = 制限なし）"
+                />
+              </Box>
+
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                {/* Premium Points Per Vote */}
+                <TextField
+                  id="vote-premium-points"
+                  name="premiumPointsPerVote"
+                  label="Premiumポイントコスト（票/P）"
+                  type="number"
+                  fullWidth
+                  value={premiumPointsPerVote}
+                  onChange={(e) => setPremiumPointsPerVote(e.target.value === '' ? '' : parseInt(e.target.value))}
+                  inputProps={{ min: 0 }}
+                  helperText="1票あたりの赤ポイント消費数（空欄 = デフォルト1P）"
+                />
+
+                {/* Regular Points Per Vote */}
+                <TextField
+                  id="vote-regular-points"
+                  name="regularPointsPerVote"
+                  label="Regularポイントコスト（票/P）"
+                  type="number"
+                  fullWidth
+                  value={regularPointsPerVote}
+                  onChange={(e) => setRegularPointsPerVote(e.target.value === '' ? '' : parseInt(e.target.value))}
+                  inputProps={{ min: 0 }}
+                  helperText="1票あたりの青ポイント消費数（空欄 = Premium 1P, Free 5P）"
+                />
+              </Box>
+
+              <Alert severity="info" sx={{ mt: 1 }}>
+                <Typography variant="body2">
+                  <strong>設定例:</strong>
+                  <br />
+                  • 1日3回まで、1回10票以上100票以下の投票を許可する場合
+                  <br />
+                  　→ 1日の投票数制限: 3、最小票数: 10、最大票数: 100
+                  <br />
+                  • 赤ポイント2P/票、青ポイント10P/票に設定する場合
+                  <br />
+                  　→ Premiumポイントコスト: 2、Regularポイントコスト: 10
+                </Typography>
+              </Alert>
+            </Box>
           </Box>
 
           {/* Choice Input Mode Toggle - Only in create mode */}

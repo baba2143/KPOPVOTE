@@ -58,6 +58,7 @@ export const createInAppVote = functions.https.onRequest(async (req, res) => {
       requiredPoints,
       coverImageUrl,
       isFeatured,
+      restrictions, // 🆕 投票制限設定
     } = req.body as InAppVoteCreateRequest;
 
     // Validate required fields
@@ -151,6 +152,7 @@ export const createInAppVote = functions.https.onRequest(async (req, res) => {
       totalVotes: 0,
       ...(coverImageUrl && { coverImageUrl }),
       ...(isFeatured !== undefined && { isFeatured }),
+      ...(restrictions && { restrictions }), // 🆕 投票制限設定
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
