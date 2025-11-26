@@ -296,7 +296,7 @@ struct CoverImageSectionView: View {
     let onSelectImage: () -> Void
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 8) {
             if let image = coverImage {
                 Image(uiImage: image)
                     .resizable()
@@ -330,6 +330,12 @@ struct CoverImageSectionView: View {
                     .background(Constants.Colors.cardDark)
                 }
             }
+
+            // Recommended image size hint
+            Text("推奨サイズ: 1200 x 600 ピクセル (2:1)")
+                .font(.system(size: 11))
+                .foregroundColor(Constants.Colors.textGray.opacity(0.7))
+                .padding(.horizontal)
         }
     }
 }
