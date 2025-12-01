@@ -90,6 +90,7 @@ export const listInAppVotes = functions.https.onRequest(async (req, res) => {
           totalVotes: data.totalVotes,
           ...(data.coverImageUrl && { coverImageUrl: data.coverImageUrl }),
           ...(data.isFeatured !== undefined && { isFeatured: data.isFeatured }),
+          ...(data.restrictions && { restrictions: data.restrictions }),
           createdAt: data.createdAt?.toDate().toISOString() || null,
           updatedAt: data.updatedAt?.toDate().toISOString() || null,
         };

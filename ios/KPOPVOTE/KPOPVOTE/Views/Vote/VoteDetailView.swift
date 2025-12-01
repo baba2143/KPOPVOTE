@@ -22,9 +22,10 @@ struct VoteDetailView: View {
     }
 
     var body: some View {
-        ZStack {
-            Constants.Colors.backgroundDark
-                .ignoresSafeArea()
+        NavigationView {
+            ZStack {
+                Constants.Colors.backgroundDark
+                    .ignoresSafeArea()
 
             if viewModel.isLoading {
                 ProgressView("読み込み中...")
@@ -90,14 +91,24 @@ struct VoteDetailView: View {
                                 if let restrictions = vote.restrictions {
                                     MultipleVoteSection(
                                         voteCount: $viewModel.voteCount,
+                                        selectedPointMode: $viewModel.selectedPointMode,
                                         maxVoteCount: viewModel.maxVoteCount,
                                         pointsToBeUsed: viewModel.pointsToBeUsed,
+                                        premiumPointsToBeUsed: viewModel.premiumPointsToBeUsed,
+                                        regularPointsToBeUsed: viewModel.regularPointsToBeUsed,
+                                        premiumPoints: viewModel.premiumPoints,
+                                        regularPoints: viewModel.regularPoints,
+                                        pointSelectionError: viewModel.pointSelectionError,
                                         minVoteCount: restrictions.minVoteCount ?? 1,
                                         canVote: viewModel.canVote,
                                         isExecuting: viewModel.isExecuting,
                                         isPremium: pointsViewModel.isPremium,
+                                        minVoteCountError: viewModel.minVoteCountError,  // 🆕 追加
                                         onVoteCountChange: { newCount in
                                             viewModel.updateVoteCount(newCount)
+                                        },
+                                        onPointModeChange: { mode in
+                                            viewModel.updatePointMode(mode)
                                         },
                                         onVoteAll: {
                                             viewModel.voteAll()
@@ -133,8 +144,8 @@ struct VoteDetailView: View {
                             }
                         }
 
-                        // Success/Already Voted Message
-                        if viewModel.hasVoted {
+                        // Success Message (投票成功時に表示)
+                        if viewModel.successMessage != nil {
                             VStack(spacing: 12) {
                                 HStack {
                                     Image(systemName: "checkmark.circle.fill")
@@ -171,14 +182,12 @@ struct VoteDetailView: View {
         .navigationTitle("投票詳細")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    print("❌ [VoteDetailView] Close button tapped")
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button("キャンセル") {
+                    print("❌ [VoteDetailView] Cancel button tapped")
                     dismiss()
-                } label: {
-                    Image(systemName: "xmark")
-                        .foregroundColor(Constants.Colors.textWhite)
                 }
+                .foregroundColor(Constants.Colors.textWhite)
             }
         }
         .alert("エラー", isPresented: .constant(viewModel.errorMessage != nil && !viewModel.isLoading)) {
@@ -210,6 +219,8 @@ struct VoteDetailView: View {
                 }
             }
         )
+        }
+        .navigationViewStyle(.stack)
     }
 }
 
@@ -479,15 +490,27 @@ struct ErrorDetailView: View {
 // MARK: - Multiple Vote Section
 struct MultipleVoteSection: View {
     @Binding var voteCount: Int
+    @Binding var selectedPointMode: PointSelectionMode
     let maxVoteCount: Int
     let pointsToBeUsed: Int
+    let premiumPointsToBeUsed: Int
+    let regularPointsToBeUsed: Int
+    let premiumPoints: Int
+    let regularPoints: Int
+    let pointSelectionError: String?
     let minVoteCount: Int
     let canVote: Bool
     let isExecuting: Bool
     let isPremium: Bool
+    let minVoteCountError: String?  // 🆕 追加
     let onVoteCountChange: (Int) -> Void
+    let onPointModeChange: (PointSelectionMode) -> Void
     let onVoteAll: () -> Void
     let onVote: () -> Void
+
+    private var canVoteWithMode: Bool {
+        return canVote && pointSelectionError == nil && minVoteCountError == nil
+    }
 
     var body: some View {
         VStack(spacing: 16) {
@@ -499,10 +522,30 @@ struct MultipleVoteSection: View {
                 onChange: onVoteCountChange
             )
 
-            // Points info
-            VotePointsInfo(
-                pointsToBeUsed: pointsToBeUsed,
-                maxVoteCount: maxVoteCount
+            // 最低投票数警告
+            if let minError = minVoteCountError {
+                HStack {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundColor(.orange)
+                    Text(minError)
+                        .font(.system(size: 14))
+                        .foregroundColor(.orange)
+                }
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(Color.orange.opacity(0.1))
+                .cornerRadius(8)
+            }
+
+            // Point Selection (NEW)
+            PointSelectionView(
+                selectedMode: $selectedPointMode,
+                premiumPoints: premiumPoints,
+                regularPoints: regularPoints,
+                premiumPointsToBeUsed: premiumPointsToBeUsed,
+                regularPointsToBeUsed: regularPointsToBeUsed,
+                pointSelectionError: pointSelectionError,
+                onModeChange: onPointModeChange
             )
 
             // Buttons
@@ -525,14 +568,14 @@ struct MultipleVoteSection: View {
                     .padding(.vertical, 16)
                     .background(
                         LinearGradient(
-                            gradient: Gradient(colors: canVote ? [Constants.Colors.gradientPink, Constants.Colors.gradientPurple] : [Color.gray, Color.gray]),
+                            gradient: Gradient(colors: canVoteWithMode ? [Constants.Colors.gradientPink, Constants.Colors.gradientPurple] : [Color.gray, Color.gray]),
                             startPoint: .leading,
                             endPoint: .trailing
                         )
                     )
                     .cornerRadius(12)
                 }
-                .disabled(!canVote || isExecuting)
+                .disabled(!canVoteWithMode || isExecuting)
 
                 // Vote All button
                 if maxVoteCount > voteCount {

@@ -10,6 +10,7 @@ import SwiftUI
 struct PointsHistoryView: View {
     @StateObject private var viewModel = PointsViewModel()
     @Environment(\.dismiss) private var dismiss
+    @State private var selectedFilter: PointHistoryFilter = .all
 
     var body: some View {
         NavigationView {
@@ -20,19 +21,26 @@ struct PointsHistoryView: View {
 
                 ScrollView {
                     VStack(spacing: Constants.Spacing.medium) {
-                        // Points Balance Card
-                        PointsBalanceCard(
-                            points: viewModel.points,
-                            isPremium: viewModel.isPremium,
-                            isLoading: viewModel.isLoading
+                        // Dual Points Balance Card
+                        DualPointsBalanceCard(
+                            premiumPoints: viewModel.premiumPoints,
+                            regularPoints: viewModel.regularPoints
                         )
                         .padding(.horizontal, Constants.Spacing.medium)
 
                         // Transaction History
                         VStack(alignment: .leading, spacing: Constants.Spacing.small) {
-                            Text("ポイント履歴")
-                                .font(.system(size: Constants.Typography.headlineSize, weight: .bold))
-                                .foregroundColor(Constants.Colors.textWhite)
+                            // Header with filter
+                            HStack {
+                                Text("ポイント履歴")
+                                    .font(.system(size: Constants.Typography.headlineSize, weight: .bold))
+                                    .foregroundColor(Constants.Colors.textWhite)
+                                Spacer()
+                            }
+                            .padding(.horizontal, Constants.Spacing.medium)
+
+                            // Filter buttons
+                            PointHistoryFilterBar(selectedFilter: $selectedFilter)
                                 .padding(.horizontal, Constants.Spacing.medium)
 
                             if viewModel.isLoadingHistory && viewModel.transactions.isEmpty {
@@ -72,8 +80,8 @@ struct PointsHistoryView: View {
                             } else {
                                 // Transaction List
                                 LazyVStack(spacing: 0) {
-                                    ForEach(viewModel.transactions) { transaction in
-                                        TransactionRow(transaction: transaction)
+                                    ForEach(filteredTransactions) { transaction in
+                                        TransactionRow(transaction: transaction, showPointType: true)
                                         if transaction.id != viewModel.transactions.last?.id {
                                             Divider()
                                                 .background(Constants.Colors.textGray.opacity(0.2))
@@ -136,6 +144,18 @@ struct PointsHistoryView: View {
             }
         }
     }
+
+    // Filtered transactions based on selected filter
+    private var filteredTransactions: [PointTransaction] {
+        switch selectedFilter {
+        case .all:
+            return viewModel.transactions
+        case .premium:
+            return viewModel.transactions.filter { $0.pointType == "premium" }
+        case .regular:
+            return viewModel.transactions.filter { $0.pointType == "regular" }
+        }
+    }
 }
 
 // MARK: - Points Balance Card
@@ -195,6 +215,7 @@ struct PointsBalanceCard: View {
 // MARK: - Transaction Row
 struct TransactionRow: View {
     let transaction: PointTransaction
+    var showPointType: Bool = false
 
     var body: some View {
         HStack(spacing: Constants.Spacing.medium) {
@@ -210,9 +231,16 @@ struct TransactionRow: View {
 
             // Transaction Info
             VStack(alignment: .leading, spacing: 4) {
-                Text(transaction.typeDisplayName)
-                    .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
-                    .foregroundColor(Constants.Colors.textWhite)
+                HStack(spacing: 4) {
+                    Text(transaction.typeDisplayName)
+                        .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
+                        .foregroundColor(Constants.Colors.textWhite)
+                    // Point type badge
+                    if showPointType, let icon = transaction.pointTypeIcon {
+                        Text(icon)
+                            .font(.system(size: 12))
+                    }
+                }
                 Text(transaction.reason)
                     .font(.system(size: Constants.Typography.captionSize))
                     .foregroundColor(Constants.Colors.textGray)
@@ -224,16 +252,33 @@ struct TransactionRow: View {
 
             Spacer()
 
-            // Points
-            Text("\(transaction.isPositive ? "+" : "")\(transaction.points)")
-                .font(.system(size: Constants.Typography.headlineSize, weight: .bold))
-                .foregroundColor(transaction.isPositive ? Constants.Colors.accentPink : Constants.Colors.textGray)
-            + Text("P")
-                .font(.system(size: Constants.Typography.captionSize, weight: .bold))
-                .foregroundColor(transaction.isPositive ? Constants.Colors.accentPink : Constants.Colors.textGray)
+            // Points with type color
+            VStack(alignment: .trailing, spacing: 2) {
+                HStack(spacing: 2) {
+                    Text("\(transaction.isPositive ? "+" : "")\(transaction.points)")
+                        .font(.system(size: Constants.Typography.headlineSize, weight: .bold))
+                        .foregroundColor(pointsColor)
+                    Text("P")
+                        .font(.system(size: Constants.Typography.captionSize, weight: .bold))
+                        .foregroundColor(pointsColor)
+                }
+                // Show point type name
+                if showPointType, let typeName = transaction.pointTypeDisplayName {
+                    Text(typeName)
+                        .font(.system(size: 10))
+                        .foregroundColor(transaction.pointTypeColor ?? Constants.Colors.textGray)
+                }
+            }
         }
         .padding(.horizontal, Constants.Spacing.medium)
         .padding(.vertical, Constants.Spacing.small)
+    }
+
+    private var pointsColor: Color {
+        if let typeColor = transaction.pointTypeColor {
+            return typeColor
+        }
+        return transaction.isPositive ? Constants.Colors.accentPink : Constants.Colors.textGray
     }
 
     private func formatDate(_ date: Date) -> String {
@@ -242,6 +287,78 @@ struct TransactionRow: View {
         formatter.timeStyle = .short
         formatter.locale = Locale(identifier: "ja_JP")
         return formatter.string(from: date)
+    }
+}
+
+// MARK: - Point History Filter
+enum PointHistoryFilter: String, CaseIterable {
+    case all = "all"
+    case premium = "premium"
+    case regular = "regular"
+
+    var displayName: String {
+        switch self {
+        case .all: return "すべて"
+        case .premium: return "Premium"
+        case .regular: return "Regular"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .all: return ""
+        case .premium: return "🔴"
+        case .regular: return "🔵"
+        }
+    }
+}
+
+// MARK: - Point History Filter Bar
+struct PointHistoryFilterBar: View {
+    @Binding var selectedFilter: PointHistoryFilter
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ForEach(PointHistoryFilter.allCases, id: \.self) { filter in
+                PointHistoryFilterButton(
+                    filter: filter,
+                    isSelected: selectedFilter == filter,
+                    onTap: { selectedFilter = filter }
+                )
+            }
+            Spacer()
+        }
+    }
+}
+
+// MARK: - Point History Filter Button
+struct PointHistoryFilterButton: View {
+    let filter: PointHistoryFilter
+    let isSelected: Bool
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 4) {
+                if !filter.icon.isEmpty {
+                    Text(filter.icon)
+                        .font(.system(size: 12))
+                }
+                Text(filter.displayName)
+                    .font(.system(size: Constants.Typography.captionSize, weight: isSelected ? .semibold : .regular))
+            }
+            .foregroundColor(isSelected ? Constants.Colors.textWhite : Constants.Colors.textGray)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(isSelected ? Constants.Colors.accentPink : Constants.Colors.cardDark)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(isSelected ? Color.clear : Constants.Colors.textGray.opacity(0.3), lineWidth: 1)
+            )
+        }
     }
 }
 

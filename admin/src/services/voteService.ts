@@ -5,6 +5,7 @@
 
 import { auth, storage } from '../config/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import imageCompression from 'browser-image-compression';
 import {
   InAppVote,
   InAppVoteCreateRequest,
@@ -29,31 +30,62 @@ const getAuthToken = async (): Promise<string> => {
 };
 
 /**
+ * Image compression options
+ */
+const imageCompressionOptions = {
+  maxSizeMB: 1, // 最大1MBに圧縮
+  maxWidthOrHeight: 1920, // 最大幅/高さ（フルHD）
+  useWebWorker: true, // WebWorkerで非同期処理
+};
+
+/**
+ * Compress image file if necessary
+ * @param file Image file to compress
+ * @returns Compressed file (or original if already small enough)
+ */
+const compressImage = async (file: File): Promise<File> => {
+  // 元のファイルが1MB未満なら圧縮不要
+  if (file.size <= 1 * 1024 * 1024) {
+    console.log(`Image already small enough: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+    return file;
+  }
+
+  console.log(`Compressing image: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+  const compressedFile = await imageCompression(file, imageCompressionOptions);
+  console.log(`Compressed to: ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`);
+
+  return compressedFile;
+};
+
+/**
  * Upload vote cover image to Firebase Storage
  * @param file Image file to upload
  * @returns Download URL of uploaded image
  */
 export const uploadVoteCoverImage = async (file: File): Promise<string> => {
   try {
-    // Validate file type
+    // Validate file type (before compression)
     const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
     if (!validTypes.includes(file.type)) {
       throw new Error('Invalid file type. Only JPEG, PNG, and WebP are allowed.');
     }
 
-    // Validate file size (max 5MB)
+    // Compress image if necessary
+    const compressedFile = await compressImage(file);
+
+    // Validate file size after compression (max 5MB)
     const maxSize = 5 * 1024 * 1024; // 5MB in bytes
-    if (file.size > maxSize) {
-      throw new Error('File size exceeds 5MB limit.');
+    if (compressedFile.size > maxSize) {
+      throw new Error('File size exceeds 5MB limit even after compression.');
     }
 
     // Create unique filename with timestamp
     const timestamp = Date.now();
-    const filename = `${timestamp}_${file.name}`;
+    const filename = `${timestamp}_${compressedFile.name}`;
     const storageRef = ref(storage, `vote-covers/${filename}`);
 
-    // Upload file
-    const snapshot = await uploadBytes(storageRef, file);
+    // Upload compressed file
+    const snapshot = await uploadBytes(storageRef, compressedFile);
 
     // Get download URL
     const downloadURL = await getDownloadURL(snapshot.ref);

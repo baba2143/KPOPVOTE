@@ -38,12 +38,7 @@ struct VoteListView: View {
         .navigationBarTitleDisplayMode(.large)
         .sheet(isPresented: $showVoteDetail) {
             if let voteId = selectedVoteId {
-                NavigationView {
-                    VoteDetailView(voteId: voteId)
-                        .onAppear {
-                            print("📱 [VoteListView] Sheet presenting with voteId: \(voteId)")
-                        }
-                }
+                VoteDetailView(voteId: voteId)
             } else {
                 Text("エラー")
                     .onAppear {

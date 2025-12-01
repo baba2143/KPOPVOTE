@@ -190,22 +190,17 @@ export const executeVote = functions.https.onRequest(async (req, res) => {
       return;
     }
 
-    // 重複投票チェック
+    // 🔴 永久重複投票チェックは削除 → 1日何度でも投票可能
     const voteRecordRef = db.collection("voteRecords").doc(`${voteId}_${uid}`);
-    const voteRecord = await voteRecordRef.get();
 
-    if (voteRecord.exists) {
-      res.status(400).json({ success: false, error: "Already voted" } as ApiResponse<null>);
-      return;
-    }
+    // 日次投票履歴取得（常に確認）
+    const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+    const dailyVoteHistoryRef = db.collection("dailyVoteHistory").doc(`${voteId}_${uid}_${today}`);
+    const dailyVoteHistory = await dailyVoteHistoryRef.get();
+    const currentDailyVoteCount = dailyVoteHistory.exists ? (dailyVoteHistory.data()!.voteCount || 0) : 0;
 
-    // 🆕 日次投票数制限チェック
+    // 🆕 日次投票数制限チェック（設定時のみ適用）
     if (restrictions.dailyVoteLimitPerUser) {
-      const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-      const dailyVoteHistoryRef = db.collection("dailyVoteHistory").doc(`${voteId}_${uid}_${today}`);
-      const dailyVoteHistory = await dailyVoteHistoryRef.get();
-
-      const currentDailyVoteCount = dailyVoteHistory.exists ? (dailyVoteHistory.data()!.voteCount || 0) : 0;
       const newTotalVoteCount = currentDailyVoteCount + voteCount;
 
       if (newTotalVoteCount > restrictions.dailyVoteLimitPerUser) {
@@ -242,16 +237,16 @@ export const executeVote = functions.https.onRequest(async (req, res) => {
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
-      // 投票記録
+      // 投票記録（累積更新 - 同一投票への複数回投票を許可）
       transaction.set(voteRecordRef, {
         voteId,
         userId: uid,
-        choiceId,
-        voteCount, // 🆕 投票数記録
-        premiumPointsUsed: premiumUsed, // 🆕 赤ポイント使用量
-        regularPointsUsed: regularUsed, // 🆕 青ポイント使用量
-        votedAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
+        lastChoiceId: choiceId, // 最後に選択した選択肢
+        totalVoteCount: admin.firestore.FieldValue.increment(voteCount), // 累積投票数
+        totalPremiumPointsUsed: admin.firestore.FieldValue.increment(premiumUsed), // 累積赤ポイント
+        totalRegularPointsUsed: admin.firestore.FieldValue.increment(regularUsed), // 累積青ポイント
+        lastVotedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true }); // merge: true で既存ドキュメントがあれば更新
 
       // 投票履歴記録
       const voteHistoryRef = db.collection("voteHistory").doc();
@@ -300,18 +295,14 @@ export const executeVote = functions.https.onRequest(async (req, res) => {
         });
       }
 
-      // 🆕 日次投票履歴更新（dailyVoteLimitPerUser設定時のみ）
-      if (restrictions.dailyVoteLimitPerUser) {
-        const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-        const dailyVoteHistoryRef = db.collection("dailyVoteHistory").doc(`${voteId}_${uid}_${today}`);
-        transaction.set(dailyVoteHistoryRef, {
-          userId: uid,
-          voteId,
-          date: today,
-          voteCount: admin.firestore.FieldValue.increment(voteCount),
-          lastVotedAt: admin.firestore.FieldValue.serverTimestamp(),
-        }, { merge: true }); // merge: true で既存ドキュメントがあれば更新、なければ作成
-      }
+      // 🆕 日次投票履歴更新（常に記録 - 日付が変わればリセット）
+      transaction.set(dailyVoteHistoryRef, {
+        userId: uid,
+        voteId,
+        date: today,
+        voteCount: admin.firestore.FieldValue.increment(voteCount),
+        lastVotedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true }); // merge: true で既存ドキュメントがあれば更新、なければ作成
     });
 
     console.log(

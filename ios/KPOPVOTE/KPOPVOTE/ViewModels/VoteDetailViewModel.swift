@@ -27,6 +27,12 @@ class VoteDetailViewModel: ObservableObject {
     @Published var premiumPoints: Int = 0
     @Published var regularPoints: Int = 0
 
+    // Point selection mode (🔴/🔵 選択)
+    @Published var selectedPointMode: PointSelectionMode = .auto
+    @Published var premiumPointsToBeUsed: Int = 0
+    @Published var regularPointsToBeUsed: Int = 0
+    @Published var pointSelectionError: String?
+
     // MARK: - Properties
     let voteId: String
 
@@ -39,7 +45,19 @@ class VoteDetailViewModel: ObservableObject {
     // MARK: - Computed Properties
     var canVote: Bool {
         guard let vote = vote else { return false }
-        return vote.isActive && !hasVoted && selectedChoiceId != nil
+        return vote.isActive && !hasVoted && selectedChoiceId != nil && minVoteCountError == nil
+    }
+
+    /// 最低投票数バリデーションエラー
+    var minVoteCountError: String? {
+        guard let restrictions = vote?.restrictions,
+              let minCount = restrictions.minVoteCount else {
+            return nil
+        }
+        if voteCount < minCount {
+            return "投票は最低\(minCount)票以上必要です"
+        }
+        return nil
     }
 
     var selectedChoice: VoteChoice? {
@@ -112,11 +130,21 @@ class VoteDetailViewModel: ObservableObject {
             let result = try await VoteService.shared.executeVote(
                 voteId: voteId,
                 choiceId: choiceId,
-                voteCount: voteCount
+                voteCount: voteCount,
+                pointSelection: selectedPointMode.rawValue
             )
 
-            hasVoted = true
-            successMessage = "投票が完了しました（\(result.voteCount)票、\(result.pointsDeducted)pt消費）"
+            // 🔴 hasVoted = true は削除 → 再投票可能に
+            // Show point breakdown in success message
+            var pointsDetail = ""
+            if result.premiumPointsDeducted > 0 && result.regularPointsDeducted > 0 {
+                pointsDetail = "\(result.premiumPointsDeducted)pt🔴 + \(result.regularPointsDeducted)pt🔵"
+            } else if result.premiumPointsDeducted > 0 {
+                pointsDetail = "\(result.premiumPointsDeducted)pt🔴"
+            } else {
+                pointsDetail = "\(result.regularPointsDeducted)pt🔵"
+            }
+            successMessage = "投票が完了しました（\(result.voteCount)票、\(pointsDetail)消費）"
 
             print("✅ [VoteDetailViewModel] Vote executed successfully")
 
@@ -155,60 +183,131 @@ class VoteDetailViewModel: ObservableObject {
     func updatePoints(premium: Int, regular: Int) {
         premiumPoints = premium
         regularPoints = regular
+
+        // 初期投票数を最低投票数に設定
+        if let minCount = vote?.restrictions?.minVoteCount, voteCount < minCount {
+            voteCount = minCount
+        }
+
         calculateMaxVoteCount()
         calculatePointsToBeUsed()
     }
 
-    /// Calculate maximum vote count based on points and restrictions
+    /// Calculate maximum vote count based on points, mode and restrictions
     func calculateMaxVoteCount() {
-        guard let vote = vote,
-              let restrictions = vote.restrictions else {
+        guard let vote = vote else {
             maxVoteCount = 1
             return
         }
 
-        let premiumCost = restrictions.premiumPointsPerVote ?? vote.requiredPoints
-        let regularCost = restrictions.regularPointsPerVote ?? vote.requiredPoints
+        let restrictions = vote.restrictions
+        let premiumCost = restrictions?.premiumPointsPerVote ?? vote.requiredPoints
+        let regularCost = restrictions?.regularPointsPerVote ?? vote.requiredPoints
 
-        // Calculate max votes from points
+        // Calculate max votes based on selected mode
         var maxFromPoints = 0
-        if premiumCost > 0 {
-            let premiumVotes = premiumPoints / premiumCost
-            let regularVotes = regularPoints / regularCost
-            maxFromPoints = premiumVotes + regularVotes
-        } else {
-            maxFromPoints = Int.max
+
+        switch selectedPointMode {
+        case .auto:
+            // Auto: Use both premium and regular
+            if premiumCost > 0 {
+                let premiumVotes = premiumPoints / premiumCost
+                let regularVotes = regularCost > 0 ? regularPoints / regularCost : 0
+                maxFromPoints = premiumVotes + regularVotes
+            } else {
+                maxFromPoints = Int.max
+            }
+
+        case .premium:
+            // Premium only
+            if premiumCost > 0 {
+                maxFromPoints = premiumPoints / premiumCost
+            } else {
+                maxFromPoints = Int.max
+            }
+
+        case .regular:
+            // Regular only
+            if regularCost > 0 {
+                maxFromPoints = regularPoints / regularCost
+            } else {
+                maxFromPoints = Int.max
+            }
         }
 
         // Apply restrictions
-        let minCount = restrictions.minVoteCount ?? 1
-        var maxCount = restrictions.maxVoteCount ?? maxFromPoints
+        let minCount = restrictions?.minVoteCount ?? 1
+        var maxCount = restrictions?.maxVoteCount ?? maxFromPoints
 
         // Limit by available points
         maxCount = min(maxCount, maxFromPoints)
 
-        // Ensure at least minCount
-        maxVoteCount = max(minCount, maxCount)
+        // Ensure at least 0 (not minCount, to allow UI to show error)
+        maxVoteCount = max(0, maxCount)
+
+        // Adjust current vote count if it exceeds new max
+        if voteCount > maxVoteCount && maxVoteCount > 0 {
+            voteCount = maxVoteCount
+        } else if maxVoteCount == 0 {
+            voteCount = 1  // Keep at 1 to show error
+        }
     }
 
     /// Calculate points to be used for current vote count
     func calculatePointsToBeUsed() {
-        guard let vote = vote,
-              let restrictions = vote.restrictions else {
-            pointsToBeUsed = vote?.requiredPoints ?? 0
+        guard let vote = vote else {
+            pointsToBeUsed = 0
+            premiumPointsToBeUsed = 0
+            regularPointsToBeUsed = 0
+            pointSelectionError = nil
             return
         }
 
-        let premiumCost = restrictions.premiumPointsPerVote ?? vote.requiredPoints
-        let regularCost = restrictions.regularPointsPerVote ?? vote.requiredPoints
+        let restrictions = vote.restrictions
+        let premiumCost = restrictions?.premiumPointsPerVote ?? vote.requiredPoints
+        let regularCost = restrictions?.regularPointsPerVote ?? vote.requiredPoints
 
-        // Auto selection: Premium first, then regular
-        let premiumUsed = min(voteCount * premiumCost, premiumPoints)
-        let premiumVotes = premiumUsed / premiumCost
-        let remainingVotes = voteCount - premiumVotes
-        let regularUsed = remainingVotes * regularCost
+        pointSelectionError = nil
 
-        pointsToBeUsed = premiumUsed + regularUsed
+        switch selectedPointMode {
+        case .auto:
+            // Auto selection: Premium first, then regular
+            let premiumUsed = min(voteCount * premiumCost, premiumPoints)
+            let premiumVotes = premiumCost > 0 ? premiumUsed / premiumCost : 0
+            let remainingVotes = voteCount - premiumVotes
+            let regularUsed = remainingVotes * regularCost
+
+            premiumPointsToBeUsed = premiumUsed
+            regularPointsToBeUsed = regularUsed
+            pointsToBeUsed = premiumUsed + regularUsed
+
+            // Validate total points
+            if (premiumUsed + regularUsed) > (premiumPoints + regularPoints) {
+                pointSelectionError = "ポイントが不足しています"
+            }
+
+        case .premium:
+            // Premium only
+            let requiredPremium = voteCount * premiumCost
+            premiumPointsToBeUsed = requiredPremium
+            regularPointsToBeUsed = 0
+            pointsToBeUsed = requiredPremium
+
+            if requiredPremium > premiumPoints {
+                pointSelectionError = "🔴 赤ポイントが不足しています（必要: \(requiredPremium)P）"
+            }
+
+        case .regular:
+            // Regular only
+            let requiredRegular = voteCount * regularCost
+            premiumPointsToBeUsed = 0
+            regularPointsToBeUsed = requiredRegular
+            pointsToBeUsed = requiredRegular
+
+            if requiredRegular > regularPoints {
+                pointSelectionError = "🔵 青ポイントが不足しています（必要: \(requiredRegular)P）"
+            }
+        }
     }
 
     /// Set vote count to maximum
@@ -227,5 +326,36 @@ class VoteDetailViewModel: ObservableObject {
         let minCount = restrictions.minVoteCount ?? 1
         voteCount = max(minCount, min(newCount, maxVoteCount))
         calculatePointsToBeUsed()
+    }
+
+    /// Update point selection mode
+    func updatePointMode(_ mode: PointSelectionMode) {
+        selectedPointMode = mode
+        calculateMaxVoteCount()
+        calculatePointsToBeUsed()
+        print("📱 [VoteDetailViewModel] Point mode changed to: \(mode.rawValue)")
+    }
+
+    /// Check if current mode can vote with current settings
+    var canVoteWithCurrentMode: Bool {
+        return pointSelectionError == nil && voteCount > 0
+    }
+
+    /// Get formatted point usage string
+    var formattedPointUsage: String {
+        switch selectedPointMode {
+        case .auto:
+            if premiumPointsToBeUsed > 0 && regularPointsToBeUsed > 0 {
+                return "\(premiumPointsToBeUsed)pt(🔴) + \(regularPointsToBeUsed)pt(🔵) = \(pointsToBeUsed)pt"
+            } else if premiumPointsToBeUsed > 0 {
+                return "\(premiumPointsToBeUsed)pt(🔴)"
+            } else {
+                return "\(regularPointsToBeUsed)pt(🔵)"
+            }
+        case .premium:
+            return "\(premiumPointsToBeUsed)pt(🔴)"
+        case .regular:
+            return "\(regularPointsToBeUsed)pt(🔵)"
+        }
     }
 }

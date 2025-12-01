@@ -27,11 +27,10 @@ struct StoreView: View {
 
                 ScrollView {
                     VStack(spacing: Constants.Spacing.large) {
-                        // Current Points Card
-                        PointsBalanceCard(
-                            points: pointsViewModel.points,
-                            isPremium: pointsViewModel.isPremium,
-                            isLoading: pointsViewModel.isLoading
+                        // Current Points Card (Dual Points)
+                        DualPointsBalanceCard(
+                            premiumPoints: pointsViewModel.premiumPoints,
+                            regularPoints: pointsViewModel.regularPoints
                         )
                         .padding(.horizontal, Constants.Spacing.medium)
 

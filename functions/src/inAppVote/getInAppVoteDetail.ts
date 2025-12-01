@@ -80,6 +80,7 @@ export const getInAppVoteDetail = functions.https.onRequest(async (req, res) => 
         totalVotes: data.totalVotes,
         coverImageUrl: data.coverImageUrl || null,
         isFeatured: data.isFeatured || false,
+        restrictions: data.restrictions || null,
         createdAt: data.createdAt?.toDate().toISOString() || null,
         updatedAt: data.updatedAt?.toDate().toISOString() || null,
       },
