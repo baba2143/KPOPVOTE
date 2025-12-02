@@ -144,6 +144,10 @@ enum Constants {
         static let trendingCollections = "\(apiBaseURL)/api/collections/trending"
         static let savedCollections = "\(apiBaseURL)/api/collections/users/me/saved"
         static let myCollections = "\(apiBaseURL)/api/collections/users/me/created"
+
+        // Calendar (Community Feature)
+        static let calendar = "\(apiBaseURL)/api/calendar"
+        static let checkDuplicate = "\(apiBaseURL)/api/calendar/check-duplicate"
     }
 
     // MARK: - UserDefaults Keys

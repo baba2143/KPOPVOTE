@@ -8,6 +8,30 @@
 import SwiftUI
 import FirebaseAuth
 
+// MARK: - Community Content Type
+enum CommunityContentType: String, CaseIterable {
+    case posts = "posts"
+    case calendar = "calendar"
+
+    var displayName: String {
+        switch self {
+        case .posts:
+            return "投稿"
+        case .calendar:
+            return "カレンダー"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .posts:
+            return "bubble.left.and.bubble.right"
+        case .calendar:
+            return "calendar"
+        }
+    }
+}
+
 struct CommunityView: View {
     @EnvironmentObject var authService: AuthService
     @StateObject private var viewModel = CommunityViewModel()
@@ -18,6 +42,7 @@ struct CommunityView: View {
     @State private var showDeleteSuccess = false
     @State private var showSearch = false
     @State private var selectedUser: IdentifiableString?
+    @State private var contentType: CommunityContentType = .posts
     @Binding var showCreatePost: Bool
 
     var body: some View {
@@ -27,100 +52,16 @@ struct CommunityView: View {
                     .ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    // User Story Bar
-                    if !activityViewModel.followingActivity.isEmpty {
-                        UserStoryBar(users: activityViewModel.followingActivity) { user in
-                            selectedUser = IdentifiableString(user.id)
-                        }
-                    } else if !activityViewModel.recommendedUsers.isEmpty {
-                        UserStoryBar(users: convertRecommendedToActivity(activityViewModel.recommendedUsers)) { user in
-                            selectedUser = IdentifiableString(user.id)
-                        }
-                    }
-
-                    // Timeline Type Selector
-                    timelineSelector
+                    // Top-level content type selector (Posts | Calendar)
+                    contentTypeSelector
                         .padding(.horizontal)
-                        .padding(.vertical, 12)
+                        .padding(.top, 8)
 
-                    // Content
-                    if viewModel.isLoading && viewModel.posts.isEmpty {
-                        Spacer()
-                        ProgressView("読み込み中...")
-                            .progressViewStyle(CircularProgressViewStyle(tint: Constants.Colors.accentPink))
-                            .foregroundColor(Constants.Colors.textWhite)
-                        Spacer()
-                    } else if let errorMessage = viewModel.errorMessage {
-                        Spacer()
-                        ErrorView(message: errorMessage) {
-                            Task {
-                                await viewModel.refresh()
-                            }
-                        }
-                        Spacer()
-                    } else if viewModel.posts.isEmpty {
-                        Spacer()
-                        VStack(spacing: Constants.Spacing.medium) {
-                            Image(systemName: "bubble.left.and.bubble.right")
-                                .font(.system(size: 64))
-                                .foregroundColor(Constants.Colors.textGray)
-
-                            Text("投稿がありません")
-                                .font(.system(size: Constants.Typography.headlineSize, weight: .bold))
-                                .foregroundColor(Constants.Colors.textWhite)
-
-                            Text(viewModel.timelineType == "following" ? "フォローしているユーザーの投稿がここに表示されます" : "この推しの投稿がありません")
-                                .font(.system(size: Constants.Typography.bodySize))
-                                .foregroundColor(Constants.Colors.textGray)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal, Constants.Spacing.large)
-                        }
-                        Spacer()
+                    // Show content based on selected type
+                    if contentType == .posts {
+                        postsContent
                     } else {
-                        ScrollView {
-                            LazyVStack(spacing: 16) {
-                                ForEach(viewModel.posts) { post in
-                                    PostCardView(
-                                        post: post,
-                                        onTap: {
-                                            print("🔷 [CommunityView] Post tapped: \(post.id)")
-                                            selectedPost = IdentifiableString(post.id)
-                                            print("🔷 [CommunityView] selectedPost set to: \(post.id)")
-                                        },
-                                        onLike: {
-                                            // Check if user is guest
-                                            if authService.isGuest {
-                                                showLoginPrompt = true
-                                            } else {
-                                                Task {
-                                                    await viewModel.toggleLike(postId: post.id)
-                                                }
-                                            }
-                                        },
-                                        onDelete: isPostOwner(post) ? {
-                                            Task {
-                                                await viewModel.deletePost(postId: post.id)
-                                            }
-                                        } : nil
-                                    )
-
-                                    // Load more trigger
-                                    if post.id == viewModel.posts.last?.id && viewModel.hasMore {
-                                        ProgressView()
-                                            .progressViewStyle(CircularProgressViewStyle(tint: Constants.Colors.accentPink))
-                                            .onAppear {
-                                                Task {
-                                                    await viewModel.loadMorePosts()
-                                                }
-                                            }
-                                    }
-                                }
-                            }
-                            .padding()
-                        }
-                        .refreshable {
-                            await viewModel.refresh()
-                        }
+                        calendarContent
                     }
                 }
             }
@@ -214,6 +155,196 @@ struct CommunityView: View {
         }
     }
 
+    // MARK: - Content Type Selector (Posts | Calendar)
+    @ViewBuilder
+    private var contentTypeSelector: some View {
+        HStack(spacing: 0) {
+            ForEach(CommunityContentType.allCases, id: \.self) { type in
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        contentType = type
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: type.icon)
+                            .font(.system(size: 14))
+                        Text(type.displayName)
+                            .font(.system(size: 14, weight: .semibold))
+                    }
+                    .foregroundColor(contentType == type ? .white : Constants.Colors.textGray)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(
+                        contentType == type ?
+                        LinearGradient(
+                            colors: [Constants.Colors.gradientPink, Constants.Colors.gradientPurple],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        ) : nil
+                    )
+                }
+            }
+        }
+        .background(Constants.Colors.cardDark)
+        .cornerRadius(25)
+    }
+
+    // MARK: - Posts Content
+    @ViewBuilder
+    private var postsContent: some View {
+        VStack(spacing: 0) {
+            // User Story Bar
+            if !activityViewModel.followingActivity.isEmpty {
+                UserStoryBar(users: activityViewModel.followingActivity) { user in
+                    selectedUser = IdentifiableString(user.id)
+                }
+            } else if !activityViewModel.recommendedUsers.isEmpty {
+                UserStoryBar(users: convertRecommendedToActivity(activityViewModel.recommendedUsers)) { user in
+                    selectedUser = IdentifiableString(user.id)
+                }
+            }
+
+            // Timeline Type Selector
+            timelineSelector
+                .padding(.horizontal)
+                .padding(.vertical, 12)
+
+            // Posts List
+            if viewModel.isLoading && viewModel.posts.isEmpty {
+                Spacer()
+                ProgressView("読み込み中...")
+                    .progressViewStyle(CircularProgressViewStyle(tint: Constants.Colors.accentPink))
+                    .foregroundColor(Constants.Colors.textWhite)
+                Spacer()
+            } else if let errorMessage = viewModel.errorMessage {
+                Spacer()
+                ErrorView(message: errorMessage) {
+                    Task {
+                        await viewModel.refresh()
+                    }
+                }
+                Spacer()
+            } else if viewModel.posts.isEmpty {
+                Spacer()
+                VStack(spacing: Constants.Spacing.medium) {
+                    Image(systemName: "bubble.left.and.bubble.right")
+                        .font(.system(size: 64))
+                        .foregroundColor(Constants.Colors.textGray)
+
+                    Text("投稿がありません")
+                        .font(.system(size: Constants.Typography.headlineSize, weight: .bold))
+                        .foregroundColor(Constants.Colors.textWhite)
+
+                    Text(viewModel.timelineType == "following" ? "フォローしているユーザーの投稿がここに表示されます" : "この推しの投稿がありません")
+                        .font(.system(size: Constants.Typography.bodySize))
+                        .foregroundColor(Constants.Colors.textGray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, Constants.Spacing.large)
+                }
+                Spacer()
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 16) {
+                        ForEach(viewModel.posts) { post in
+                            PostCardView(
+                                post: post,
+                                onTap: {
+                                    print("🔷 [CommunityView] Post tapped: \(post.id)")
+                                    selectedPost = IdentifiableString(post.id)
+                                    print("🔷 [CommunityView] selectedPost set to: \(post.id)")
+                                },
+                                onLike: {
+                                    if authService.isGuest {
+                                        showLoginPrompt = true
+                                    } else {
+                                        Task {
+                                            await viewModel.toggleLike(postId: post.id)
+                                        }
+                                    }
+                                },
+                                onDelete: isPostOwner(post) ? {
+                                    Task {
+                                        await viewModel.deletePost(postId: post.id)
+                                    }
+                                } : nil
+                            )
+
+                            // Load more trigger
+                            if post.id == viewModel.posts.last?.id && viewModel.hasMore {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: Constants.Colors.accentPink))
+                                    .onAppear {
+                                        Task {
+                                            await viewModel.loadMorePosts()
+                                        }
+                                    }
+                            }
+                        }
+                    }
+                    .padding()
+                }
+                .refreshable {
+                    await viewModel.refresh()
+                }
+            }
+        }
+    }
+
+    // MARK: - Calendar Content
+    @ViewBuilder
+    private var calendarContent: some View {
+        VStack(spacing: 0) {
+            // Bias selector for calendar
+            if biasViewModel.selectedIdolObjects.isEmpty {
+                // No bias selected - show prompt
+                VStack(spacing: 16) {
+                    Spacer()
+                    Image(systemName: "person.crop.circle.badge.questionmark")
+                        .font(.system(size: 50))
+                        .foregroundColor(Constants.Colors.textGray)
+
+                    Text("推しを選択してください")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.white)
+
+                    Text("カレンダーを表示するには、マイページで推しを設定してください")
+                        .font(.system(size: 14))
+                        .foregroundColor(Constants.Colors.textGray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+                    Spacer()
+                }
+            } else {
+                // Bias tabs for calendar
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(biasViewModel.selectedIdolObjects, id: \.id) { idol in
+                            CalendarBiasTab(
+                                name: idol.name,
+                                isSelected: selectedCalendarBiasId == idol.id
+                            ) {
+                                selectedCalendarBiasId = idol.id
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                }
+
+                // Calendar container for selected bias
+                if let biasId = selectedCalendarBiasId,
+                   let idol = biasViewModel.selectedIdolObjects.first(where: { $0.id == biasId }) {
+                    CalendarContainerView(artistId: biasId, artistName: idol.name)
+                } else if let firstIdol = biasViewModel.selectedIdolObjects.first {
+                    CalendarContainerView(artistId: firstIdol.id, artistName: firstIdol.name)
+                        .onAppear {
+                            selectedCalendarBiasId = firstIdol.id
+                        }
+                }
+            }
+        }
+    }
+
     // MARK: - Timeline Selector
     @ViewBuilder
     private var timelineSelector: some View {
@@ -245,6 +376,9 @@ struct CommunityView: View {
             }
         }
     }
+
+    // Selected bias for calendar
+    @State private var selectedCalendarBiasId: String?
 
     // MARK: - Check Post Owner
     private func isPostOwner(_ post: CommunityPost) -> Bool {
@@ -296,6 +430,33 @@ struct IdentifiableString: Identifiable {
 
     init(_ string: String) {
         self.id = string
+    }
+}
+
+// MARK: - Calendar Bias Tab
+struct CalendarBiasTab: View {
+    let name: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(name)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(isSelected ? .white : Constants.Colors.textGray)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(
+                    isSelected ?
+                    LinearGradient(
+                        colors: [Constants.Colors.gradientPink, Constants.Colors.gradientPurple],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    ) : nil
+                )
+                .background(isSelected ? nil : Constants.Colors.cardDark)
+                .cornerRadius(20)
+        }
     }
 }
 

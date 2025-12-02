@@ -27,13 +27,13 @@ export { setAdmin } from "./admin/setAdmin";
 export { verifyAdminAuth } from "./admin/verifyAdminAuth";
 export { searchUsers } from "./admin/searchUsers";
 export { getUserDetail } from "./admin/getUserDetail";
-export { grantPoints } from "./admin/grantPoints";
+// grantPoints - Phase 1除外（ポイント機能）
 export { suspendUser } from "./admin/suspendUser";
 export { getAdminLogs } from "./admin/getAdminLogs";
 
-// Admin functions (Phase 1 - Week 1 - Reward Settings Management)
-export { getRewardSettings } from "./admin/getRewardSettings";
-export { updateRewardSetting } from "./admin/updateRewardSetting";
+// Reward Settings - Phase 1除外（ポイント機能）
+// export { getRewardSettings } from "./admin/getRewardSettings";
+// export { updateRewardSetting } from "./admin/updateRewardSetting";
 
 // In-App Vote functions (Phase 0+)
 export { createInAppVote } from "./inAppVote/createInAppVote";
@@ -61,7 +61,8 @@ export { seedExternalApps } from "./seedExternalApps";
 export { seedCommunityData } from "./community/seedCommunityData";
 export { fixUserBias } from "./community/fixUserBias";
 export { setTestUserBias } from "./community/setTestUserBias";
-export { seedRewardSettings } from "./seeds/seedRewardSettings";
+// seedRewardSettings - Phase 1除外（ポイント機能）
+// export { seedRewardSettings } from "./seeds/seedRewardSettings";
 
 // Community functions (Phase 0+)
 export { getCommunityPosts } from "./community/getCommunityPosts";
@@ -92,12 +93,10 @@ export { createComment } from "./community/createComment";
 export { getComments } from "./community/getComments";
 export { deleteComment } from "./community/deleteComment";
 
-// Points functions (Phase 0 - Monetization)
-export { getPoints } from "./points/getPoints";
-export { getPointHistory } from "./points/getPointHistory";
-
-// Points functions (Phase 1 - Week 1 - Multi-Point System)
-export { dailyLogin } from "./points/dailyLogin";
+// Points functions - Phase 1除外（ポイント機能）
+// export { getPoints } from "./points/getPoints";
+// export { getPointHistory } from "./points/getPointHistory";
+// export { dailyLogin } from "./points/dailyLogin";
 
 // IAP functions (Phase 1A - Consumable IAP)
 export { verifyPurchase } from "./iap/verifyPurchase";
@@ -115,14 +114,16 @@ export { getUserProfile } from "./community/getUserProfile";
 // Storage functions (Goods Trade)
 export { uploadGoodsImage } from "./storage/uploadGoodsImage";
 
-// Collections API (Phase 2 - Votes Tab)
+// API Routes (Express)
 import * as functions from "firebase-functions";
 import collectionsRouter from "./api/collections";
+import calendarRouter from "./api/calendar";
 import express = require("express");
 
 const app = express();
 app.use(express.json());
 app.use("/collections", collectionsRouter);
+app.use("/calendar", calendarRouter);
 
 export const api = functions.https.onRequest(app);
 
