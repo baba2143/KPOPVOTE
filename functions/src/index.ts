@@ -114,6 +114,15 @@ export { getUserProfile } from "./community/getUserProfile";
 // Storage functions (Goods Trade)
 export { uploadGoodsImage } from "./storage/uploadGoodsImage";
 
+// FCM functions (Push Notifications)
+export { registerFcmToken } from "./fcm/registerToken";
+export { unregisterFcmToken } from "./fcm/unregisterToken";
+
+// Scheduled functions (Cron jobs)
+export { updateVoteStatuses } from "./scheduled/updateVoteStatuses";
+export { checkVoteDeadlines } from "./scheduled/checkVoteDeadlines";
+export { checkCalendarReminders } from "./scheduled/checkCalendarReminders";
+
 // API Routes (Express)
 import * as functions from "firebase-functions";
 import collectionsRouter from "./api/collections";

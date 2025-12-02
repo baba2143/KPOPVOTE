@@ -1,13 +1,14 @@
 /**
  * Create community post
- * 投稿作成時にポイント報酬を付与
+ * Phase 1: ポイント報酬機能除外版
+ * Phase 6: フォロワーへの通知機能追加
  */
 
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { CreatePostRequest, ApiResponse } from "../types";
 import { verifyToken, AuthenticatedRequest } from "../middleware/auth";
-import { grantRewardPoints } from "../utils/rewardHelper";
+import { sendPushNotification } from "../utils/fcmHelper";
 
 export const createPost = functions.https.onRequest(async (req, res) => {
   res.set("Access-Control-Allow-Origin", "*");
@@ -152,25 +153,15 @@ export const createPost = functions.https.onRequest(async (req, res) => {
     const userDoc = await userRef.get();
     const userData = userDoc.exists ? userDoc.data() : null;
 
-    // 投稿作成報酬を付与
-    let pointsGranted = 0;
-    try {
-      const isPremium = userData?.isPremium || false;
-      pointsGranted = await grantRewardPoints(
-        currentUser.uid,
-        "community_post",
-        isPremium,
-        postRef.id,
-      );
+    console.log(`✅ [createPost] Post created: user=${currentUser.uid}, post=${postRef.id}`);
 
-      console.log(
-        "✅ [createPost] Post creation reward granted: " +
-          `user=${currentUser.uid}, post=${postRef.id}, points=${pointsGranted}P, ` +
-          `type=${isPremium ? "premium" : "regular"}`,
-      );
-    } catch (rewardError) {
-      console.error("⚠️ [createPost] Failed to grant reward:", rewardError);
-    }
+    // Notify followers about the new post (async, don't block response)
+    notifyFollowersAboutNewPost(
+      currentUser.uid,
+      userData?.displayName || "ユーザー",
+      postRef.id,
+      type
+    ).catch((err) => console.error("❌ [createPost] Error notifying followers:", err));
 
     // Build user object for response
     const userObject = {
@@ -203,3 +194,106 @@ export const createPost = functions.https.onRequest(async (req, res) => {
     res.status(500).json({ success: false, error: "Internal server error" } as ApiResponse<null>);
   }
 });
+
+/**
+ * Notify followers about a new post
+ * Rate limited: only notify if user hasn't posted in the last 30 minutes
+ */
+async function notifyFollowersAboutNewPost(
+  authorId: string,
+  authorName: string,
+  postId: string,
+  postType: string
+): Promise<void> {
+  const db = admin.firestore();
+
+  try {
+    // Rate limit check: don't spam followers with too many notifications
+    const rateLimitKey = `postNotify_${authorId}`;
+    const rateLimitDoc = await db.collection("notificationsSent").doc(rateLimitKey).get();
+
+    if (rateLimitDoc.exists) {
+      const lastSent = rateLimitDoc.data()?.sentAt?.toDate();
+      if (lastSent) {
+        const minutesSinceLastNotify = (Date.now() - lastSent.getTime()) / (1000 * 60);
+        if (minutesSinceLastNotify < 30) {
+          console.log(
+            `⏳ [createPost] Skipping follower notification (rate limited): ${authorId}`
+          );
+          return;
+        }
+      }
+    }
+
+    // Update rate limit timestamp
+    await db.collection("notificationsSent").doc(rateLimitKey).set({
+      sentAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    // Get followers
+    const followersSnapshot = await db
+      .collection("follows")
+      .where("followingId", "==", authorId)
+      .limit(100) // Limit to prevent excessive notifications
+      .get();
+
+    if (followersSnapshot.empty) {
+      console.log(`ℹ️ [createPost] No followers to notify for user: ${authorId}`);
+      return;
+    }
+
+    // Create post type label
+    const postTypeLabels: Record<string, string> = {
+      image: "画像",
+      my_votes: "投票結果",
+      goods_trade: "グッズ交換",
+      collection: "コレクション",
+    };
+    const typeLabel = postTypeLabels[postType] || "投稿";
+
+    let notifiedCount = 0;
+
+    for (const followerDoc of followersSnapshot.docs) {
+      const followerId = followerDoc.data().followerId;
+
+      // Don't notify the author themselves
+      if (followerId === authorId) continue;
+
+      // Create notification
+      const notificationRef = db.collection("notifications").doc();
+      await notificationRef.set({
+        id: notificationRef.id,
+        userId: followerId,
+        type: "system",
+        title: `${authorName}さんが新しい${typeLabel}を投稿`,
+        body: `${authorName}さんの新しい投稿をチェックしましょう！`,
+        isRead: false,
+        actionUserId: authorId,
+        actionUserDisplayName: authorName,
+        relatedPostId: postId,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      // Send push notification
+      await sendPushNotification({
+        userId: followerId,
+        type: "system",
+        title: `${authorName}さんが新しい${typeLabel}を投稿`,
+        body: `${authorName}さんの新しい投稿をチェックしましょう！`,
+        data: {
+          postId,
+          userId: authorId,
+          notificationId: notificationRef.id,
+        },
+      });
+
+      notifiedCount++;
+    }
+
+    console.log(
+      `📱 [createPost] Notified ${notifiedCount} followers about new post by ${authorId}`
+    );
+  } catch (error) {
+    console.error("❌ [createPost] Error in notifyFollowersAboutNewPost:", error);
+  }
+}

@@ -186,56 +186,60 @@ struct HomeView: View {
 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 12) {
-                        // Multi-Point Display Button
-                        Button(action: {
-                            showPointsHistory = true
-                        }) {
-                            HStack(spacing: 6) {
-                                // Premium Points (Red)
-                                HStack(spacing: 2) {
-                                    Circle()
-                                        .fill(Color.red)
-                                        .frame(width: 6, height: 6)
-                                    if pointsViewModel.isLoading {
-                                        ProgressView()
-                                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                            .scaleEffect(0.6)
-                                    } else {
-                                        Text("\(pointsViewModel.premiumPoints)")
-                                            .font(.system(size: 12, weight: .bold))
-                                            .foregroundColor(.white)
+                        // Multi-Point Display Button (Phase 1: 非表示)
+                        if FeatureFlags.pointsEnabled {
+                            Button(action: {
+                                showPointsHistory = true
+                            }) {
+                                HStack(spacing: 6) {
+                                    // Premium Points (Red)
+                                    HStack(spacing: 2) {
+                                        Circle()
+                                            .fill(Color.red)
+                                            .frame(width: 6, height: 6)
+                                        if pointsViewModel.isLoading {
+                                            ProgressView()
+                                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                                .scaleEffect(0.6)
+                                        } else {
+                                            Text("\(pointsViewModel.premiumPoints)")
+                                                .font(.system(size: 12, weight: .bold))
+                                                .foregroundColor(.white)
+                                        }
                                     }
-                                }
 
-                                // Regular Points (Blue)
-                                HStack(spacing: 2) {
-                                    Circle()
-                                        .fill(Color.blue)
-                                        .frame(width: 6, height: 6)
-                                    if pointsViewModel.isLoading {
-                                        ProgressView()
-                                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                            .scaleEffect(0.6)
-                                    } else {
-                                        Text("\(pointsViewModel.regularPoints)")
-                                            .font(.system(size: 12, weight: .bold))
-                                            .foregroundColor(.white)
+                                    // Regular Points (Blue)
+                                    HStack(spacing: 2) {
+                                        Circle()
+                                            .fill(Color.blue)
+                                            .frame(width: 6, height: 6)
+                                        if pointsViewModel.isLoading {
+                                            ProgressView()
+                                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                                .scaleEffect(0.6)
+                                        } else {
+                                            Text("\(pointsViewModel.regularPoints)")
+                                                .font(.system(size: 12, weight: .bold))
+                                                .foregroundColor(.white)
+                                        }
                                     }
                                 }
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color.white.opacity(0.1))
+                                )
                             }
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.white.opacity(0.1))
-                            )
                         }
 
-                        // Store Button
-                        NavigationLink(destination: StoreView()) {
-                            Image(systemName: "cart.fill")
-                                .font(.system(size: 20))
-                                .foregroundColor(Constants.Colors.textWhite)
+                        // Store Button (Phase 1: 非表示)
+                        if FeatureFlags.storeEnabled {
+                            NavigationLink(destination: StoreView()) {
+                                Image(systemName: "cart.fill")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(Constants.Colors.textWhite)
+                            }
                         }
 
                         // Notification Button
@@ -269,10 +273,16 @@ struct HomeView: View {
                 await viewModel.loadFeaturedVotes()
                 await biasViewModel.loadIdols()
                 await biasViewModel.loadCurrentBias()
-                await pointsViewModel.loadPoints()
-                await pointsViewModel.claimDailyLoginBonus()
+                // Phase 1: ポイント機能無効化
+                if FeatureFlags.pointsEnabled {
+                    await pointsViewModel.loadPoints()
+                }
+                if FeatureFlags.dailyLoginBonusEnabled {
+                    await pointsViewModel.claimDailyLoginBonus()
+                }
             }
-            .sheet(isPresented: $showPointsHistory) {
+            // Phase 1: ポイント履歴画面無効化
+            .sheet(isPresented: FeatureFlags.pointsEnabled ? $showPointsHistory : .constant(false)) {
                 PointsHistoryView()
             }
             .sheet(isPresented: $showVoteDetail) {

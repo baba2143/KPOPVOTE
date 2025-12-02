@@ -108,6 +108,7 @@ export async function getCollectionDetail(
     let isSaved = false;
     let isLiked = false;
     let isOwner = false;
+    let isFollowingCreator = false;
 
     if (userId) {
       isOwner = data.creatorId === userId;
@@ -123,6 +124,16 @@ export async function getCollectionDetail(
         .doc(`${userId}_${collectionId}`)
         .get();
       isLiked = likeDoc.exists;
+
+      // Check if user is following the creator (only if not owner)
+      if (!isOwner && data.creatorId) {
+        const followDoc = await db.collection("follows")
+          .where("followerId", "==", userId)
+          .where("followingId", "==", data.creatorId)
+          .limit(1)
+          .get();
+        isFollowingCreator = !followDoc.empty;
+      }
     }
 
     const response: CollectionDetailResponse = {
@@ -132,6 +143,7 @@ export async function getCollectionDetail(
         isSaved,
         isLiked,
         isOwner,
+        isFollowingCreator,
       },
     };
 

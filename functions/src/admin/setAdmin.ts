@@ -1,14 +1,55 @@
 /**
  * Set admin role for a user
+ *
+ * Security:
+ * - Initial admin setup: Only allowed for emails specified in environment variable
+ * - Subsequent admin additions: Only existing admins can add new admins
+ * - All admin operations are logged to adminLogs collection
+ *
+ * Environment variable setup:
+ * firebase functions:config:set admin.initial_emails="admin@example.com,superadmin@example.com"
  */
 
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
+import { Timestamp } from "firebase-admin/firestore";
 import {
   AdminAuthRequest,
   ApiResponse,
   AdminAuthResponse,
 } from "../types";
+
+// Get initial admin emails from environment config
+const getInitialAdminEmails = (): string[] => {
+  try {
+    const config = functions.config();
+    const emailsStr = config.admin?.initial_emails || "";
+    if (!emailsStr) return [];
+    return emailsStr.split(",").map((e: string) => e.trim().toLowerCase());
+  } catch {
+    return [];
+  }
+};
+
+// Log admin operation to Firestore
+const logAdminOperation = async (
+  action: "grant" | "revoke",
+  targetUid: string,
+  targetEmail: string | undefined,
+  callerUid: string,
+  callerEmail: string | undefined,
+  isInitialSetup: boolean
+) => {
+  await admin.firestore().collection("adminLogs").add({
+    action,
+    targetUid,
+    targetEmail: targetEmail || null,
+    callerUid,
+    callerEmail: callerEmail || null,
+    isInitialSetup,
+    timestamp: Timestamp.now(),
+  });
+};
 
 export const setAdmin = functions.https.onRequest(async (req, res) => {
   // Enable CORS
@@ -46,13 +87,12 @@ export const setAdmin = functions.https.onRequest(async (req, res) => {
     const token = authHeader.split("Bearer ")[1];
     const decodedToken = await admin.auth().verifyIdToken(token);
     const callerUid = decodedToken.uid;
+    const callerEmail = decodedToken.email;
 
-    // Check if caller is already an admin (for security)
+    // Check if caller is already an admin
     const callerRecord = await admin.auth().getUser(callerUid);
     const callerIsAdmin = callerRecord.customClaims?.admin === true;
 
-    // For initial setup, allow the first user to become admin
-    // In production, this should be restricted or done via Firebase CLI
     const { uid } = req.body as AdminAuthRequest;
 
     if (!uid || typeof uid !== "string") {
@@ -63,39 +103,83 @@ export const setAdmin = functions.https.onRequest(async (req, res) => {
       return;
     }
 
-    // TODO: Add proper authorization logic
-    // For now, allow setting admin if caller is admin or if no admins exist yet
-    if (!callerIsAdmin) {
-      // Check if any admins exist
-      const usersSnapshot = await admin.firestore().collection("users").get();
-      let adminExists = false;
+    // Get target user info
+    const targetRecord = await admin.auth().getUser(uid);
+    const targetEmail = targetRecord.email;
 
-      for (const doc of usersSnapshot.docs) {
-        const userRecord = await admin.auth().getUser(doc.id);
-        if (userRecord.customClaims?.admin === true) {
-          adminExists = true;
-          break;
-        }
-      }
+    // Authorization logic
+    let isInitialSetup = false;
+
+    if (!callerIsAdmin) {
+      // Non-admin caller - check if initial admin setup is allowed
+      const initialAdminEmails = getInitialAdminEmails();
+
+      // Check if any admins already exist
+      const adminLogsSnapshot = await admin
+        .firestore()
+        .collection("adminLogs")
+        .where("action", "==", "grant")
+        .limit(1)
+        .get();
+
+      const adminExists = !adminLogsSnapshot.empty;
 
       if (adminExists) {
+        // Admins exist - only existing admins can add new admins
         res.status(403).json({
           success: false,
-          error: "Forbidden: Admin access required",
+          error: "Forbidden: Admin access required to add new admins",
         } as ApiResponse<null>);
         return;
       }
+
+      // No admins exist - check if caller's email is in initial admin list
+      const callerEmailLower = callerEmail?.toLowerCase() || "";
+
+      if (
+        initialAdminEmails.length === 0 ||
+        !initialAdminEmails.includes(callerEmailLower)
+      ) {
+        res.status(403).json({
+          success: false,
+          error:
+            "Forbidden: Your email is not authorized for initial admin setup",
+        } as ApiResponse<null>);
+        return;
+      }
+
+      // For initial setup, caller can only set themselves as admin
+      if (uid !== callerUid) {
+        res.status(403).json({
+          success: false,
+          error:
+            "Forbidden: Initial admin setup only allows setting yourself as admin",
+        } as ApiResponse<null>);
+        return;
+      }
+
+      isInitialSetup = true;
     }
 
     // Set admin custom claim
     await admin.auth().setCustomUserClaims(uid, { admin: true });
 
-    // Also update Firestore user document
+    // Update Firestore user document
     await admin
       .firestore()
       .collection("users")
       .doc(uid)
       .set({ isAdmin: true }, { merge: true });
+
+    // Log the admin operation
+    await logAdminOperation(
+      "grant",
+      uid,
+      targetEmail,
+      callerUid,
+      callerEmail,
+      isInitialSetup
+    );
 
     // Return success response
     res.status(200).json({

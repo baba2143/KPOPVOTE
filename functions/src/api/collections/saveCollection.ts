@@ -6,6 +6,7 @@
 import { Response } from "express";
 import { AuthenticatedRequest } from "../../middleware/auth";
 import { firestore } from "firebase-admin";
+import { sendPushNotification } from "../../utils/fcmHelper";
 
 /**
  * Toggle Save/Unsave Collection
@@ -108,11 +109,53 @@ export async function saveCollection(
 
       newSaved = true;
 
-      // Get updated saveCount
+      // Get updated saveCount and collection data
       const updatedDoc = await db.collection("collections").doc(collectionId).get();
-      newSaveCount = updatedDoc.data()?.saveCount || 0;
+      const collectionData = updatedDoc.data();
+      newSaveCount = collectionData?.saveCount || 0;
 
       console.log(`✅ [saveCollection] Saved successfully. New saveCount: ${newSaveCount}`);
+
+      // Notify collection creator (if not self-save)
+      const creatorId = collectionData?.userId;
+      if (creatorId && creatorId !== userId) {
+        const currentUserDoc = await db.collection("users").doc(userId).get();
+        const currentUserData = currentUserDoc.data();
+
+        const notificationRef = db.collection("notifications").doc();
+        const notificationTitle = "コレクションが保存されました";
+        const userName = currentUserData?.displayName || "ユーザー";
+        const collectionTitle = collectionData?.title || "";
+        const notificationBody = `${userName}さんがあなたのコレクション「${collectionTitle}」を保存しました`;
+
+        await notificationRef.set({
+          id: notificationRef.id,
+          userId: creatorId,
+          type: "system",
+          title: notificationTitle,
+          body: notificationBody,
+          isRead: false,
+          actionUserId: userId,
+          actionUserDisplayName: currentUserData?.displayName || null,
+          actionUserPhotoURL: currentUserData?.photoURL || null,
+          relatedCollectionId: collectionId,
+          createdAt: firestore.FieldValue.serverTimestamp(),
+        });
+
+        await sendPushNotification({
+          userId: creatorId,
+          type: "system",
+          title: notificationTitle,
+          body: notificationBody,
+          data: {
+            notificationId: notificationRef.id,
+            collectionId: collectionId,
+            userId: userId,
+          },
+        });
+
+        console.log(`📱 [saveCollection] Notified collection creator: ${creatorId}`);
+      }
     }
 
     // Return response matching iOS SaveCollectionResponse structure

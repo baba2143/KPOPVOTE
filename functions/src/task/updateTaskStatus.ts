@@ -1,6 +1,6 @@
 /**
  * Update task status endpoint
- * タスク完了時にポイント報酬を付与
+ * Phase 1: ポイント報酬機能除外版
  */
 
 import * as functions from "firebase-functions";
@@ -10,7 +10,6 @@ import {
   ApiResponse,
   TaskStatusResponse,
 } from "../types";
-import { grantRewardPoints } from "../utils/rewardHelper";
 
 export const updateTaskStatus = functions.https.onRequest(async (req, res) => {
   // Enable CORS
@@ -88,9 +87,6 @@ export const updateTaskStatus = functions.https.onRequest(async (req, res) => {
       return;
     }
 
-    const taskData = taskDoc.data()!;
-    const wasCompleted = taskData.isCompleted || false;
-
     // Update task status
     const updateData: {
       isCompleted: boolean;
@@ -109,44 +105,15 @@ export const updateTaskStatus = functions.https.onRequest(async (req, res) => {
 
     await taskRef.update(updateData);
 
-    // タスク完了報酬の付与（未完了→完了の場合のみ）
-    let pointsGranted = 0;
-    if (!wasCompleted && isCompleted) {
-      try {
-        // ユーザー情報を取得（サブスク状態確認）
-        const userDoc = await admin.firestore().collection("users").doc(uid).get();
-        if (userDoc.exists) {
-          const userData = userDoc.data()!;
-          const isPremium = userData.isPremium || false;
-
-          // タスク完了報酬を付与（rewardSettingsから動的取得）
-          pointsGranted = await grantRewardPoints(
-            uid,
-            "task_completion",
-            isPremium,
-            taskId,
-          );
-
-          console.log(
-            "✅ [updateTaskStatus] Task completion reward granted: " +
-              `user=${uid}, task=${taskId}, points=${pointsGranted}P, ` +
-              `type=${isPremium ? "premium" : "regular"}`,
-          );
-        }
-      } catch (rewardError) {
-        // 報酬付与エラーはログに記録するが、タスク更新は成功させる
-        console.error(
-          `⚠️ [updateTaskStatus] Failed to grant reward for task ${taskId}:`,
-          rewardError,
-        );
-      }
-    }
-
     // Get updated task data
     const updatedDoc = await taskRef.get();
     const updatedData = updatedDoc.data();
 
-    // Return success response (報酬情報を含む)
+    console.log(
+      `✅ [updateTaskStatus] Task status updated: user=${uid}, task=${taskId}, isCompleted=${isCompleted}`,
+    );
+
+    // Return success response
     res.status(200).json({
       success: true,
       data: {
@@ -158,7 +125,6 @@ export const updateTaskStatus = functions.https.onRequest(async (req, res) => {
         updatedAt: updatedData?.updatedAt ?
           updatedData.updatedAt.toDate().toISOString() :
           null,
-        pointsGranted: pointsGranted > 0 ? pointsGranted : undefined,
       },
     } as ApiResponse<TaskStatusResponse>);
   } catch (error: unknown) {

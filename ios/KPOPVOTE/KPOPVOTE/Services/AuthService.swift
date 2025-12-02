@@ -101,6 +101,9 @@ class AuthService: ObservableObject {
                 self.isAuthenticated = true
             }
 
+            // Register FCM token after successful registration
+            PushNotificationManager.shared.onUserLogin()
+
             print("✅ [Register] Registration complete for: \(email)")
             return user
 
@@ -166,6 +169,9 @@ class AuthService: ObservableObject {
                 self.isAuthenticated = true
             }
 
+            // Register FCM token after successful login
+            PushNotificationManager.shared.onUserLogin()
+
             print("✅ [Login] Login complete for: \(email)")
             return user
 
@@ -195,6 +201,9 @@ class AuthService: ObservableObject {
 
     // MARK: - Logout
     func logout() throws {
+        // Unregister FCM token before logout
+        PushNotificationManager.shared.onUserLogout()
+
         try Auth.auth().signOut()
         currentUser = nil
         isAuthenticated = false
@@ -243,6 +252,9 @@ class AuthService: ObservableObject {
                 self.currentUser = user
                 self.isAuthenticated = true
             }
+
+            // Register FCM token after auth state restored
+            PushNotificationManager.shared.onUserLogin()
 
         } catch {
             print("Failed to load user data: \(error.localizedDescription)")

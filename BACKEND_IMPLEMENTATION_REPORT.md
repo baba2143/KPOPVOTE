@@ -543,6 +543,47 @@ try {
 
 ---
 
-**報告日**: 2025-11-23
+## ⚠️ Phase 1除外決定（2025-12-02）
+
+### 決定事項
+**ポイント機能はPhase 1から完全除外**し、投票機能をポイントなしで動作させることが決定されました。
+
+### 除外理由
+- Phase 1のコア機能（投票・ランキング）に集中
+- ポイントシステムは Phase 2以降で再実装予定
+
+### 実施した変更
+
+#### Backend修正
+| ファイル | 変更内容 |
+|---------|---------|
+| `functions/src/inAppVote/executeVote.ts` | ポイント消費ロジック削除 |
+| `functions/src/task/updateTaskStatus.ts` | 報酬付与ロジック削除 |
+| `functions/src/community/createPost.ts` | 報酬付与ロジック削除 |
+| `functions/src/community/likePost.ts` | 報酬付与ロジック削除 |
+| `functions/src/community/createComment.ts` | 報酬付与ロジック削除 |
+| `functions/src/index.ts` | ポイント関連エクスポート削除 |
+
+#### Admin Panel修正
+| ファイル | 変更内容 |
+|---------|---------|
+| `admin/src/components/vote/VoteFormDialog.tsx` | ポイントコスト設定UI削除 |
+
+#### iOS修正
+| ファイル | 変更内容 |
+|---------|---------|
+| `ios/.../Views/MainTabView.swift` | ProfileViewポイント表示を`FeatureFlags.pointsEnabled`で条件分岐 |
+
+### 維持されたもの
+- **FeatureFlags設定**: `pointsEnabled = false` のまま維持
+- **型定義**: `admin/src/types/vote.ts` はそのまま残存（Phase 2以降で使用）
+- **Firestoreデータ**: `rewardSettings`, `pointTransactions`, `users.premiumPoints/regularPoints` は放置（削除不要）
+
+### Phase 2以降での復活
+本レポートの実装仕様（上記セクション）を参照して再実装可能。
+
+---
+
+**報告日**: 2025-11-23（初版）、2025-12-02（Phase 1除外追記）
 **実装者**: Claude Code + ユーザー様
-**ステータス**: ✅ Backend実装完了 → ⏭️ UI実装フェーズへ
+**ステータス**: ✅ Backend実装完了 → ⚠️ Phase 1除外 → Phase 2以降で再実装予定

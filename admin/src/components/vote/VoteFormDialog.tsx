@@ -62,8 +62,6 @@ export const VoteFormDialog: React.FC<VoteFormDialogProps> = ({
   const [dailyVoteLimitPerUser, setDailyVoteLimitPerUser] = useState<number | ''>('');
   const [minVoteCount, setMinVoteCount] = useState<number | ''>('');
   const [maxVoteCount, setMaxVoteCount] = useState<number | ''>('');
-  const [premiumPointsPerVote, setPremiumPointsPerVote] = useState<number | ''>('');
-  const [regularPointsPerVote, setRegularPointsPerVote] = useState<number | ''>('');
 
   // Cover image
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -110,8 +108,6 @@ export const VoteFormDialog: React.FC<VoteFormDialogProps> = ({
         setDailyVoteLimitPerUser(initialVote.restrictions.dailyVoteLimitPerUser ?? '');
         setMinVoteCount(initialVote.restrictions.minVoteCount ?? '');
         setMaxVoteCount(initialVote.restrictions.maxVoteCount ?? '');
-        setPremiumPointsPerVote(initialVote.restrictions.premiumPointsPerVote ?? '');
-        setRegularPointsPerVote(initialVote.restrictions.regularPointsPerVote ?? '');
       }
       // Load existing choices for display (read-only in edit mode)
       if (initialVote.choices && initialVote.choices.length > 0) {
@@ -276,16 +272,6 @@ export const VoteFormDialog: React.FC<VoteFormDialogProps> = ({
       return false;
     }
 
-    if (premiumPointsPerVote !== '' && Number(premiumPointsPerVote) < 0) {
-      setError('Premiumポイントコストは0以上である必要があります');
-      return false;
-    }
-
-    if (regularPointsPerVote !== '' && Number(regularPointsPerVote) < 0) {
-      setError('Regularポイントコストは0以上である必要があります');
-      return false;
-    }
-
     return true;
   };
 
@@ -328,12 +314,6 @@ export const VoteFormDialog: React.FC<VoteFormDialogProps> = ({
       }
       if (maxVoteCount !== '') {
         restrictionsData.maxVoteCount = Number(maxVoteCount);
-      }
-      if (premiumPointsPerVote !== '') {
-        restrictionsData.premiumPointsPerVote = Number(premiumPointsPerVote);
-      }
-      if (regularPointsPerVote !== '') {
-        restrictionsData.regularPointsPerVote = Number(regularPointsPerVote);
       }
 
       const hasRestrictions = Object.keys(restrictionsData).length > 0;
@@ -403,8 +383,6 @@ export const VoteFormDialog: React.FC<VoteFormDialogProps> = ({
     setDailyVoteLimitPerUser('');
     setMinVoteCount('');
     setMaxVoteCount('');
-    setPremiumPointsPerVote('');
-    setRegularPointsPerVote('');
     setRestrictions({});
     setError(null);
     onClose();
@@ -594,34 +572,6 @@ export const VoteFormDialog: React.FC<VoteFormDialogProps> = ({
                 />
               </Box>
 
-              <Box sx={{ display: 'flex', gap: 2 }}>
-                {/* Premium Points Per Vote */}
-                <TextField
-                  id="vote-premium-points"
-                  name="premiumPointsPerVote"
-                  label="Premiumポイントコスト（票/P）"
-                  type="number"
-                  fullWidth
-                  value={premiumPointsPerVote}
-                  onChange={(e) => setPremiumPointsPerVote(e.target.value === '' ? '' : parseInt(e.target.value))}
-                  inputProps={{ min: 0 }}
-                  helperText="1票あたりの赤ポイント消費数（空欄 = デフォルト1P）"
-                />
-
-                {/* Regular Points Per Vote */}
-                <TextField
-                  id="vote-regular-points"
-                  name="regularPointsPerVote"
-                  label="Regularポイントコスト（票/P）"
-                  type="number"
-                  fullWidth
-                  value={regularPointsPerVote}
-                  onChange={(e) => setRegularPointsPerVote(e.target.value === '' ? '' : parseInt(e.target.value))}
-                  inputProps={{ min: 0 }}
-                  helperText="1票あたりの青ポイント消費数（空欄 = Premium 1P, Free 5P）"
-                />
-              </Box>
-
               <Alert severity="info" sx={{ mt: 1 }}>
                 <Typography variant="body2">
                   <strong>設定例:</strong>
@@ -629,10 +579,6 @@ export const VoteFormDialog: React.FC<VoteFormDialogProps> = ({
                   • 1日3回まで、1回10票以上100票以下の投票を許可する場合
                   <br />
                   　→ 1日の投票数制限: 3、最小票数: 10、最大票数: 100
-                  <br />
-                  • 赤ポイント2P/票、青ポイント10P/票に設定する場合
-                  <br />
-                  　→ Premiumポイントコスト: 2、Regularポイントコスト: 10
                 </Typography>
               </Alert>
             </Box>

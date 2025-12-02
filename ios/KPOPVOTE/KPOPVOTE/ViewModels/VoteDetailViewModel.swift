@@ -127,24 +127,32 @@ class VoteDetailViewModel: ObservableObject {
         do {
             print("📱 [VoteDetailViewModel] Executing vote: \(voteId), choice: \(choiceId)")
 
+            // Phase 1: ポイント機能無効化時は "none" を送信
+            let pointSelectionValue = FeatureFlags.pointsEnabled ? selectedPointMode.rawValue : "none"
+
             let result = try await VoteService.shared.executeVote(
                 voteId: voteId,
                 choiceId: choiceId,
                 voteCount: voteCount,
-                pointSelection: selectedPointMode.rawValue
+                pointSelection: pointSelectionValue
             )
 
             // 🔴 hasVoted = true は削除 → 再投票可能に
-            // Show point breakdown in success message
-            var pointsDetail = ""
-            if result.premiumPointsDeducted > 0 && result.regularPointsDeducted > 0 {
-                pointsDetail = "\(result.premiumPointsDeducted)pt🔴 + \(result.regularPointsDeducted)pt🔵"
-            } else if result.premiumPointsDeducted > 0 {
-                pointsDetail = "\(result.premiumPointsDeducted)pt🔴"
+            // Phase 1: ポイント消費なしの場合は簡略メッセージ
+            if FeatureFlags.pointsEnabled {
+                // Show point breakdown in success message
+                var pointsDetail = ""
+                if result.premiumPointsDeducted > 0 && result.regularPointsDeducted > 0 {
+                    pointsDetail = "\(result.premiumPointsDeducted)pt🔴 + \(result.regularPointsDeducted)pt🔵"
+                } else if result.premiumPointsDeducted > 0 {
+                    pointsDetail = "\(result.premiumPointsDeducted)pt🔴"
+                } else {
+                    pointsDetail = "\(result.regularPointsDeducted)pt🔵"
+                }
+                successMessage = "投票が完了しました（\(result.voteCount)票、\(pointsDetail)消費）"
             } else {
-                pointsDetail = "\(result.regularPointsDeducted)pt🔵"
+                successMessage = "投票が完了しました（\(result.voteCount)票）"
             }
-            successMessage = "投票が完了しました（\(result.voteCount)票、\(pointsDetail)消費）"
 
             print("✅ [VoteDetailViewModel] Vote executed successfully")
 

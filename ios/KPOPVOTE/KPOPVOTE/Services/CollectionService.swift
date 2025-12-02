@@ -681,6 +681,7 @@ struct CollectionDetailData: Codable {
     let isSaved: Bool
     let isLiked: Bool
     let isOwner: Bool
+    let isFollowingCreator: Bool
 }
 
 struct SaveCollectionResponse: Codable {

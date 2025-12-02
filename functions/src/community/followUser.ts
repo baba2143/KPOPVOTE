@@ -6,6 +6,7 @@ import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { FollowRequest, ApiResponse } from "../types";
 import { verifyToken, AuthenticatedRequest } from "../middleware/auth";
+import { sendPushNotification } from "../utils/fcmHelper";
 
 export const followUser = functions.https.onRequest(async (req, res) => {
   res.set("Access-Control-Allow-Origin", "*");
@@ -97,17 +98,32 @@ export const followUser = functions.https.onRequest(async (req, res) => {
     const currentUserDoc = await db.collection("users").doc(currentUser.uid).get();
     const currentUserData = currentUserDoc.data();
 
+    const notificationTitle = "New Follower";
+    const notificationBody = `${currentUserData?.displayName || "Someone"} started following you`;
+
     await notificationRef.set({
       id: notificationRef.id,
       userId: userId,
       type: "follow",
-      title: "New Follower",
-      body: `${currentUserData?.displayName || "Someone"} started following you`,
+      title: notificationTitle,
+      body: notificationBody,
       isRead: false,
       actionUserId: currentUser.uid,
       actionUserDisplayName: currentUserData?.displayName || null,
       actionUserPhotoURL: currentUserData?.photoURL || null,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    // Send push notification
+    await sendPushNotification({
+      userId: userId,
+      type: "follow",
+      title: notificationTitle,
+      body: notificationBody,
+      data: {
+        notificationId: notificationRef.id,
+        userId: currentUser.uid,
+      },
     });
 
     res.status(201).json({

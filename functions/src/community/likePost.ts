@@ -1,13 +1,13 @@
 /**
  * Like/Unlike post (toggle)
- * いいね獲得時に投稿者にポイント報酬を付与
+ * Phase 1: ポイント報酬機能除外版
  */
 
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { ApiResponse } from "../types";
 import { verifyToken, AuthenticatedRequest } from "../middleware/auth";
-import { grantRewardPoints } from "../utils/rewardHelper";
+import { sendPushNotification } from "../utils/fcmHelper";
 
 export const likePost = functions.https.onRequest(async (req, res) => {
   res.set("Access-Control-Allow-Origin", "*");
@@ -92,12 +92,15 @@ export const likePost = functions.https.onRequest(async (req, res) => {
         const currentUserData = currentUserDoc.data();
 
         const notificationRef = db.collection("notifications").doc();
+        const notificationTitle = "New Like";
+        const notificationBody = `${currentUserData?.displayName || "Someone"} liked your post`;
+
         await notificationRef.set({
           id: notificationRef.id,
           userId: postData.userId,
           type: "like",
-          title: "New Like",
-          body: `${currentUserData?.displayName || "Someone"} liked your post`,
+          title: notificationTitle,
+          body: notificationBody,
           isRead: false,
           actionUserId: currentUser.uid,
           actionUserDisplayName: currentUserData?.displayName || null,
@@ -106,28 +109,21 @@ export const likePost = functions.https.onRequest(async (req, res) => {
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
         });
 
-        // いいね獲得報酬を投稿者に付与
-        try {
-          const postOwnerDoc = await db.collection("users").doc(postData.userId).get();
-          const postOwnerData = postOwnerDoc.data();
-          const isPremium = postOwnerData?.isPremium || false;
-
-          const pointsGranted = await grantRewardPoints(
-            postData.userId,
-            "community_like",
-            isPremium,
-            postId,
-          );
-
-          console.log(
-            "✅ [likePost] Like reward granted to post owner: " +
-              `owner=${postData.userId}, post=${postId}, points=${pointsGranted}P, ` +
-              `type=${isPremium ? "premium" : "regular"}`,
-          );
-        } catch (rewardError) {
-          console.error("⚠️ [likePost] Failed to grant reward:", rewardError);
-        }
+        // Send push notification
+        await sendPushNotification({
+          userId: postData.userId,
+          type: "like",
+          title: notificationTitle,
+          body: notificationBody,
+          data: {
+            notificationId: notificationRef.id,
+            postId: postId,
+            userId: currentUser.uid,
+          },
+        });
       }
+
+      console.log(`✅ [likePost] Post liked: user=${currentUser.uid}, post=${postId}`);
 
       res.status(200).json({
         success: true,

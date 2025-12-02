@@ -423,114 +423,116 @@ struct ProfileView: View {
                                 .foregroundColor(Constants.Colors.textWhite)
                         }
 
-                        // Points Display - Tappable Card (Multi-Point)
-                        Button(action: {
-                            showPointsHistory = true
-                        }) {
-                            VStack(spacing: Constants.Spacing.small) {
-                                // Premium Badge
-                                if pointsViewModel.isPremium {
-                                    HStack(spacing: 4) {
-                                        Image(systemName: "crown.fill")
-                                            .font(.system(size: 12))
-                                        Text("プレミアム会員")
-                                            .font(.system(size: Constants.Typography.captionSize, weight: .semibold))
+                        // Points Display - Only show if pointsEnabled
+                        if FeatureFlags.pointsEnabled {
+                            Button(action: {
+                                showPointsHistory = true
+                            }) {
+                                VStack(spacing: Constants.Spacing.small) {
+                                    // Premium Badge
+                                    if pointsViewModel.isPremium {
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "crown.fill")
+                                                .font(.system(size: 12))
+                                            Text("プレミアム会員")
+                                                .font(.system(size: Constants.Typography.captionSize, weight: .semibold))
+                                        }
+                                        .foregroundColor(.yellow)
                                     }
-                                    .foregroundColor(.yellow)
-                                }
 
-                                // Multi-Point Display
-                                if pointsViewModel.isLoading {
-                                    ProgressView()
-                                        .progressViewStyle(CircularProgressViewStyle(tint: Constants.Colors.accentPink))
-                                } else {
-                                    VStack(spacing: 8) {
-                                        // Premium Points (Red)
-                                        HStack(spacing: 8) {
-                                            HStack(spacing: 4) {
-                                                Circle()
-                                                    .fill(Color.red)
-                                                    .frame(width: 10, height: 10)
-                                                Text("プレミアム")
-                                                    .font(.system(size: 12, weight: .medium))
+                                    // Multi-Point Display
+                                    if pointsViewModel.isLoading {
+                                        ProgressView()
+                                            .progressViewStyle(CircularProgressViewStyle(tint: Constants.Colors.accentPink))
+                                    } else {
+                                        VStack(spacing: 8) {
+                                            // Premium Points (Red)
+                                            HStack(spacing: 8) {
+                                                HStack(spacing: 4) {
+                                                    Circle()
+                                                        .fill(Color.red)
+                                                        .frame(width: 10, height: 10)
+                                                    Text("プレミアム")
+                                                        .font(.system(size: 12, weight: .medium))
+                                                        .foregroundColor(Constants.Colors.textGray)
+                                                }
+                                                Spacer()
+                                                HStack(alignment: .firstTextBaseline, spacing: 2) {
+                                                    Text("\(pointsViewModel.premiumPoints)")
+                                                        .font(.system(size: 24, weight: .bold))
+                                                        .foregroundColor(.red)
+                                                    Text("P")
+                                                        .font(.system(size: 14, weight: .bold))
+                                                        .foregroundColor(.red.opacity(0.7))
+                                                }
+                                            }
+
+                                            Divider()
+                                                .background(Constants.Colors.textGray.opacity(0.3))
+
+                                            // Regular Points (Blue)
+                                            HStack(spacing: 8) {
+                                                HStack(spacing: 4) {
+                                                    Circle()
+                                                        .fill(Color.blue)
+                                                        .frame(width: 10, height: 10)
+                                                    Text("レギュラー")
+                                                        .font(.system(size: 12, weight: .medium))
+                                                        .foregroundColor(Constants.Colors.textGray)
+                                                }
+                                                Spacer()
+                                                HStack(alignment: .firstTextBaseline, spacing: 2) {
+                                                    Text("\(pointsViewModel.regularPoints)")
+                                                        .font(.system(size: 24, weight: .bold))
+                                                        .foregroundColor(.blue)
+                                                    Text("P")
+                                                        .font(.system(size: 14, weight: .bold))
+                                                        .foregroundColor(.blue.opacity(0.7))
+                                                }
+                                            }
+
+                                            // Total Points
+                                            HStack {
+                                                Text("合計")
+                                                    .font(.system(size: 11, weight: .medium))
                                                     .foregroundColor(Constants.Colors.textGray)
-                                            }
-                                            Spacer()
-                                            HStack(alignment: .firstTextBaseline, spacing: 2) {
-                                                Text("\(pointsViewModel.premiumPoints)")
-                                                    .font(.system(size: 24, weight: .bold))
-                                                    .foregroundColor(.red)
-                                                Text("P")
+                                                Spacer()
+                                                Text("\(pointsViewModel.points)P")
                                                     .font(.system(size: 14, weight: .bold))
-                                                    .foregroundColor(.red.opacity(0.7))
+                                                    .foregroundColor(Constants.Colors.textWhite)
                                             }
                                         }
 
-                                        Divider()
-                                            .background(Constants.Colors.textGray.opacity(0.3))
-
-                                        // Regular Points (Blue)
-                                        HStack(spacing: 8) {
-                                            HStack(spacing: 4) {
-                                                Circle()
-                                                    .fill(Color.blue)
-                                                    .frame(width: 10, height: 10)
-                                                Text("レギュラー")
-                                                    .font(.system(size: 12, weight: .medium))
-                                                    .foregroundColor(Constants.Colors.textGray)
-                                            }
-                                            Spacer()
-                                            HStack(alignment: .firstTextBaseline, spacing: 2) {
-                                                Text("\(pointsViewModel.regularPoints)")
-                                                    .font(.system(size: 24, weight: .bold))
-                                                    .foregroundColor(.blue)
-                                                Text("P")
-                                                    .font(.system(size: 14, weight: .bold))
-                                                    .foregroundColor(.blue.opacity(0.7))
-                                            }
+                                        // View History Link
+                                        HStack(spacing: 4) {
+                                            Text("履歴を見る")
+                                                .font(.system(size: Constants.Typography.captionSize))
+                                                .foregroundColor(Constants.Colors.accentBlue)
+                                            Image(systemName: "chevron.right")
+                                                .font(.system(size: 10))
+                                                .foregroundColor(Constants.Colors.accentBlue)
                                         }
-
-                                        // Total Points
-                                        HStack {
-                                            Text("合計")
-                                                .font(.system(size: 11, weight: .medium))
-                                                .foregroundColor(Constants.Colors.textGray)
-                                            Spacer()
-                                            Text("\(pointsViewModel.points)P")
-                                                .font(.system(size: 14, weight: .bold))
-                                                .foregroundColor(Constants.Colors.textWhite)
-                                        }
+                                        .padding(.top, 4)
                                     }
-
-                                    // View History Link
-                                    HStack(spacing: 4) {
-                                        Text("履歴を見る")
-                                            .font(.system(size: Constants.Typography.captionSize))
-                                            .foregroundColor(Constants.Colors.accentBlue)
-                                        Image(systemName: "chevron.right")
-                                            .font(.system(size: 10))
-                                            .foregroundColor(Constants.Colors.accentBlue)
-                                    }
-                                    .padding(.top, 4)
                                 }
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, Constants.Spacing.medium)
-                            .padding(.horizontal, Constants.Spacing.large)
-                            .background(
-                                LinearGradient(
-                                    gradient: Gradient(colors: [
-                                        Constants.Colors.gradientPink.opacity(0.15),
-                                        Constants.Colors.gradientBlue.opacity(0.15)
-                                    ]),
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, Constants.Spacing.medium)
+                                .padding(.horizontal, Constants.Spacing.large)
+                                .background(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [
+                                            Constants.Colors.gradientPink.opacity(0.15),
+                                            Constants.Colors.gradientBlue.opacity(0.15)
+                                        ]),
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
                                 )
-                            )
-                            .background(Color.yellow.opacity(0.1))
-                            .cornerRadius(16)
+                                .background(Color.yellow.opacity(0.1))
+                                .cornerRadius(16)
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
                     }
                     .padding()
                     .background(Constants.Colors.cardDark)

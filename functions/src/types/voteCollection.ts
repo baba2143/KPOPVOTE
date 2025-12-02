@@ -225,6 +225,7 @@ export interface CollectionDetailResponse {
     isSaved: boolean;
     isLiked: boolean;
     isOwner: boolean;
+    isFollowingCreator: boolean;
   };
 }
 

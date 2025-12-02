@@ -148,6 +148,10 @@ enum Constants {
         // Calendar (Community Feature)
         static let calendar = "\(apiBaseURL)/api/calendar"
         static let checkDuplicate = "\(apiBaseURL)/api/calendar/check-duplicate"
+
+        // FCM (Push Notifications)
+        static let registerFcmToken = "\(apiBaseURL)/registerFcmToken"
+        static let unregisterFcmToken = "\(apiBaseURL)/unregisterFcmToken"
     }
 
     // MARK: - UserDefaults Keys

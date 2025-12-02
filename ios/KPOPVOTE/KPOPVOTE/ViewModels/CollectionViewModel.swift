@@ -26,6 +26,7 @@ class CollectionViewModel: ObservableObject {
     @Published var isSaved: Bool = false
     @Published var isLiked: Bool = false
     @Published var isOwner: Bool = false
+    @Published var isFollowingCreator: Bool = false
 
     // Pagination
     @Published var currentPage: Int = 1
@@ -249,6 +250,7 @@ class CollectionViewModel: ObservableObject {
             isSaved = response.data.isSaved
             isLiked = response.data.isLiked
             isOwner = response.data.isOwner
+            isFollowingCreator = response.data.isFollowingCreator
 
             print("✅ [CollectionViewModel] Loaded collection detail: \(response.data.collection.title)")
         } catch {
@@ -337,6 +339,31 @@ class CollectionViewModel: ObservableObject {
         } catch {
             errorMessage = NetworkErrorHandler.getUserMessage(for: error)
             print("❌ [CollectionViewModel] Delete collection failed: \(error.localizedDescription)")
+            return false
+        }
+    }
+
+    /// Toggle follow/unfollow collection creator
+    func toggleFollowCreator() async -> Bool {
+        guard let creatorId = currentCollection?.creatorId else {
+            print("❌ [CollectionViewModel] No creator ID")
+            return false
+        }
+
+        do {
+            if isFollowingCreator {
+                try await FollowService.shared.unfollowUser(userId: creatorId)
+                isFollowingCreator = false
+                print("✅ [CollectionViewModel] Unfollowed creator: \(creatorId)")
+            } else {
+                _ = try await FollowService.shared.followUser(userId: creatorId)
+                isFollowingCreator = true
+                print("✅ [CollectionViewModel] Followed creator: \(creatorId)")
+            }
+            return true
+        } catch {
+            errorMessage = NetworkErrorHandler.getUserMessage(for: error)
+            print("❌ [CollectionViewModel] Follow toggle failed: \(error.localizedDescription)")
             return false
         }
     }

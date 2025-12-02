@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct CollectionDetailView: View {
     let collectionId: String
@@ -23,6 +24,8 @@ struct CollectionDetailView: View {
 
     @State private var showEditSheet = false
     @State private var showDeleteConfirmation = false
+    @State private var showShareSheet = false
+    @State private var showReportSheet = false
 
     var body: some View {
         ZStack {
@@ -117,8 +120,17 @@ struct CollectionDetailView: View {
                         .padding(.horizontal)
 
                         // Creator Info Section
-                        CreatorInfoView(collection: collection)
-                            .padding(.horizontal)
+                        CreatorInfoView(
+                            collection: collection,
+                            isOwner: viewModel.isOwner,
+                            isFollowingCreator: viewModel.isFollowingCreator,
+                            onToggleFollow: {
+                                Task {
+                                    await viewModel.toggleFollowCreator()
+                                }
+                            }
+                        )
+                        .padding(.horizontal)
 
                         // Stats Section
                         StatsView(collection: collection)
@@ -144,7 +156,7 @@ struct CollectionDetailView: View {
                 if let collection = viewModel.currentCollection {
                     Menu {
                         Button(action: {
-                            // TODO: Share functionality
+                            showShareSheet = true
                         }) {
                             Label("共有", systemImage: "square.and.arrow.up")
                         }
@@ -163,7 +175,7 @@ struct CollectionDetailView: View {
                             }
                         } else {
                             Button(role: .destructive, action: {
-                                // TODO: Report functionality
+                                showReportSheet = true
                             }) {
                                 Label("報告", systemImage: "exclamationmark.triangle")
                             }
@@ -253,6 +265,19 @@ struct CollectionDetailView: View {
             Button("キャンセル", role: .cancel) { }
         } message: {
             Text("このコレクションを削除してもよろしいですか？この操作は取り消せません。")
+        }
+        .sheet(isPresented: $showShareSheet) {
+            if let collection = viewModel.currentCollection {
+                ShareSheet(activityItems: [
+                    "「\(collection.title)」をチェック！\n\(collection.description)\n\n#KPOPVOTE",
+                    URL(string: "https://kpopvote.app/collections/\(collection.id)")!
+                ])
+            }
+        }
+        .sheet(isPresented: $showReportSheet) {
+            if let collection = viewModel.currentCollection {
+                ReportCollectionView(collectionId: collection.id, collectionTitle: collection.title)
+            }
         }
         .onAppear {
             print("📱 [CollectionDetailView] onAppear - collectionId: \(collectionId)")
@@ -497,6 +522,9 @@ struct CollectionTaskCardView: View {
 // MARK: - Creator Info View
 struct CreatorInfoView: View {
     let collection: VoteCollection
+    let isOwner: Bool
+    let isFollowingCreator: Bool
+    let onToggleFollow: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -536,7 +564,26 @@ struct CreatorInfoView: View {
 
                 Spacer()
 
-                // TODO: Follow button
+                // Follow button (only show if not owner)
+                if !isOwner {
+                    Button(action: onToggleFollow) {
+                        HStack(spacing: 4) {
+                            Image(systemName: isFollowingCreator ? "person.badge.minus" : "person.badge.plus")
+                                .font(.system(size: 14))
+                            Text(isFollowingCreator ? "フォロー中" : "フォロー")
+                                .font(.system(size: 14, weight: .semibold))
+                        }
+                        .foregroundColor(isFollowingCreator ? Constants.Colors.textGray : .white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(isFollowingCreator ? Constants.Colors.cardDark : Constants.Colors.accentPink)
+                        .cornerRadius(20)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 20)
+                                .stroke(isFollowingCreator ? Constants.Colors.textGray : Color.clear, lineWidth: 1)
+                        )
+                    }
+                }
             }
             .padding(16)
             .background(Constants.Colors.cardDark)
@@ -626,6 +673,184 @@ struct StatItemView: View {
                 .foregroundColor(Constants.Colors.textGray)
         }
         .frame(maxWidth: .infinity)
+    }
+}
+
+// MARK: - Share Sheet (UIKit Wrapper)
+struct ShareSheet: UIViewControllerRepresentable {
+    let activityItems: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        let controller = UIActivityViewController(
+            activityItems: activityItems,
+            applicationActivities: nil
+        )
+        return controller
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
+
+// MARK: - Report Collection View
+struct ReportCollectionView: View {
+    let collectionId: String
+    let collectionTitle: String
+    @Environment(\.dismiss) var dismiss
+
+    @State private var selectedReason: ReportReason?
+    @State private var additionalComment: String = ""
+    @State private var isSubmitting = false
+    @State private var showSuccessAlert = false
+
+    enum ReportReason: String, CaseIterable {
+        case spam = "スパム・宣伝"
+        case inappropriate = "不適切なコンテンツ"
+        case copyright = "著作権侵害"
+        case harassment = "嫌がらせ・誹謗中傷"
+        case other = "その他"
+
+        var description: String {
+            return self.rawValue
+        }
+    }
+
+    var body: some View {
+        NavigationView {
+            ZStack {
+                Constants.Colors.backgroundDark
+                    .ignoresSafeArea()
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 24) {
+                        // Title
+                        Text("「\(collectionTitle)」を報告")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(Constants.Colors.textWhite)
+                            .padding(.top, 16)
+
+                        // Reason Selection
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("報告理由を選択")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(Constants.Colors.textWhite)
+
+                            ForEach(ReportReason.allCases, id: \.self) { reason in
+                                ReportReasonRow(
+                                    reason: reason,
+                                    isSelected: selectedReason == reason,
+                                    onTap: { selectedReason = reason }
+                                )
+                            }
+                        }
+
+                        // Additional Comment
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("追加コメント（任意）")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(Constants.Colors.textWhite)
+
+                            TextEditor(text: $additionalComment)
+                                .frame(height: 100)
+                                .padding(8)
+                                .background(Constants.Colors.cardDark)
+                                .cornerRadius(8)
+                                .foregroundColor(Constants.Colors.textWhite)
+                        }
+
+                        // Submit Button
+                        Button(action: submitReport) {
+                            HStack {
+                                if isSubmitting {
+                                    ProgressView()
+                                        .tint(.white)
+                                } else {
+                                    Text("報告を送信")
+                                }
+                            }
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(selectedReason != nil ? Color.red : Constants.Colors.textGray)
+                            .cornerRadius(12)
+                        }
+                        .disabled(selectedReason == nil || isSubmitting)
+
+                        Spacer()
+                    }
+                    .padding(.horizontal)
+                }
+            }
+            .navigationTitle("コンテンツを報告")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("キャンセル") {
+                        dismiss()
+                    }
+                    .foregroundColor(Constants.Colors.textWhite)
+                }
+            }
+            .alert("報告を送信しました", isPresented: $showSuccessAlert) {
+                Button("OK") {
+                    dismiss()
+                }
+            } message: {
+                Text("ご報告いただきありがとうございます。内容を確認の上、適切に対応いたします。")
+            }
+        }
+    }
+
+    private func submitReport() {
+        guard let reason = selectedReason else { return }
+
+        isSubmitting = true
+
+        // Submit report to Firestore
+        Task {
+            do {
+                try await ReportService.shared.submitReport(
+                    collectionId: collectionId,
+                    reason: reason.rawValue,
+                    comment: additionalComment
+                )
+
+                await MainActor.run {
+                    isSubmitting = false
+                    showSuccessAlert = true
+                }
+            } catch {
+                await MainActor.run {
+                    isSubmitting = false
+                    // Handle error (could show an alert)
+                    print("❌ [ReportCollectionView] Failed to submit report: \(error)")
+                }
+            }
+        }
+    }
+}
+
+struct ReportReasonRow: View {
+    let reason: ReportCollectionView.ReportReason
+    let isSelected: Bool
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack {
+                Text(reason.description)
+                    .font(.system(size: 16))
+                    .foregroundColor(Constants.Colors.textWhite)
+
+                Spacer()
+
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .foregroundColor(isSelected ? Constants.Colors.accentPink : Constants.Colors.textGray)
+            }
+            .padding(16)
+            .background(Constants.Colors.cardDark)
+            .cornerRadius(8)
+        }
     }
 }
 

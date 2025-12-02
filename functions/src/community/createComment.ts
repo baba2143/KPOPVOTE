@@ -1,14 +1,14 @@
 /**
  * Create comment on a post
  * Only followers of the post author can comment
- * コメント投稿時に投稿者にポイント報酬を付与
+ * Phase 1: ポイント報酬機能除外版
  */
 
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { ApiResponse } from "../types";
 import { verifyToken, AuthenticatedRequest } from "../middleware/auth";
-import { grantRewardPoints } from "../utils/rewardHelper";
+import { sendPushNotification } from "../utils/fcmHelper";
 
 interface CreateCommentRequest {
   postId: string;
@@ -123,38 +123,44 @@ export const createComment = functions.https.onRequest(async (req, res) => {
 
     // Create notification for post author (if not commenting on own post)
     if (currentUser.uid !== postAuthorId) {
-      await db.collection("notifications").add({
+      const currentUserDoc = await db.collection("users").doc(currentUser.uid).get();
+      const currentUserData = currentUserDoc.data();
+
+      const notificationRef = db.collection("notifications").doc();
+      const notificationTitle = "New Comment";
+      const notificationBody = `${currentUserData?.displayName || "Someone"} commented on your post`;
+
+      await notificationRef.set({
+        id: notificationRef.id,
         userId: postAuthorId,
         type: "comment",
-        postId: postId,
-        commentId: commentRef.id,
-        fromUserId: currentUser.uid,
-        read: false,
+        title: notificationTitle,
+        body: notificationBody,
+        isRead: false,
+        actionUserId: currentUser.uid,
+        actionUserDisplayName: currentUserData?.displayName || null,
+        actionUserPhotoURL: currentUserData?.photoURL || null,
+        relatedPostId: postId,
+        relatedCommentId: commentRef.id,
         createdAt: now,
       });
 
-      // コメント投稿報酬を投稿者に付与
-      try {
-        const postOwnerDoc = await db.collection("users").doc(postAuthorId).get();
-        const postOwnerData = postOwnerDoc.data();
-        const isPremium = postOwnerData?.isPremium || false;
-
-        const pointsGranted = await grantRewardPoints(
-          postAuthorId,
-          "community_comment",
-          isPremium,
-          postId,
-        );
-
-        console.log(
-          "✅ [createComment] Comment reward granted to post owner: " +
-            `owner=${postAuthorId}, post=${postId}, comment=${commentRef.id}, ` +
-            `points=${pointsGranted}P, type=${isPremium ? "premium" : "regular"}`,
-        );
-      } catch (rewardError) {
-        console.error("⚠️ [createComment] Failed to grant reward:", rewardError);
-      }
+      // Send push notification
+      await sendPushNotification({
+        userId: postAuthorId,
+        type: "comment",
+        title: notificationTitle,
+        body: notificationBody,
+        data: {
+          notificationId: notificationRef.id,
+          postId: postId,
+          commentId: commentRef.id,
+          userId: currentUser.uid,
+        },
+      });
     }
+
+    console.log(`✅ [createComment] Comment created: user=${currentUser.uid}, post=${postId}, comment=${commentRef.id}`);
 
     // Get updated comments count
     const updatedPostDoc = await db.collection("posts").doc(postId).get();

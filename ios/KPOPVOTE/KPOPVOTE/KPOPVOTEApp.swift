@@ -7,9 +7,12 @@
 
 import SwiftUI
 import FirebaseCore
+import FirebaseMessaging
 
 @main
 struct KPOPVOTEApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+
     init() {
         FirebaseApp.configure()
 

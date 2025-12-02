@@ -81,8 +81,8 @@ struct VoteDetailView: View {
                         // Vote Button
                         if !viewModel.hasVoted && vote.isActive {
                             VStack(spacing: Constants.Spacing.small) {
-                                // Premium Multiplier Badge
-                                if pointsViewModel.isPremium {
+                                // Premium Multiplier Badge (Phase 1: 非表示)
+                                if FeatureFlags.pointsEnabled && pointsViewModel.isPremium {
                                     PremiumMultiplierBadge(multiplier: 2, style: .medium)
                                         .frame(maxWidth: .infinity, alignment: .center)
                                 }
@@ -202,8 +202,11 @@ struct VoteDetailView: View {
         .task {
             print("🚀 [VoteDetailView] Task started - loading detail for voteId: \(voteId)")
             await viewModel.loadDetail()
-            await pointsViewModel.loadPoints()
-            viewModel.updatePoints(premium: pointsViewModel.premiumPoints, regular: pointsViewModel.regularPoints)
+            // Phase 1: ポイント機能無効化
+            if FeatureFlags.pointsEnabled {
+                await pointsViewModel.loadPoints()
+                viewModel.updatePoints(premium: pointsViewModel.premiumPoints, regular: pointsViewModel.regularPoints)
+            }
             print("✅ [VoteDetailView] Task completed - vote loaded: \(viewModel.vote != nil), premium: \(pointsViewModel.isPremium)")
         }
         .onAppear {
@@ -424,13 +427,18 @@ struct VoteButton: View {
                         Text("投票中...")
                     } else {
                         Image(systemName: "hand.thumbsup.fill")
-                        Text("投票する（\(requiredPoints)pt消費）")
+                        // Phase 1: ポイント消費なしで投票
+                        if FeatureFlags.pointsEnabled {
+                            Text("投票する（\(requiredPoints)pt消費）")
+                        } else {
+                            Text("投票する")
+                        }
                     }
                 }
                 .font(.system(size: 18, weight: .bold))
 
-                // Show earned points if premium
-                if isPremium && !isExecuting {
+                // Show earned points if premium (Phase 1: 非表示)
+                if FeatureFlags.pointsEnabled && isPremium && !isExecuting {
                     HStack(spacing: 4) {
                         Image(systemName: "star.fill")
                             .font(.system(size: 12))
@@ -537,16 +545,18 @@ struct MultipleVoteSection: View {
                 .cornerRadius(8)
             }
 
-            // Point Selection (NEW)
-            PointSelectionView(
-                selectedMode: $selectedPointMode,
-                premiumPoints: premiumPoints,
-                regularPoints: regularPoints,
-                premiumPointsToBeUsed: premiumPointsToBeUsed,
-                regularPointsToBeUsed: regularPointsToBeUsed,
-                pointSelectionError: pointSelectionError,
-                onModeChange: onPointModeChange
-            )
+            // Point Selection (Phase 1: 非表示)
+            if FeatureFlags.pointsEnabled {
+                PointSelectionView(
+                    selectedMode: $selectedPointMode,
+                    premiumPoints: premiumPoints,
+                    regularPoints: regularPoints,
+                    premiumPointsToBeUsed: premiumPointsToBeUsed,
+                    regularPointsToBeUsed: regularPointsToBeUsed,
+                    pointSelectionError: pointSelectionError,
+                    onModeChange: onPointModeChange
+                )
+            }
 
             // Buttons
             HStack(spacing: 12) {
@@ -559,7 +569,12 @@ struct MultipleVoteSection: View {
                             Text("投票中...")
                         } else {
                             Image(systemName: "hand.thumbsup.fill")
-                            Text("投票する（\(pointsToBeUsed)pt）")
+                            // Phase 1: ポイント消費なしで投票
+                            if FeatureFlags.pointsEnabled {
+                                Text("投票する（\(pointsToBeUsed)pt）")
+                            } else {
+                                Text("投票する")
+                            }
                         }
                     }
                     .font(.system(size: 16, weight: .bold))
