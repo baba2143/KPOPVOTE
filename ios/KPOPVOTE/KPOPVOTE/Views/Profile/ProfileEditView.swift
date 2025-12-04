@@ -13,6 +13,7 @@ struct ProfileEditView: View {
     @StateObject private var viewModel = ProfileEditViewModel()
     @StateObject private var biasViewModel = BiasViewModel()
     @State private var showBiasPicker = false
+    @State private var showImagePicker = false
 
     var body: some View {
         NavigationView {
@@ -80,6 +81,9 @@ struct ProfileEditView: View {
                     allIdols: biasViewModel.allIdols
                 )
             }
+            .sheet(isPresented: $showImagePicker) {
+                ImagePicker(selectedImage: $viewModel.selectedImage)
+            }
             .alert("エラー", isPresented: Binding(
                 get: { viewModel.errorMessage != nil },
                 set: { if !$0 { viewModel.errorMessage = nil } }
@@ -97,20 +101,87 @@ struct ProfileEditView: View {
     @ViewBuilder
     private var profileImageSection: some View {
         VStack(spacing: Constants.Spacing.small) {
-            // Profile Icon
-            Image(systemName: "person.circle.fill")
-                .font(.system(size: 100))
-                .foregroundColor(Constants.Colors.accentPink)
+            // Profile Image
+            ZStack {
+                if let selectedImage = viewModel.selectedImage {
+                    // Show selected image
+                    Image(uiImage: selectedImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 100, height: 100)
+                        .clipShape(Circle())
+                } else if let photoURL = viewModel.currentPhotoURL,
+                          let url = URL(string: photoURL) {
+                    // Show current profile image from URL
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .empty:
+                            ProgressView()
+                                .frame(width: 100, height: 100)
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 100, height: 100)
+                                .clipShape(Circle())
+                        case .failure:
+                            defaultProfileIcon
+                        @unknown default:
+                            defaultProfileIcon
+                        }
+                    }
+                } else {
+                    // Default icon
+                    defaultProfileIcon
+                }
 
-            // TODO: Image picker will be added in future
-            Text("プロフィール画像")
+                // Camera overlay
+                Circle()
+                    .fill(Color.black.opacity(0.3))
+                    .frame(width: 100, height: 100)
+                    .overlay(
+                        Image(systemName: "camera.fill")
+                            .font(.system(size: 24))
+                            .foregroundColor(.white)
+                    )
+                    .opacity(0.7)
+            }
+            .onTapGesture {
+                showImagePicker = true
+            }
+
+            Text("タップして変更")
                 .font(.system(size: Constants.Typography.captionSize))
                 .foregroundColor(Constants.Colors.textGray)
+
+            if viewModel.isUploadingImage {
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                    Text("画像をアップロード中...")
+                        .font(.system(size: Constants.Typography.captionSize))
+                        .foregroundColor(Constants.Colors.textGray)
+                }
+            } else if viewModel.selectedImage != nil {
+                HStack(spacing: 8) {
+                    Image(systemName: "photo.circle.fill")
+                        .foregroundColor(.blue)
+                    Text("画像を選択しました")
+                        .font(.system(size: Constants.Typography.captionSize))
+                        .foregroundColor(.blue)
+                }
+            }
         }
         .frame(maxWidth: .infinity)
         .padding()
         .background(Constants.Colors.cardDark)
         .cornerRadius(16)
+    }
+
+    private var defaultProfileIcon: some View {
+        Image(systemName: "person.circle.fill")
+            .font(.system(size: 100))
+            .foregroundColor(Constants.Colors.accentPink)
     }
 
     // MARK: - Display Name Section

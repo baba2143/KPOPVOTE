@@ -66,6 +66,90 @@ class ImageUploadService {
         return downloadURLString
     }
 
+    /// Upload profile image to Firebase Storage
+    /// - Parameter image: UIImage to upload
+    /// - Returns: Download URL with access token
+    func uploadProfileImage(_ image: UIImage) async throws -> String {
+        guard let userId = Auth.auth().currentUser?.uid else {
+            throw ImageUploadError.notAuthenticated
+        }
+
+        // Resize to square 400x400 for profile images
+        let resizedImage = resizeImageToSquare(image, size: 400)
+
+        print("📐 [ImageUploadService] Profile image original size: \(image.size), Resized: \(resizedImage.size)")
+
+        // Convert to JPEG with high quality (0.8)
+        guard let imageData = resizedImage.jpegData(compressionQuality: 0.8) else {
+            throw ImageUploadError.compressionFailed
+        }
+
+        print("📦 [ImageUploadService] Profile image data size: \(imageData.count) bytes (~\(imageData.count / 1024)KB)")
+
+        // Check file size (max 2MB for profile images)
+        let maxSize = 2 * 1024 * 1024 // 2MB
+        guard imageData.count <= maxSize else {
+            throw ImageUploadError.imageTooLarge
+        }
+
+        // Fixed filename for profile image (overwrites previous)
+        let storagePath = "profiles/\(userId)/profile.jpg"
+
+        // Get Firebase Storage reference
+        let storageRef = Storage.storage().reference()
+        let imageRef = storageRef.child(storagePath)
+
+        print("📤 [ImageUploadService] Uploading profile image to Firebase Storage: \(storagePath)")
+
+        // Upload image data
+        let metadata = StorageMetadata()
+        metadata.contentType = "image/jpeg"
+
+        let _ = try await imageRef.putDataAsync(imageData, metadata: metadata)
+
+        // Get download URL with token
+        let downloadURL = try await imageRef.downloadURL()
+        let downloadURLString = downloadURL.absoluteString
+
+        print("✅ [ImageUploadService] Profile image uploaded successfully: \(downloadURLString)")
+
+        return downloadURLString
+    }
+
+    /// Resize image to square (center crop)
+    /// - Parameters:
+    ///   - image: Original image
+    ///   - size: Target square size
+    /// - Returns: Cropped and resized square image
+    private func resizeImageToSquare(_ image: UIImage, size: CGFloat) -> UIImage {
+        let originalSize = image.size
+        let scale = image.scale  // Points → Pixels 変換用
+        let minDimension = min(originalSize.width, originalSize.height)
+
+        // Calculate crop rect (center crop) - CGImage uses pixels, not points
+        let cropRect = CGRect(
+            x: (originalSize.width - minDimension) / 2 * scale,
+            y: (originalSize.height - minDimension) / 2 * scale,
+            width: minDimension * scale,
+            height: minDimension * scale
+        )
+
+        // Crop to square
+        guard let cgImage = image.cgImage?.cropping(to: cropRect) else {
+            return image
+        }
+        let croppedImage = UIImage(cgImage: cgImage, scale: image.scale, orientation: image.imageOrientation)
+
+        // Resize to target size
+        let targetSize = CGSize(width: size, height: size)
+        UIGraphicsBeginImageContextWithOptions(targetSize, false, 1.0)
+        croppedImage.draw(in: CGRect(origin: .zero, size: targetSize))
+        let resizedImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+
+        return resizedImage ?? croppedImage
+    }
+
     /// Resize image to fit within max dimension while maintaining aspect ratio
     /// - Parameters:
     ///   - image: Original image

@@ -266,6 +266,58 @@ class CommunityService {
         return result.data
     }
 
+    // MARK: - Fetch Liked Posts
+    /// Fetch posts that the user has liked
+    /// - Parameters:
+    ///   - limit: Number of posts to fetch
+    ///   - lastPostId: Last post ID for pagination
+    /// - Returns: Tuple of posts array and hasMore flag
+    func fetchLikedPosts(limit: Int = 20, lastPostId: String? = nil) async throws -> (posts: [CommunityPost], hasMore: Bool) {
+        guard let token = try await Auth.auth().currentUser?.getIDToken() else {
+            throw CommunityError.notAuthenticated
+        }
+
+        var urlComponents = URLComponents(string: Constants.API.getLikedPosts)!
+        var queryItems = [
+            URLQueryItem(name: "limit", value: "\(limit)")
+        ]
+
+        if let lastPostId = lastPostId {
+            queryItems.append(URLQueryItem(name: "lastPostId", value: lastPostId))
+        }
+
+        urlComponents.queryItems = queryItems
+
+        var request = URLRequest(url: urlComponents.url!)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        print("💗 [CommunityService] Fetching liked posts")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw CommunityError.invalidResponse
+        }
+
+        print("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
+
+        guard httpResponse.statusCode == 200 else {
+            if let errorString = String(data: data, encoding: .utf8) {
+                print("❌ [CommunityService] Error: \(errorString)")
+            }
+            throw CommunityError.fetchFailed
+        }
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let result = try decoder.decode(PostListResponse.self, from: data)
+
+        print("✅ [CommunityService] Fetched \(result.data.posts.count) liked posts")
+
+        return (result.data.posts, result.data.hasMore)
+    }
+
     // MARK: - Get My Votes
     /// Fetch user's vote history
     /// - Returns: Array of user's votes

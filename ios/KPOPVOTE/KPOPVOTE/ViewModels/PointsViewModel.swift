@@ -10,6 +10,9 @@ import SwiftUI
 
 @MainActor
 class PointsViewModel: ObservableObject {
+    // Phase 1: ポイント機能無効化フラグ
+    private let isPointsFeatureEnabled = false
+
     // マルチポイント対応
     @Published var premiumPoints: Int = 0
     @Published var regularPoints: Int = 0
@@ -38,6 +41,12 @@ class PointsViewModel: ObservableObject {
 
     // MARK: - Load Points Balance (Multi-Point)
     func loadPoints() async {
+        // Phase 1: ポイント機能無効化
+        guard isPointsFeatureEnabled else {
+            print("ℹ️ [PointsViewModel] Points feature is disabled in Phase 1")
+            return
+        }
+
         isLoading = true
         errorMessage = nil
 
@@ -65,6 +74,11 @@ class PointsViewModel: ObservableObject {
 
     // MARK: - Daily Login Bonus
     func claimDailyLoginBonus() async {
+        // Phase 1: ポイント機能無効化
+        guard isPointsFeatureEnabled else {
+            return
+        }
+
         do {
             print("📡 [PointsViewModel] Claiming daily login bonus...")
             let bonus = try await pointsService.claimDailyLoginBonus()
@@ -86,6 +100,11 @@ class PointsViewModel: ObservableObject {
 
     // MARK: - Load Point History
     func loadPointHistory(refresh: Bool = false) async {
+        // Phase 1: ポイント機能無効化
+        guard isPointsFeatureEnabled else {
+            return
+        }
+
         // Reset pagination if refreshing
         if refresh {
             currentOffset = 0

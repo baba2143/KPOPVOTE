@@ -14,6 +14,7 @@ interface IOSLoginResponse {
   uid: string;
   email: string;
   displayName?: string;
+  photoURL?: string;
   points: number;
   isSuspended: boolean;
 }
@@ -100,6 +101,7 @@ export const login = functions.https.onRequest(async (req, res) => {
         uid: uid,
         email: userProfile.email || decodedToken.email,
         displayName: userProfile.displayName,
+        photoURL: userProfile.photoURL || null,
         points: userProfile.points || 0,
         isSuspended: userProfile.isSuspended || false,
       } as IOSLoginResponse,

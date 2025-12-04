@@ -14,7 +14,7 @@ class ProfileService {
     private init() {}
 
     // MARK: - Update Profile
-    func updateProfile(displayName: String?, bio: String?, biasIds: [String]?) async throws -> User {
+    func updateProfile(displayName: String?, bio: String?, biasIds: [String]?, photoURL: String? = nil) async throws -> User {
         guard let token = try? await Auth.auth().currentUser?.getIDToken() else {
             throw ProfileError.notAuthenticated
         }
@@ -34,6 +34,9 @@ class ProfileService {
         }
         if let biasIds = biasIds {
             body["biasIds"] = biasIds
+        }
+        if let photoURL = photoURL {
+            body["photoURL"] = photoURL
         }
 
         request.httpBody = try JSONSerialization.data(withJSONObject: body)

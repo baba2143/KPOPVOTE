@@ -7,6 +7,7 @@
 
 import Foundation
 import Combine
+import UIKit
 
 @MainActor
 class ProfileEditViewModel: ObservableObject {
@@ -17,6 +18,11 @@ class ProfileEditViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var showSuccess: Bool = false
 
+    // Profile Image
+    @Published var selectedImage: UIImage?
+    @Published var currentPhotoURL: String?
+    @Published var isUploadingImage: Bool = false
+
     // Validation
     @Published var displayNameError: String?
     @Published var bioError: String?
@@ -24,19 +30,22 @@ class ProfileEditViewModel: ObservableObject {
     private var originalDisplayName: String = ""
     private var originalBio: String = ""
     private var originalBiasIds: [String] = []
+    private var originalPhotoURL: String?
 
     // MARK: - Load Current Profile
     func loadCurrentProfile(user: User) {
         displayName = user.displayName ?? ""
         bio = user.bio ?? ""
         selectedBiasIds = user.biasIds
+        currentPhotoURL = user.photoURL
 
         // Store original values
         originalDisplayName = displayName
         originalBio = bio
         originalBiasIds = selectedBiasIds
+        originalPhotoURL = user.photoURL
 
-        print("📱 [ProfileEditViewModel] Loaded profile: \(displayName), bio: \(bio.isEmpty ? "empty" : "exists")")
+        print("📱 [ProfileEditViewModel] Loaded profile: \(displayName), bio: \(bio.isEmpty ? "empty" : "exists"), photoURL: \(user.photoURL ?? "none")")
     }
 
     // MARK: - Validation
@@ -72,7 +81,8 @@ class ProfileEditViewModel: ObservableObject {
 
         return trimmedDisplayName != originalDisplayName ||
                trimmedBio != originalBio ||
-               selectedBiasIds != originalBiasIds
+               selectedBiasIds != originalBiasIds ||
+               selectedImage != nil
     }
 
     // MARK: - Save Profile
@@ -95,10 +105,21 @@ class ProfileEditViewModel: ObservableObject {
 
             print("💾 [ProfileEditViewModel] Saving profile...")
 
+            // Upload image if selected
+            var newPhotoURL: String?
+            if let image = selectedImage {
+                isUploadingImage = true
+                print("📸 [ProfileEditViewModel] Uploading profile image...")
+                newPhotoURL = try await ImageUploadService.shared.uploadProfileImage(image)
+                isUploadingImage = false
+                print("✅ [ProfileEditViewModel] Image uploaded: \(newPhotoURL ?? "")")
+            }
+
             let updatedUser = try await ProfileService.shared.updateProfile(
                 displayName: trimmedDisplayName,
                 bio: trimmedBio.isEmpty ? nil : trimmedBio,
-                biasIds: selectedBiasIds
+                biasIds: selectedBiasIds,
+                photoURL: newPhotoURL
             )
 
             print("✅ [ProfileEditViewModel] Profile saved successfully")
@@ -107,6 +128,11 @@ class ProfileEditViewModel: ObservableObject {
             originalDisplayName = trimmedDisplayName
             originalBio = trimmedBio
             originalBiasIds = selectedBiasIds
+            if let newPhotoURL = newPhotoURL {
+                originalPhotoURL = newPhotoURL
+                currentPhotoURL = newPhotoURL
+            }
+            selectedImage = nil
 
             showSuccess = true
             isSaving = false
@@ -115,6 +141,7 @@ class ProfileEditViewModel: ObservableObject {
         } catch {
             print("❌ [ProfileEditViewModel] Save error: \(error)")
             errorMessage = error.localizedDescription
+            isUploadingImage = false
             isSaving = false
             return nil
         }

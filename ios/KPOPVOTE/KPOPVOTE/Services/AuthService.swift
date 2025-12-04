@@ -160,6 +160,7 @@ class AuthService: ObservableObject {
                 id: result.data.uid,
                 email: result.data.email,
                 displayName: result.data.displayName,
+                photoURL: result.data.photoURL,
                 points: result.data.points,
                 isSuspended: result.data.isSuspended
             )
@@ -216,7 +217,7 @@ class AuthService: ObservableObject {
         await MainActor.run {
             self.currentUser = user
         }
-        print("✅ [Auth] Current user updated: \(user.displayName ?? user.email)")
+        print("✅ [Auth] Current user updated: \(user.displayName ?? user.email), photoURL: \(user.photoURL ?? "nil")")
     }
 
     // MARK: - Load User Data
@@ -239,11 +240,13 @@ class AuthService: ObservableObject {
             }
 
             let result = try JSONDecoder().decode(LoginResponse.self, from: data)
+            print("🔄 [Auth] loadUserData - photoURL from API: \(result.data.photoURL ?? "nil")")
 
             let user = User(
                 id: result.data.uid,
                 email: result.data.email,
                 displayName: result.data.displayName,
+                photoURL: result.data.photoURL,
                 points: result.data.points,
                 isSuspended: result.data.isSuspended
             )
@@ -251,13 +254,14 @@ class AuthService: ObservableObject {
             await MainActor.run {
                 self.currentUser = user
                 self.isAuthenticated = true
+                print("🔄 [Auth] loadUserData - currentUser.photoURL set to: \(self.currentUser?.photoURL ?? "nil")")
             }
 
             // Register FCM token after auth state restored
             PushNotificationManager.shared.onUserLogin()
 
         } catch {
-            print("Failed to load user data: \(error.localizedDescription)")
+            print("❌ [Auth] Failed to load user data: \(error.localizedDescription)")
         }
     }
 }
@@ -303,6 +307,7 @@ struct LoginResponse: Codable {
         let uid: String
         let email: String
         let displayName: String?
+        let photoURL: String?
         let points: Int
         let isSuspended: Bool
     }

@@ -404,6 +404,9 @@ struct ProfileView: View {
     @State private var showProfileEdit = false
     @State private var showPointsHistory = false
     @State private var showPremium = false
+    @State private var showNotifications = false
+    @State private var showFavorites = false
+    @State private var showAbout = false
 
     var body: some View {
         NavigationView {
@@ -411,10 +414,8 @@ struct ProfileView: View {
                 VStack(spacing: Constants.Spacing.large) {
                     // User Info Card
                     VStack(spacing: Constants.Spacing.medium) {
-                        // Profile Icon
-                        Image(systemName: "person.circle.fill")
-                            .font(.system(size: 80))
-                            .foregroundColor(Constants.Colors.accentPink)
+                        // Profile Image
+                        profileImageView
 
                         // Display Name or Email
                         if let user = authService.currentUser {
@@ -603,11 +604,26 @@ struct ProfileView: View {
                             }
                             .buttonStyle(.plain)
                             Divider().padding(.leading, 60).background(Constants.Colors.textGray.opacity(0.3))
-                            SettingsRow(icon: "bell.fill", title: "Notifications", color: .orange)
+                            Button {
+                                showNotifications = true
+                            } label: {
+                                SettingsRow(icon: "bell.fill", title: "Notifications", color: .orange)
+                            }
+                            .buttonStyle(.plain)
                             Divider().padding(.leading, 60).background(Constants.Colors.textGray.opacity(0.3))
-                            SettingsRow(icon: "star.fill", title: "Favorites", color: .yellow)
+                            Button {
+                                showFavorites = true
+                            } label: {
+                                SettingsRow(icon: "star.fill", title: "Favorites", color: .yellow)
+                            }
+                            .buttonStyle(.plain)
                             Divider().padding(.leading, 60).background(Constants.Colors.textGray.opacity(0.3))
-                            SettingsRow(icon: "info.circle.fill", title: "About", color: Constants.Colors.textGray)
+                            Button {
+                                showAbout = true
+                            } label: {
+                                SettingsRow(icon: "info.circle.fill", title: "About", color: Constants.Colors.textGray)
+                            }
+                            .buttonStyle(.plain)
                         }
                         .background(Constants.Colors.cardDark)
                         .cornerRadius(16)
@@ -661,7 +677,95 @@ struct ProfileView: View {
             .sheet(isPresented: $showPremium) {
                 PremiumView()
             }
+            .sheet(isPresented: $showNotifications) {
+                NotificationsView()
+            }
+            .sheet(isPresented: $showFavorites) {
+                FavoritesView()
+            }
+            .sheet(isPresented: $showAbout) {
+                AboutView()
+            }
         }
+    }
+
+    // MARK: - Default Profile Circle
+    private var defaultProfileCircle: some View {
+        Circle()
+            .fill(Constants.Colors.accentPink.opacity(0.3))
+            .frame(width: 80, height: 80)
+            .overlay(
+                Image(systemName: "person.fill")
+                    .font(.system(size: 32))
+                    .foregroundColor(Constants.Colors.accentPink)
+            )
+    }
+
+    // MARK: - Profile Image View
+    private var profileImageView: some View {
+        ProfileImageLoader(photoURL: authService.currentUser?.photoURL)
+    }
+}
+
+// MARK: - Profile Image Loader (Separate View for proper state management)
+struct ProfileImageLoader: View {
+    let photoURL: String?
+
+    var body: some View {
+        Group {
+            if let urlString = photoURL,
+               !urlString.isEmpty,
+               let url = URL(string: urlString) {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .empty:
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: Constants.Colors.accentPink))
+                            .frame(width: 80, height: 80)
+                            .onAppear {
+                                print("🖼️ [ProfileImageLoader] LOADING... URL: \(urlString.prefix(60))...")
+                            }
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 80, height: 80)
+                            .clipped()
+                            .clipShape(Circle())
+                            .onAppear {
+                                print("🖼️ [ProfileImageLoader] SUCCESS! Image loaded")
+                            }
+                    case .failure(let error):
+                        defaultCircle
+                            .onAppear {
+                                print("🖼️ [ProfileImageLoader] FAILED: \(error.localizedDescription)")
+                            }
+                    @unknown default:
+                        defaultCircle
+                    }
+                }
+                .id(urlString) // Force new AsyncImage when URL changes
+            } else {
+                defaultCircle
+                    .onAppear {
+                        print("🖼️ [ProfileImageLoader] No URL - photoURL: \(photoURL ?? "nil")")
+                    }
+            }
+        }
+        .onAppear {
+            print("🖼️ [ProfileImageLoader] View appeared with URL: \(photoURL ?? "nil")")
+        }
+    }
+
+    private var defaultCircle: some View {
+        Circle()
+            .fill(Constants.Colors.accentPink.opacity(0.3))
+            .frame(width: 80, height: 80)
+            .overlay(
+                Image(systemName: "person.fill")
+                    .font(.system(size: 32))
+                    .foregroundColor(Constants.Colors.accentPink)
+            )
     }
 }
 
