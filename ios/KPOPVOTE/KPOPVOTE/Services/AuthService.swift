@@ -9,6 +9,7 @@ import Foundation
 import FirebaseAuth
 import Combine
 
+@MainActor
 class AuthService: ObservableObject {
     @Published var currentUser: User?
     @Published var isAuthenticated = false
@@ -82,12 +83,25 @@ class AuthService: ObservableObject {
 
                 guard httpResponse.statusCode == 200 else {
                     print("❌ [Register] API returned non-200 status: \(httpResponse.statusCode)")
+                    // Try to parse error message from response
+                    if let errorResponse = try? JSONDecoder().decode(ApiErrorResponse.self, from: data) {
+                        throw AuthError.apiError(errorResponse.error)
+                    }
                     throw AuthError.registrationFailed
                 }
             }
 
-            let result = try JSONDecoder().decode(RegisterResponse.self, from: data)
-            print("✅ [Register] Successfully decoded response")
+            let result: RegisterResponse
+            do {
+                result = try JSONDecoder().decode(RegisterResponse.self, from: data)
+                print("✅ [Register] Successfully decoded response")
+            } catch let decodingError {
+                print("❌ [Register] JSON Decoding Error: \(decodingError)")
+                if let responseString = String(data: data, encoding: .utf8) {
+                    print("❌ [Register] Raw response was: \(responseString)")
+                }
+                throw AuthError.apiError("レスポンス解析エラー")
+            }
 
             // 3. Create User object
             let user = User(
@@ -110,6 +124,25 @@ class AuthService: ObservableObject {
         } catch let error as AuthError {
             print("❌ [Register] AuthError: \(error.localizedDescription)")
             throw error
+        } catch let error as NSError {
+            print("❌ [Register] NSError: domain=\(error.domain), code=\(error.code), description=\(error.localizedDescription)")
+            // Firebase Auth specific error handling
+            if error.domain == "FIRAuthErrorDomain" {
+                switch error.code {
+                case 17007: // ERROR_EMAIL_ALREADY_IN_USE
+                    throw AuthError.emailAlreadyInUse
+                case 17026: // ERROR_WEAK_PASSWORD
+                    throw AuthError.weakPassword
+                case 17008: // ERROR_INVALID_EMAIL
+                    throw AuthError.invalidEmail
+                case 17020: // ERROR_NETWORK_REQUEST_FAILED
+                    throw AuthError.networkError
+                default:
+                    print("❌ [Register] Unknown Firebase Auth error code: \(error.code)")
+                    throw AuthError.apiError("Firebase Auth: \(error.localizedDescription)")
+                }
+            }
+            throw AuthError.registrationFailed
         } catch {
             print("❌ [Register] Unexpected error: \(error.localizedDescription)")
             throw AuthError.registrationFailed
@@ -152,8 +185,17 @@ class AuthService: ObservableObject {
                 }
             }
 
-            let result = try JSONDecoder().decode(LoginResponse.self, from: data)
-            print("✅ [Login] Successfully decoded response")
+            let result: LoginResponse
+            do {
+                result = try JSONDecoder().decode(LoginResponse.self, from: data)
+                print("✅ [Login] Successfully decoded response")
+            } catch let decodingError {
+                print("❌ [Login] JSON Decoding Error: \(decodingError)")
+                if let responseString = String(data: data, encoding: .utf8) {
+                    print("❌ [Login] Raw response was: \(responseString)")
+                }
+                throw AuthError.apiError("ログインレスポンス解析エラー")
+            }
 
             // 4. Create User object
             let user = User(
@@ -165,10 +207,11 @@ class AuthService: ObservableObject {
                 isSuspended: result.data.isSuspended
             )
 
-            await MainActor.run {
-                self.currentUser = user
-                self.isAuthenticated = true
-            }
+            // 明示的にSwiftUIに変更を通知（Release buildでの問題回避）
+            self.objectWillChange.send()
+            self.currentUser = user
+            self.isAuthenticated = true
+            print("✅ [Login] isAuthenticated set to true")
 
             // Register FCM token after successful login
             PushNotificationManager.shared.onUserLogin()
@@ -272,6 +315,11 @@ enum AuthError: LocalizedError {
     case loginFailed
     case invalidCredentials
     case accountSuspended
+    case emailAlreadyInUse
+    case weakPassword
+    case invalidEmail
+    case networkError
+    case apiError(String)
 
     var errorDescription: String? {
         switch self {
@@ -283,6 +331,16 @@ enum AuthError: LocalizedError {
             return "メールアドレスまたはパスワードが正しくありません"
         case .accountSuspended:
             return "このアカウントは停止されています"
+        case .emailAlreadyInUse:
+            return "このメールアドレスは既に使用されています"
+        case .weakPassword:
+            return "パスワードは6文字以上で入力してください"
+        case .invalidEmail:
+            return "メールアドレスの形式が正しくありません"
+        case .networkError:
+            return "ネットワークエラーが発生しました。接続を確認してください"
+        case .apiError(let message):
+            return "サーバーエラー: \(message)"
         }
     }
 }
@@ -311,4 +369,9 @@ struct LoginResponse: Codable {
         let points: Int
         let isSuspended: Bool
     }
+}
+
+struct ApiErrorResponse: Codable {
+    let success: Bool
+    let error: String
 }

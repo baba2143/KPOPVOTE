@@ -116,6 +116,14 @@ struct LoginView: View {
             } message: {
                 Text(viewModel.errorMessage ?? "エラーが発生しました")
             }
+            // Debug用アラート（TestFlight診断用）
+            .alert("デバッグ情報", isPresented: $viewModel.showDebugAlert) {
+                Button("OK") {
+                    viewModel.clearDebugAlert()
+                }
+            } message: {
+                Text(viewModel.debugMessage ?? "")
+            }
             .sheet(isPresented: $showRegister) {
                 RegisterView(authService: authService)
             }

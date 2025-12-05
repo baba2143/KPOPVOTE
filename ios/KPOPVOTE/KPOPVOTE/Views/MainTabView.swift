@@ -795,6 +795,7 @@ struct SettingsRow: View {
                 .foregroundColor(Constants.Colors.textGray)
         }
         .padding()
+        .contentShape(Rectangle())  // 行全体をタップ可能に
         .background(Color.clear)
     }
 }
