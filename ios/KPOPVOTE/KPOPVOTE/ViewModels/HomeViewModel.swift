@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import FirebaseAuth
 
 @MainActor
 class HomeViewModel: ObservableObject {
@@ -22,6 +23,13 @@ class HomeViewModel: ObservableObject {
 
     // MARK: - Load Active Tasks
     func loadActiveTasks() async {
+        // ゲストモードの場合はスキップ
+        guard Auth.auth().currentUser != nil else {
+            print("👤 [HomeViewModel] Guest mode - skipping active tasks")
+            activeTasks = []
+            return
+        }
+
         isLoading = true
         errorMessage = nil
 

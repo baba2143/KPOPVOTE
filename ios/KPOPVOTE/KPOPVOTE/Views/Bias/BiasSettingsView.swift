@@ -11,8 +11,55 @@ struct BiasSettingsView: View {
     @StateObject private var viewModel = BiasViewModel()
     @Environment(\.dismiss) private var dismiss
 
+    private var isGuest: Bool {
+        AppStorageManager.shared.isGuestMode
+    }
+
     var body: some View {
-        NavigationView {
+        if isGuest {
+            // ゲストモード - ログイン促進画面
+            NavigationView {
+                VStack(spacing: 20) {
+                    Spacer()
+
+                    Image(systemName: "person.crop.circle.badge.exclamationmark")
+                        .font(.system(size: 64))
+                        .foregroundColor(.blue)
+
+                    Text("ログインが必要です")
+                        .font(.system(size: 20, weight: .bold))
+
+                    Text("推しを設定するには\nログインしてください")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+
+                    Button(action: { dismiss() }) {
+                        Text("閉じる")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 32)
+                            .padding(.vertical, 14)
+                            .background(Color.blue)
+                            .cornerRadius(24)
+                    }
+
+                    Spacer()
+                }
+                .padding()
+                .navigationTitle("推し設定")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("キャンセル") {
+                            dismiss()
+                        }
+                    }
+                }
+            }
+        } else {
+            // 通常モード
+            NavigationView {
             ZStack {
                 // Loading state
                 if viewModel.isLoading {
@@ -140,6 +187,7 @@ struct BiasSettingsView: View {
                 }
             }
         }
+        } // else
     }
 }
 

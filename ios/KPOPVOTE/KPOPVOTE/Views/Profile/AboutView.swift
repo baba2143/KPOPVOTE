@@ -12,6 +12,11 @@ struct AboutView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.requestReview) var requestReview
 
+    // Sheet states
+    @State private var showTerms = false
+    @State private var showPrivacy = false
+    @State private var showLicenses = false
+
     // App version info
     private var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
@@ -41,7 +46,7 @@ struct AboutView: View {
                     .padding()
                 }
             }
-            .navigationTitle("About")
+            .navigationTitle("アプリについて")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -52,6 +57,15 @@ struct AboutView: View {
                             .foregroundColor(Constants.Colors.textWhite)
                     }
                 }
+            }
+            .sheet(isPresented: $showTerms) {
+                TermsOfServiceView()
+            }
+            .sheet(isPresented: $showPrivacy) {
+                PrivacyPolicyView()
+            }
+            .sheet(isPresented: $showLicenses) {
+                LicensesView()
             }
         }
     }
@@ -91,10 +105,10 @@ struct AboutView: View {
             // Terms of Service
             AboutMenuRow(
                 icon: "doc.text.fill",
-                title: "Terms of Service",
+                title: "利用規約",
                 color: .blue
             ) {
-                openURL("https://kpopvote.app/terms")
+                showTerms = true
             }
 
             Divider()
@@ -104,10 +118,10 @@ struct AboutView: View {
             // Privacy Policy
             AboutMenuRow(
                 icon: "lock.shield.fill",
-                title: "Privacy Policy",
+                title: "プライバシーポリシー",
                 color: .green
             ) {
-                openURL("https://kpopvote.app/privacy")
+                showPrivacy = true
             }
 
             Divider()
@@ -117,7 +131,7 @@ struct AboutView: View {
             // Contact Us
             AboutMenuRow(
                 icon: "envelope.fill",
-                title: "Contact Us",
+                title: "お問い合わせ",
                 color: .orange
             ) {
                 sendEmail()
@@ -130,7 +144,7 @@ struct AboutView: View {
             // Rate App
             AboutMenuRow(
                 icon: "star.fill",
-                title: "Rate App",
+                title: "アプリを評価",
                 color: .yellow
             ) {
                 requestReview()
@@ -143,10 +157,10 @@ struct AboutView: View {
             // Licenses
             AboutMenuRow(
                 icon: "doc.plaintext.fill",
-                title: "Licenses",
+                title: "ライセンス",
                 color: Constants.Colors.textGray
             ) {
-                // Show licenses (placeholder)
+                showLicenses = true
             }
         }
         .background(Constants.Colors.cardDark)
@@ -170,7 +184,7 @@ struct AboutView: View {
     }
 
     private func sendEmail() {
-        let email = "support@kpopvote.app"
+        let email = "info@switch-media-jp.com"
         let subject = "KPOPVOTE App Feedback"
         let body = "App Version: \(appVersion) (\(buildNumber))\n\n"
 

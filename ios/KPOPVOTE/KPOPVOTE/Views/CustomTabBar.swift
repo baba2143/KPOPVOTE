@@ -76,7 +76,7 @@ struct CustomTabBar: View {
             // Profile Tab
             TabBarItem(
                 iconName: selectedTab == 4 ? "person.fill" : "person",
-                title: "Profile",
+                title: "Mypage",
                 isSelected: selectedTab == 4
             ) {
                 selectedTab = 4

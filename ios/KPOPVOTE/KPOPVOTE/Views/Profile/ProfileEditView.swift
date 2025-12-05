@@ -15,8 +15,59 @@ struct ProfileEditView: View {
     @State private var showBiasPicker = false
     @State private var showImagePicker = false
 
+    private var isGuest: Bool {
+        AppStorageManager.shared.isGuestMode
+    }
+
     var body: some View {
-        NavigationView {
+        if isGuest {
+            // ゲストモード - ログイン促進画面
+            NavigationView {
+                VStack(spacing: 20) {
+                    Spacer()
+
+                    Image(systemName: "person.crop.circle.badge.exclamationmark")
+                        .font(.system(size: 64))
+                        .foregroundColor(Constants.Colors.accentPink)
+
+                    Text("ログインが必要です")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(Constants.Colors.textWhite)
+
+                    Text("プロフィールを編集するには\nログインしてください")
+                        .font(.system(size: 14))
+                        .foregroundColor(Constants.Colors.textGray)
+                        .multilineTextAlignment(.center)
+
+                    Button(action: { dismiss() }) {
+                        Text("閉じる")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 32)
+                            .padding(.vertical, 14)
+                            .background(Constants.Colors.accentPink)
+                            .cornerRadius(24)
+                    }
+
+                    Spacer()
+                }
+                .padding()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Constants.Colors.backgroundDark)
+                .navigationTitle("プロフィール編集")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("キャンセル") {
+                            dismiss()
+                        }
+                        .foregroundColor(Constants.Colors.textWhite)
+                    }
+                }
+            }
+        } else {
+            // 通常モード
+            NavigationView {
             ZStack {
                 Constants.Colors.backgroundDark
                     .ignoresSafeArea()
@@ -95,6 +146,7 @@ struct ProfileEditView: View {
                 Text(viewModel.errorMessage ?? "")
             }
         }
+        } // else
     }
 
     // MARK: - Profile Image Section

@@ -9,7 +9,7 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var authService = AuthService()
-    @State private var hasCompletedOnboarding = AppStorageManager.shared.hasCompletedOnboarding
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
     var body: some View {
         Group {
@@ -17,9 +17,6 @@ struct ContentView: View {
                 // 初回起動 - チュートリアル表示
                 TutorialView()
                     .environmentObject(authService)
-                    .onDisappear {
-                        hasCompletedOnboarding = AppStorageManager.shared.hasCompletedOnboarding
-                    }
             } else if authService.isAuthenticated {
                 // 認証済み - メイン画面
                 MainTabView()

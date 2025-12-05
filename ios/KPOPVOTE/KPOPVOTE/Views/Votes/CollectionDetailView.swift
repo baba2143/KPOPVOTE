@@ -27,12 +27,43 @@ struct CollectionDetailView: View {
     @State private var showShareSheet = false
     @State private var showReportSheet = false
 
+    private var isGuest: Bool {
+        AppStorageManager.shared.isGuestMode
+    }
+
     var body: some View {
         ZStack {
             Constants.Colors.backgroundDark
                 .ignoresSafeArea()
 
-            if viewModel.isLoading && viewModel.currentCollection == nil {
+            if isGuest {
+                // ゲストモード - ログイン促進画面
+                VStack(spacing: 20) {
+                    Image(systemName: "person.crop.circle.badge.exclamationmark")
+                        .font(.system(size: 64))
+                        .foregroundColor(Constants.Colors.accentPink)
+
+                    Text("ログインが必要です")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(Constants.Colors.textWhite)
+
+                    Text("コレクションの詳細を見るには\nログインしてください")
+                        .font(.system(size: 14))
+                        .foregroundColor(Constants.Colors.textGray)
+                        .multilineTextAlignment(.center)
+
+                    Button(action: { dismiss() }) {
+                        Text("閉じる")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 32)
+                            .padding(.vertical, 14)
+                            .background(Constants.Colors.accentPink)
+                            .cornerRadius(24)
+                    }
+                }
+                .padding()
+            } else if viewModel.isLoading && viewModel.currentCollection == nil {
                 VStack {
                     ProgressView("読み込み中...")
                         .progressViewStyle(CircularProgressViewStyle(tint: Constants.Colors.accentPink))

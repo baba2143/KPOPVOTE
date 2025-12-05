@@ -12,9 +12,60 @@ struct CreateCollectionView: View {
     @Environment(\.dismiss) var dismiss
     @StateObject private var viewModel = CreateCollectionViewModel()
 
+    private var isGuest: Bool {
+        AppStorageManager.shared.isGuestMode
+    }
+
     var body: some View {
-        NavigationView {
-            ZStack {
+        if isGuest {
+            // ゲストモード - ログイン促進画面
+            NavigationView {
+                VStack(spacing: 20) {
+                    Spacer()
+
+                    Image(systemName: "person.crop.circle.badge.exclamationmark")
+                        .font(.system(size: 64))
+                        .foregroundColor(Constants.Colors.accentPink)
+
+                    Text("ログインが必要です")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(Constants.Colors.textWhite)
+
+                    Text("コレクションを作成するには\nログインしてください")
+                        .font(.system(size: 14))
+                        .foregroundColor(Constants.Colors.textGray)
+                        .multilineTextAlignment(.center)
+
+                    Button(action: { dismiss() }) {
+                        Text("閉じる")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 32)
+                            .padding(.vertical, 14)
+                            .background(Constants.Colors.accentPink)
+                            .cornerRadius(24)
+                    }
+
+                    Spacer()
+                }
+                .padding()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Constants.Colors.backgroundDark)
+                .navigationTitle("新規コレクション")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("キャンセル") {
+                            dismiss()
+                        }
+                        .foregroundColor(Constants.Colors.textWhite)
+                    }
+                }
+            }
+        } else {
+            // 通常モード
+            NavigationView {
+                ZStack {
                 Constants.Colors.backgroundDark
                     .ignoresSafeArea()
 
@@ -90,6 +141,7 @@ struct CreateCollectionView: View {
                 }
             }
         }
+        } // else
     }
 
     private var loadingView: some View {

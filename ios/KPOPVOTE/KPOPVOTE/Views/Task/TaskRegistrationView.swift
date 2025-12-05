@@ -38,9 +38,60 @@ struct TaskRegistrationView: View {
         }
     }
 
+    private var isGuest: Bool {
+        AppStorageManager.shared.isGuestMode
+    }
+
     var body: some View {
-        NavigationView {
-            ScrollView {
+        if isGuest {
+            // ゲストモード - ログイン促進画面
+            NavigationView {
+                VStack(spacing: 20) {
+                    Spacer()
+
+                    Image(systemName: "person.crop.circle.badge.exclamationmark")
+                        .font(.system(size: 64))
+                        .foregroundColor(Constants.Colors.accentPink)
+
+                    Text("ログインが必要です")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(Constants.Colors.textWhite)
+
+                    Text("VOTEを登録するには\nログインしてください")
+                        .font(.system(size: 14))
+                        .foregroundColor(Constants.Colors.textGray)
+                        .multilineTextAlignment(.center)
+
+                    Button(action: { dismiss() }) {
+                        Text("閉じる")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 32)
+                            .padding(.vertical, 14)
+                            .background(Constants.Colors.accentPink)
+                            .cornerRadius(24)
+                    }
+
+                    Spacer()
+                }
+                .padding()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Constants.Colors.backgroundDark)
+                .navigationTitle("VOTE登録")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("キャンセル") {
+                            dismiss()
+                        }
+                        .foregroundColor(Constants.Colors.textWhite)
+                    }
+                }
+            }
+        } else {
+            // 通常モード
+            NavigationView {
+                ScrollView {
                 VStack(spacing: Constants.Spacing.large) {
                     // Title Input
                     VStack(alignment: .leading, spacing: Constants.Spacing.small) {
@@ -388,6 +439,7 @@ struct TaskRegistrationView: View {
                 }
             }
         }
+        } // else
     }
 }
 

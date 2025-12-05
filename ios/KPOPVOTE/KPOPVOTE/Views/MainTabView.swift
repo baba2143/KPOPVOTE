@@ -551,7 +551,8 @@ struct ProfileView: View {
                             .padding(.horizontal)
 
                         VStack(spacing: 0) {
-                            // Premium Button
+                            // MARK: - Premium Button (Phase 2以降で実装予定)
+                            /*
                             Button {
                                 showPremium = true
                             } label: {
@@ -587,6 +588,7 @@ struct ProfileView: View {
                             .buttonStyle(.plain)
 
                             Divider().padding(.leading, 60).background(Constants.Colors.textGray.opacity(0.3))
+                            */
 
                             // Bias Settings Button
                             Button {
@@ -600,28 +602,28 @@ struct ProfileView: View {
                             Button {
                                 showProfileEdit = true
                             } label: {
-                                SettingsRow(icon: "person.fill", title: "Account", color: Constants.Colors.accentBlue)
+                                SettingsRow(icon: "person.fill", title: "プロフィール設定", color: Constants.Colors.accentBlue)
                             }
                             .buttonStyle(.plain)
                             Divider().padding(.leading, 60).background(Constants.Colors.textGray.opacity(0.3))
                             Button {
                                 showNotifications = true
                             } label: {
-                                SettingsRow(icon: "bell.fill", title: "Notifications", color: .orange)
+                                SettingsRow(icon: "bell.fill", title: "通知設定", color: .orange)
                             }
                             .buttonStyle(.plain)
                             Divider().padding(.leading, 60).background(Constants.Colors.textGray.opacity(0.3))
                             Button {
                                 showFavorites = true
                             } label: {
-                                SettingsRow(icon: "star.fill", title: "Favorites", color: .yellow)
+                                SettingsRow(icon: "star.fill", title: "お気に入り", color: .yellow)
                             }
                             .buttonStyle(.plain)
                             Divider().padding(.leading, 60).background(Constants.Colors.textGray.opacity(0.3))
                             Button {
                                 showAbout = true
                             } label: {
-                                SettingsRow(icon: "info.circle.fill", title: "About", color: Constants.Colors.textGray)
+                                SettingsRow(icon: "info.circle.fill", title: "アプリについて", color: Constants.Colors.textGray)
                             }
                             .buttonStyle(.plain)
                         }

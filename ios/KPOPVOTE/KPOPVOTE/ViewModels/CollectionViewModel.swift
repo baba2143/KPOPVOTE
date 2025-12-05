@@ -7,6 +7,7 @@
 
 import Foundation
 import Combine
+import FirebaseAuth
 
 @MainActor
 class CollectionViewModel: ObservableObject {
@@ -183,6 +184,14 @@ class CollectionViewModel: ObservableObject {
 
     /// Load saved collections
     func loadSavedCollections(page: Int = 1) async {
+        // ゲストモードの場合はスキップ
+        guard Auth.auth().currentUser != nil else {
+            print("👤 [CollectionViewModel] Guest mode - skipping saved collections")
+            savedCollections = []
+            isLoading = false
+            return
+        }
+
         isLoading = true
         errorMessage = nil
 
@@ -210,6 +219,14 @@ class CollectionViewModel: ObservableObject {
 
     /// Load user's created collections
     func loadMyCollections(page: Int = 1) async {
+        // ゲストモードの場合はスキップ
+        guard Auth.auth().currentUser != nil else {
+            print("👤 [CollectionViewModel] Guest mode - skipping my collections")
+            myCollections = []
+            isLoading = false
+            return
+        }
+
         isLoading = true
         errorMessage = nil
 

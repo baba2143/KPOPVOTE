@@ -17,12 +17,61 @@ struct CreatePostView: View {
 
     var onPostCreated: (() -> Void)?
 
-    var body: some View {
-        ZStack {
-            Constants.Colors.backgroundDark
-                .ignoresSafeArea()
+    private var isGuest: Bool {
+        AppStorageManager.shared.isGuestMode
+    }
 
-            ScrollView {
+    var body: some View {
+        if isGuest {
+            // ゲストモード - ログイン促進画面
+            VStack(spacing: 20) {
+                Spacer()
+
+                Image(systemName: "person.crop.circle.badge.exclamationmark")
+                    .font(.system(size: 64))
+                    .foregroundColor(Constants.Colors.accentPink)
+
+                Text("ログインが必要です")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(Constants.Colors.textWhite)
+
+                Text("投稿するには\nログインしてください")
+                    .font(.system(size: 14))
+                    .foregroundColor(Constants.Colors.textGray)
+                    .multilineTextAlignment(.center)
+
+                Button(action: { dismiss() }) {
+                    Text("閉じる")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 32)
+                        .padding(.vertical, 14)
+                        .background(Constants.Colors.accentPink)
+                        .cornerRadius(24)
+                }
+
+                Spacer()
+            }
+            .padding()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Constants.Colors.backgroundDark)
+            .navigationTitle("新規投稿")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("キャンセル") {
+                        dismiss()
+                    }
+                    .foregroundColor(Constants.Colors.textGray)
+                }
+            }
+        } else {
+            // 通常モード
+            ZStack {
+                Constants.Colors.backgroundDark
+                    .ignoresSafeArea()
+
+                ScrollView {
                 VStack(alignment: .leading, spacing: Constants.Spacing.large) {
                     // Post Type Selector
                     postTypeSelector
@@ -89,6 +138,7 @@ struct CreatePostView: View {
             await biasViewModel.loadIdols()
             await biasViewModel.loadCurrentBias()
         }
+        } // else
     }
 
     // MARK: - Post Type Selector

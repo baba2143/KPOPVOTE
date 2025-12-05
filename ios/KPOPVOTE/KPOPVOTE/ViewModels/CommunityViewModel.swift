@@ -7,6 +7,7 @@
 
 import Foundation
 import Combine
+import FirebaseAuth
 
 @MainActor
 class CommunityViewModel: ObservableObject {
@@ -25,6 +26,14 @@ class CommunityViewModel: ObservableObject {
     // MARK: - Load Posts
     /// Load posts with timeline type
     func loadPosts() async {
+        // ゲストモードの場合はスキップ
+        guard Auth.auth().currentUser != nil else {
+            print("👤 [CommunityViewModel] Guest mode - skipping posts")
+            posts = []
+            isLoading = false
+            return
+        }
+
         isLoading = true
         errorMessage = nil
         lastPostId = nil
