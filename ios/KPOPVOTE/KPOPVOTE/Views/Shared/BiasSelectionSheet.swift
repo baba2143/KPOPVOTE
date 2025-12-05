@@ -43,6 +43,29 @@ struct BiasSelectionSheet: View {
                             .background(Constants.Colors.cardDark)
                         }
 
+                        // Search bar
+                        HStack {
+                            Image(systemName: "magnifyingglass")
+                                .foregroundColor(Constants.Colors.textGray)
+
+                            TextField("アイドル名・グループ名で検索", text: $viewModel.searchText)
+                                .textFieldStyle(.plain)
+                                .foregroundColor(Constants.Colors.textWhite)
+                                .autocorrectionDisabled()
+
+                            if !viewModel.searchText.isEmpty {
+                                Button(action: { viewModel.searchText = "" }) {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundColor(Constants.Colors.textGray)
+                                }
+                            }
+                        }
+                        .padding(10)
+                        .background(Constants.Colors.cardDark)
+                        .cornerRadius(10)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+
                         // Alphabet filter tabs
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 8) {

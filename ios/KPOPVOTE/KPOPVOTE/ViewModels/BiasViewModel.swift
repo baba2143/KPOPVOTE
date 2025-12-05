@@ -18,6 +18,7 @@ class BiasViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var successMessage: String?
     @Published var selectedChar: String = "ALL" // Selected alphabet filter
+    @Published var searchText: String = "" // Search query
 
     // MARK: - Computed Properties
 
@@ -30,13 +31,25 @@ class BiasViewModel: ObservableObject {
         return firstChar.rangeOfCharacter(from: .letters) != nil ? firstChar : "#"
     }
 
-    /// Filtered idols by selected alphabet
+    /// Filtered idols by selected alphabet and search text
     var filteredIdols: [IdolMaster] {
-        if selectedChar == "ALL" {
-            return allIdols
-        } else {
-            return allIdols.filter { getFirstChar($0.name) == selectedChar }
+        var idols = allIdols
+
+        // アルファベットフィルター
+        if selectedChar != "ALL" {
+            idols = idols.filter { getFirstChar($0.name) == selectedChar }
         }
+
+        // テキスト検索
+        if !searchText.isEmpty {
+            let query = searchText.lowercased()
+            idols = idols.filter {
+                $0.name.lowercased().contains(query) ||
+                $0.groupName.lowercased().contains(query)
+            }
+        }
+
+        return idols
     }
 
     /// Group idols by groupName (from filtered idols)

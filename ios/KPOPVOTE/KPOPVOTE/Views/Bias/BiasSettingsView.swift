@@ -73,6 +73,29 @@ struct BiasSettingsView: View {
                 } else {
                     // Main content
                     VStack(spacing: 0) {
+                        // Search bar
+                        HStack {
+                            Image(systemName: "magnifyingglass")
+                                .foregroundColor(.gray)
+
+                            TextField("アイドル名・グループ名で検索", text: $viewModel.searchText)
+                                .textFieldStyle(.plain)
+                                .autocorrectionDisabled()
+
+                            if !viewModel.searchText.isEmpty {
+                                Button(action: { viewModel.searchText = "" }) {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundColor(.gray)
+                                }
+                            }
+                        }
+                        .padding(10)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(10)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 12)
+                        .padding(.bottom, 4)
+
                         // Alphabet filter tabs
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 8) {
