@@ -12,6 +12,7 @@ struct CustomTabBar: View {
     let onCenterTap: () -> Void
 
     var body: some View {
+        VStack(spacing: 0) {
         HStack(spacing: 0) {
             // Home Tab
             TabBarItem(
@@ -35,7 +36,7 @@ struct CustomTabBar: View {
             ZStack {
                 // Spacer for tab bar
                 Color.clear
-                    .frame(width: 70, height: 50)
+                    .frame(width: 70, height: 65)
 
                 // Floating button
                 Button(action: onCenterTap) {
@@ -82,13 +83,22 @@ struct CustomTabBar: View {
                 selectedTab = 4
             }
         }
-        .frame(height: 50)
+        .frame(height: 65)
         .background(Constants.Colors.cardDark)
         .overlay(
             Rectangle()
                 .frame(height: 0.5)
                 .foregroundColor(Constants.Colors.textGray.opacity(0.2)),
             alignment: .top
+        )
+        }
+        // Safe area bottom padding for home indicator
+        .background(
+            GeometryReader { geometry in
+                Constants.Colors.cardDark
+                    .frame(height: geometry.safeAreaInsets.bottom)
+                    .offset(y: 65)
+            }
         )
     }
 }
@@ -102,17 +112,17 @@ struct TabBarItem: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 4) {
+            VStack(spacing: 5) {
                 Image(systemName: iconName)
-                    .font(.system(size: 22))
+                    .font(.system(size: 24))
                     .foregroundColor(isSelected ? Constants.Colors.accentPink : Constants.Colors.textGray)
 
                 Text(title)
-                    .font(.system(size: 10))
+                    .font(.system(size: 11))
                     .foregroundColor(isSelected ? Constants.Colors.accentPink : Constants.Colors.textGray)
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 50)
+            .frame(height: 65)
         }
     }
 }
