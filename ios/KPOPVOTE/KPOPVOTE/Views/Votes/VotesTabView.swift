@@ -46,7 +46,10 @@ struct VotesTabView: View {
                 }
             }
             .navigationTitle("Votes")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbarBackground(Constants.Colors.backgroundDark, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
         }
     }
 }

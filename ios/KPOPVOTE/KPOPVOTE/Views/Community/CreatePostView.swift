@@ -504,8 +504,19 @@ struct CreatePostView: View {
                 .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
                 .foregroundColor(Constants.Colors.textWhite)
 
-            if !biasViewModel.selectedIdolObjects.isEmpty {
+            if !biasViewModel.selectedGroupObjects.isEmpty || !biasViewModel.selectedIdolObjects.isEmpty {
                 FlowLayout(spacing: 8) {
+                    // Group chips
+                    ForEach(biasViewModel.selectedGroupObjects, id: \.id) { group in
+                        GroupChipToggle(
+                            group: group,
+                            isSelected: viewModel.selectedBiasIds.contains(group.id),
+                            onToggle: {
+                                toggleBias(group.id)
+                            }
+                        )
+                    }
+                    // Member chips
                     ForEach(biasViewModel.selectedIdolObjects, id: \.id) { idol in
                         BiasChipToggle(
                             idol: idol,
@@ -621,6 +632,25 @@ struct BiasChipToggle: View {
     var body: some View {
         Button(action: onToggle) {
             Text(idol.name)
+                .font(.system(size: Constants.Typography.captionSize, weight: .semibold))
+                .foregroundColor(isSelected ? .white : Constants.Colors.textGray)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(isSelected ? Constants.Colors.accentPink : Color.white.opacity(0.1))
+                .cornerRadius(20)
+        }
+    }
+}
+
+// MARK: - Group Chip Toggle Component
+struct GroupChipToggle: View {
+    let group: GroupMaster
+    let isSelected: Bool
+    let onToggle: () -> Void
+
+    var body: some View {
+        Button(action: onToggle) {
+            Text(group.name)
                 .font(.system(size: Constants.Typography.captionSize, weight: .semibold))
                 .foregroundColor(isSelected ? .white : Constants.Colors.textGray)
                 .padding(.horizontal, 16)

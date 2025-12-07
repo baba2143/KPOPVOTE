@@ -66,31 +66,23 @@ struct CommunityView: View {
                 }
             }
             .navigationTitle("コミュニティ")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbarBackground(Constants.Colors.backgroundDark, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack(spacing: 16) {
-                        // Search button
-                        Button(action: {
-                            if authService.isGuest {
-                                showLoginPrompt = true
-                            } else {
-                                showSearch = true
-                            }
-                        }) {
-                            Image(systemName: "magnifyingglass")
-                                .font(.system(size: 20))
-                                .foregroundColor(Constants.Colors.textWhite)
-                        }
-
-                        // Search button
-                        Button(action: {
+                    // Search button
+                    Button(action: {
+                        if authService.isGuest {
+                            showLoginPrompt = true
+                        } else {
                             showSearch = true
-                        }) {
-                            Image(systemName: "magnifyingglass")
-                                .font(.system(size: 20))
-                                .foregroundColor(Constants.Colors.textWhite)
                         }
+                    }) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 20))
+                            .foregroundColor(Constants.Colors.textWhite)
                     }
                 }
             }
@@ -294,8 +286,8 @@ struct CommunityView: View {
     @ViewBuilder
     private var calendarContent: some View {
         VStack(spacing: 0) {
-            // Bias selector for calendar
-            if biasViewModel.selectedIdolObjects.isEmpty {
+            // Bias selector for calendar - check both groups and members
+            if biasViewModel.selectedIdolObjects.isEmpty && biasViewModel.selectedGroupObjects.isEmpty {
                 // No bias selected - show prompt
                 VStack(spacing: 16) {
                     Spacer()
@@ -315,9 +307,19 @@ struct CommunityView: View {
                     Spacer()
                 }
             } else {
-                // Bias tabs for calendar
+                // Bias tabs for calendar - show both groups and members
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
+                        // Group tabs
+                        ForEach(biasViewModel.selectedGroupObjects, id: \.id) { group in
+                            CalendarBiasTab(
+                                name: group.name,
+                                isSelected: selectedCalendarBiasId == group.id
+                            ) {
+                                selectedCalendarBiasId = group.id
+                            }
+                        }
+                        // Member tabs
                         ForEach(biasViewModel.selectedIdolObjects, id: \.id) { idol in
                             CalendarBiasTab(
                                 name: idol.name,
@@ -331,10 +333,23 @@ struct CommunityView: View {
                     .padding(.vertical, 12)
                 }
 
-                // Calendar container for selected bias
-                if let biasId = selectedCalendarBiasId,
-                   let idol = biasViewModel.selectedIdolObjects.first(where: { $0.id == biasId }) {
-                    CalendarContainerView(artistId: biasId, artistName: idol.name)
+                // Calendar container for selected bias (group or member)
+                if let biasId = selectedCalendarBiasId {
+                    // Check if it's a group
+                    if let group = biasViewModel.selectedGroupObjects.first(where: { $0.id == biasId }) {
+                        CalendarContainerView(artistId: biasId, artistName: group.name)
+                    }
+                    // Check if it's a member
+                    else if let idol = biasViewModel.selectedIdolObjects.first(where: { $0.id == biasId }) {
+                        CalendarContainerView(artistId: biasId, artistName: idol.name)
+                    }
+                }
+                // Default: select first available (group first, then member)
+                else if let firstGroup = biasViewModel.selectedGroupObjects.first {
+                    CalendarContainerView(artistId: firstGroup.id, artistName: firstGroup.name)
+                        .onAppear {
+                            selectedCalendarBiasId = firstGroup.id
+                        }
                 } else if let firstIdol = biasViewModel.selectedIdolObjects.first {
                     CalendarContainerView(artistId: firstIdol.id, artistName: firstIdol.name)
                         .onAppear {
@@ -361,7 +376,20 @@ struct CommunityView: View {
                     }
                 )
 
-                // Bias Timeline Buttons - Show all with horizontal scroll
+                // Group Timeline Buttons
+                ForEach(biasViewModel.selectedGroupObjects, id: \.id) { group in
+                    TimelineTypeButton(
+                        title: group.name,
+                        isSelected: viewModel.timelineType == "bias" && viewModel.selectedBiasId == group.id,
+                        action: {
+                            Task {
+                                await viewModel.changeTimelineType("bias", biasId: group.id)
+                            }
+                        }
+                    )
+                }
+
+                // Member Timeline Buttons
                 ForEach(biasViewModel.selectedIdolObjects, id: \.id) { idol in
                     TimelineTypeButton(
                         title: idol.name,

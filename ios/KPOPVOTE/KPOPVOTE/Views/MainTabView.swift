@@ -652,6 +652,8 @@ struct ProfileView: View {
             }
             .background(Constants.Colors.backgroundDark)
             .navigationTitle("Profile")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(Constants.Colors.backgroundDark, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .alert("ログアウト確認", isPresented: $showLogoutConfirm) {

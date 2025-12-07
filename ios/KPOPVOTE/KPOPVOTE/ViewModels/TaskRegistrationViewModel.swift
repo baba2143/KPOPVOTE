@@ -40,6 +40,7 @@ class TaskRegistrationViewModel: ObservableObject {
     private let taskService = TaskService()
     private let externalAppService = ExternalAppService()
     private let idolService = IdolService.shared
+    private let groupService = GroupService.shared
 
     // MARK: - Initializer
     init(task: VoteTask? = nil) {
@@ -268,16 +269,25 @@ class TaskRegistrationViewModel: ObservableObject {
         deadline <= Date() ? "期限は現在時刻より後に設定してください" : nil
     }
 
-    // MARK: - Load Member Names
-    func loadMemberNames(for memberIds: [String]) async {
+    // MARK: - Load Member/Group Names
+    func loadMemberNames(for ids: [String]) async {
         do {
-            let allIdols = try await idolService.fetchIdols()
-            let idolDict = Dictionary(uniqueKeysWithValues: allIdols.map { ($0.id, $0.name) })
+            // Load both idols and groups
+            async let idolsTask = idolService.fetchIdols()
+            async let groupsTask = groupService.fetchGroups()
 
-            selectedMemberNames = memberIds.compactMap { idolDict[$0] }
-            print("✅ [TaskRegistrationViewModel] Loaded names for \(selectedMemberNames.count) members")
+            let (allIdols, allGroups) = try await (idolsTask, groupsTask)
+
+            let idolDict = Dictionary(uniqueKeysWithValues: allIdols.map { ($0.id, $0.name) })
+            let groupDict = Dictionary(uniqueKeysWithValues: allGroups.map { ($0.id, $0.name) })
+
+            // Try idol first, then group
+            selectedMemberNames = ids.compactMap { id in
+                idolDict[id] ?? groupDict[id]
+            }
+            print("✅ [TaskRegistrationViewModel] Loaded names for \(selectedMemberNames.count) members/groups")
         } catch {
-            print("❌ [TaskRegistrationViewModel] Failed to load member names: \(error)")
+            print("❌ [TaskRegistrationViewModel] Failed to load member/group names: \(error)")
         }
     }
 }

@@ -15,8 +15,8 @@ struct CommunityActivityView: View {
     let onPostTap: (String) -> Void
 
     var body: some View {
-        // Hide section if no biases selected
-        if !biasViewModel.selectedIdolObjects.isEmpty {
+        // Hide section if no biases selected (check both groups and members)
+        if !biasViewModel.selectedIdolObjects.isEmpty || !biasViewModel.selectedGroupObjects.isEmpty {
             VStack(alignment: .leading, spacing: Constants.Spacing.medium) {
                 // Section Header
                 HStack {
