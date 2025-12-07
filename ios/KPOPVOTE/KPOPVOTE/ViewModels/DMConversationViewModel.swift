@@ -83,6 +83,12 @@ class DMConversationViewModel: ObservableObject {
 
             // Mark as read
             try? await DirectMessageService.shared.markAsRead(conversationId: conversationId)
+        } catch DirectMessageError.conversationNotFound {
+            // New conversation - no messages yet, this is normal
+            print("ℹ️ [DMConversationViewModel] New conversation, no messages yet")
+            messages = []
+            hasMore = false
+            // Don't set errorMessage - this is expected for new conversations
         } catch {
             print("❌ [DMConversationViewModel] Failed to load messages: \(error)")
             errorMessage = error.localizedDescription

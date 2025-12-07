@@ -255,6 +255,7 @@ struct AboutMenuRow: View {
                     .foregroundColor(Constants.Colors.textGray)
             }
             .padding()
+            .contentShape(Rectangle())
             .background(Color.clear)
         }
         .buttonStyle(.plain)

@@ -100,6 +100,12 @@ class DirectMessageService {
 
         print("📥 [DMService] HTTP Status: \(httpResponse.statusCode)")
 
+        // 404 means conversation doesn't exist yet (new conversation)
+        if httpResponse.statusCode == 404 {
+            print("ℹ️ [DMService] Conversation not found (new conversation)")
+            throw DirectMessageError.conversationNotFound
+        }
+
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
                 print("❌ [DMService] Error: \(errorString)")
@@ -249,6 +255,7 @@ enum DirectMessageError: LocalizedError {
     case sendFailed
     case markReadFailed
     case mutualFollowRequired
+    case conversationNotFound
 
     var errorDescription: String? {
         switch self {
@@ -264,6 +271,8 @@ enum DirectMessageError: LocalizedError {
             return "既読処理に失敗しました"
         case .mutualFollowRequired:
             return "相互フォローのユーザーにのみDMを送信できます"
+        case .conversationNotFound:
+            return nil  // Not an error, just a new conversation
         }
     }
 }

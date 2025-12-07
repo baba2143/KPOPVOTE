@@ -9,6 +9,7 @@ import { VoteDetailPage } from './pages/VoteDetailPage';
 import { IdolListPage } from './pages/IdolListPage';
 import { ExternalAppListPage } from './pages/ExternalAppListPage';
 import { CommunityMonitorPage } from './pages/CommunityMonitorPage';
+import { DMReportPage } from './pages/DMReportPage';
 import { UserListPage } from './pages/UserListPage';
 import { AdminLogPage } from './pages/AdminLogPage';
 import { RewardSettingsPage } from './pages/RewardSettingsPage';
@@ -97,6 +98,16 @@ function AppRoutes() {
           <PrivateRoute>
             <AppLayout>
               <CommunityMonitorPage />
+            </AppLayout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/dm-reports"
+        element={
+          <PrivateRoute>
+            <AppLayout>
+              <DMReportPage />
             </AppLayout>
           </PrivateRoute>
         }

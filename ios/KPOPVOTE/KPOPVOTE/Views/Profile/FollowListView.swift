@@ -52,7 +52,10 @@ struct FollowListView: View {
                     ScrollView {
                         LazyVStack(spacing: 0) {
                             ForEach(viewModel.users, id: \.id) { user in
-                                FollowUserRow(user: user)
+                                NavigationLink(destination: UserProfileView(userId: user.userId)) {
+                                    FollowUserRow(user: user)
+                                }
+                                .buttonStyle(.plain)
 
                                 Divider()
                                     .background(Constants.Colors.textGray.opacity(0.3))

@@ -98,6 +98,7 @@ export { sendDirectMessage } from "./directMessage/sendDirectMessage";
 export { getConversations } from "./directMessage/getConversations";
 export { getMessages } from "./directMessage/getMessages";
 export { markAsRead } from "./directMessage/markAsRead";
+export { getDMReports } from "./directMessage/getDMReports";
 
 // Points functions - Phase 1除外（ポイント機能）
 // export { getPoints } from "./points/getPoints";
@@ -115,6 +116,7 @@ export { searchUsers as searchCommunityUsers } from "./community/searchUsers";
 export { searchPosts } from "./community/searchPosts";
 export { getFollowingActivity } from "./community/getFollowingActivity";
 export { seedTestUsers } from "./community/seedTestUsers";
+export { createTestMutualFollow } from "./community/createTestMutualFollow";
 export { getUserProfile } from "./community/getUserProfile";
 
 // Storage functions (Goods Trade)

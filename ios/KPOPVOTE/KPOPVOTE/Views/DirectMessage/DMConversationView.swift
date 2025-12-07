@@ -12,6 +12,11 @@ struct DMConversationView: View {
     @StateObject private var viewModel: DMConversationViewModel
     @FocusState private var isInputFocused: Bool
 
+    // Report states
+    @State private var showReportUserSheet = false
+    @State private var showReportMessageSheet = false
+    @State private var messageToReport: DirectMessage?
+
     init(conversation: Conversation) {
         _viewModel = StateObject(wrappedValue: DMConversationViewModel(conversation: conversation))
     }
@@ -49,6 +54,18 @@ struct DMConversationView: View {
                         .foregroundColor(Constants.Colors.textWhite)
                 }
             }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Menu {
+                    Button(role: .destructive) {
+                        showReportUserSheet = true
+                    } label: {
+                        Label("ユーザーを通報", systemImage: "exclamationmark.triangle")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .foregroundColor(Constants.Colors.textWhite)
+                }
+            }
         }
         .task {
             await viewModel.loadMessages()
@@ -59,6 +76,26 @@ struct DMConversationView: View {
             }
         } message: {
             Text(viewModel.errorMessage ?? "")
+        }
+        .sheet(isPresented: $showReportUserSheet) {
+            DMReportView(
+                reportType: .user,
+                conversationId: viewModel.conversationId,
+                reporteeId: viewModel.participantId,
+                reporteeName: viewModel.participantName,
+                message: nil
+            )
+        }
+        .sheet(isPresented: $showReportMessageSheet) {
+            if let message = messageToReport {
+                DMReportView(
+                    reportType: .message,
+                    conversationId: viewModel.conversationId,
+                    reporteeId: message.senderId,
+                    reporteeName: viewModel.participantName,
+                    message: message
+                )
+            }
         }
     }
 
@@ -82,7 +119,11 @@ struct DMConversationView: View {
                     ForEach(viewModel.messages) { message in
                         MessageBubbleView(
                             message: message,
-                            isOwnMessage: viewModel.isOwnMessage(message)
+                            isOwnMessage: viewModel.isOwnMessage(message),
+                            onReport: {
+                                messageToReport = message
+                                showReportMessageSheet = true
+                            }
                         )
                         .id(message.id)
                     }
@@ -155,6 +196,7 @@ struct DMConversationView: View {
 struct MessageBubbleView: View {
     let message: DirectMessage
     let isOwnMessage: Bool
+    let onReport: () -> Void
 
     var body: some View {
         HStack {
@@ -216,6 +258,16 @@ struct MessageBubbleView: View {
                 Text(formatTime(message.createdAt))
                     .font(.caption2)
                     .foregroundColor(Constants.Colors.textGray)
+            }
+            .contextMenu {
+                // Only show report option for other user's messages
+                if !isOwnMessage {
+                    Button(role: .destructive) {
+                        onReport()
+                    } label: {
+                        Label("メッセージを通報", systemImage: "exclamationmark.triangle")
+                    }
+                }
             }
 
             if !isOwnMessage {
