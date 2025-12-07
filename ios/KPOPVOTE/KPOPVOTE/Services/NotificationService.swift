@@ -42,7 +42,7 @@ class NotificationService {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("🔔 [NotificationService] Fetching notifications: unreadOnly=\(unreadOnly)")
+        debugLog("🔔 [NotificationService] Fetching notifications: unreadOnly=\(unreadOnly)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -50,11 +50,11 @@ class NotificationService {
             throw NotificationError.invalidResponse
         }
 
-        print("📥 [NotificationService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [NotificationService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [NotificationService] Error: \(errorString)")
+                debugLog("❌ [NotificationService] Error: \(errorString)")
             }
             throw NotificationError.fetchFailed
         }
@@ -62,7 +62,7 @@ class NotificationService {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let result = try decoder.decode(NotificationListResponse.self, from: data)
-        print("✅ [NotificationService] Fetched \(result.data.notifications.count) notifications")
+        debugLog("✅ [NotificationService] Fetched \(result.data.notifications.count) notifications")
 
         return (result.data.notifications, result.data.hasMore, result.data.unreadCount)
     }
@@ -87,7 +87,7 @@ class NotificationService {
         let requestBody = ["notificationId": notificationId]
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
 
-        print("📖 [NotificationService] Marking notification as read: \(notificationId)")
+        debugLog("📖 [NotificationService] Marking notification as read: \(notificationId)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -95,16 +95,16 @@ class NotificationService {
             throw NotificationError.invalidResponse
         }
 
-        print("📥 [NotificationService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [NotificationService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [NotificationService] Error: \(errorString)")
+                debugLog("❌ [NotificationService] Error: \(errorString)")
             }
             throw NotificationError.markAsReadFailed
         }
 
-        print("✅ [NotificationService] Notification marked as read")
+        debugLog("✅ [NotificationService] Notification marked as read")
     }
 
     // MARK: - Mark All as Read
@@ -126,7 +126,7 @@ class NotificationService {
         let requestBody = ["markAll": true]
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
 
-        print("📖 [NotificationService] Marking all notifications as read")
+        debugLog("📖 [NotificationService] Marking all notifications as read")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -134,17 +134,17 @@ class NotificationService {
             throw NotificationError.invalidResponse
         }
 
-        print("📥 [NotificationService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [NotificationService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [NotificationService] Error: \(errorString)")
+                debugLog("❌ [NotificationService] Error: \(errorString)")
             }
             throw NotificationError.markAsReadFailed
         }
 
         let result = try JSONDecoder().decode(MarkAllAsReadResponse.self, from: data)
-        print("✅ [NotificationService] Marked \(result.data.count) notifications as read")
+        debugLog("✅ [NotificationService] Marked \(result.data.count) notifications as read")
 
         return result.data.count
     }
@@ -179,7 +179,7 @@ class NotificationService {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("🗳️ [NotificationService] Fetching my votes: status=\(status), sort=\(sort)")
+        debugLog("🗳️ [NotificationService] Fetching my votes: status=\(status), sort=\(sort)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -187,11 +187,11 @@ class NotificationService {
             throw NotificationError.invalidResponse
         }
 
-        print("📥 [NotificationService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [NotificationService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [NotificationService] Error: \(errorString)")
+                debugLog("❌ [NotificationService] Error: \(errorString)")
             }
             throw NotificationError.fetchFailed
         }
@@ -199,7 +199,7 @@ class NotificationService {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let result = try decoder.decode(NotificationMyVotesResponse.self, from: data)
-        print("✅ [NotificationService] Fetched \(result.data.voteHistory.count) vote history items")
+        debugLog("✅ [NotificationService] Fetched \(result.data.voteHistory.count) vote history items")
 
         return (result.data.voteHistory, result.data.hasMore, result.data.summary)
     }

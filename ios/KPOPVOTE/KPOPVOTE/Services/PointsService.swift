@@ -29,7 +29,7 @@ class PointsService {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("🔍 [PointsService] Fetching multi-point balance")
+        debugLog("🔍 [PointsService] Fetching multi-point balance")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -37,11 +37,11 @@ class PointsService {
             throw PointsError.invalidResponse
         }
 
-        print("📥 [PointsService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [PointsService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [PointsService] Error: \(errorString)")
+                debugLog("❌ [PointsService] Error: \(errorString)")
             }
             throw PointsError.fetchFailed
         }
@@ -52,7 +52,7 @@ class PointsService {
         }
 
         let result = try JSONDecoder().decode(GetMultiPointsResponse.self, from: data)
-        print("✅ [PointsService] Fetched points: premium=\(result.data.premiumPoints), regular=\(result.data.regularPoints)")
+        debugLog("✅ [PointsService] Fetched points: premium=\(result.data.premiumPoints), regular=\(result.data.regularPoints)")
 
         return result.data
     }
@@ -73,7 +73,7 @@ class PointsService {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("🔍 [PointsService] Fetching points balance (legacy)")
+        debugLog("🔍 [PointsService] Fetching points balance (legacy)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -81,11 +81,11 @@ class PointsService {
             throw PointsError.invalidResponse
         }
 
-        print("📥 [PointsService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [PointsService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [PointsService] Error: \(errorString)")
+                debugLog("❌ [PointsService] Error: \(errorString)")
             }
             throw PointsError.fetchFailed
         }
@@ -96,7 +96,7 @@ class PointsService {
         }
 
         let result = try JSONDecoder().decode(GetPointsResponse.self, from: data)
-        print("✅ [PointsService] Fetched points: \(result.data.points), isPremium: \(result.data.isPremium)")
+        debugLog("✅ [PointsService] Fetched points: \(result.data.points), isPremium: \(result.data.isPremium)")
 
         return result.data
     }
@@ -126,7 +126,7 @@ class PointsService {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("🔍 [PointsService] Fetching point history: limit=\(limit), offset=\(offset)")
+        debugLog("🔍 [PointsService] Fetching point history: limit=\(limit), offset=\(offset)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -134,11 +134,11 @@ class PointsService {
             throw PointsError.invalidResponse
         }
 
-        print("📥 [PointsService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [PointsService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [PointsService] Error: \(errorString)")
+                debugLog("❌ [PointsService] Error: \(errorString)")
             }
             throw PointsError.fetchFailed
         }
@@ -149,7 +149,7 @@ class PointsService {
         }
 
         let result = try JSONDecoder().decode(GetPointHistoryResponse.self, from: data)
-        print("✅ [PointsService] Fetched \(result.data.transactions.count) transactions, total: \(result.data.totalCount)")
+        debugLog("✅ [PointsService] Fetched \(result.data.transactions.count) transactions, total: \(result.data.totalCount)")
 
         return result.data
     }
@@ -171,7 +171,7 @@ class PointsService {
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        print("🔍 [PointsService] Claiming daily login bonus")
+        debugLog("🔍 [PointsService] Claiming daily login bonus")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -179,11 +179,11 @@ class PointsService {
             throw PointsError.invalidResponse
         }
 
-        print("📥 [PointsService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [PointsService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [PointsService] Error: \(errorString)")
+                debugLog("❌ [PointsService] Error: \(errorString)")
             }
             throw PointsError.fetchFailed
         }
@@ -194,7 +194,7 @@ class PointsService {
         }
 
         let result = try JSONDecoder().decode(DailyLoginApiResponse.self, from: data)
-        print("✅ [PointsService] Daily login: +\(result.data.pointsGranted)P (\(result.data.pointType)), streak: \(result.data.loginStreak)")
+        debugLog("✅ [PointsService] Daily login: +\(result.data.pointsGranted)P (\(result.data.pointType)), streak: \(result.data.loginStreak)")
 
         return result.data
     }

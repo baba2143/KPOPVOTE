@@ -25,7 +25,7 @@ class ExternalAppService {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("📡 [ExternalAppService] Fetching external apps from: \(urlString)")
+        debugLog("📡 [ExternalAppService] Fetching external apps from: \(urlString)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -33,23 +33,23 @@ class ExternalAppService {
             throw ExternalAppError.invalidResponse
         }
 
-        print("📥 [ExternalAppService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [ExternalAppService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [ExternalAppService] Error response: \(errorString)")
+                debugLog("❌ [ExternalAppService] Error response: \(errorString)")
             }
             throw ExternalAppError.serverError(httpResponse.statusCode)
         }
 
         // Debug: レスポンスの生データを確認
         if let responseString = String(data: data, encoding: .utf8) {
-            print("📥 [ExternalAppService] Response JSON: \(responseString)")
+            debugLog("📥 [ExternalAppService] Response JSON: \(responseString)")
         }
 
         // Cloud Functionのレスポンスをデコード
         let result = try JSONDecoder().decode(ListExternalAppsResponse.self, from: data)
-        print("✅ [ExternalAppService] Fetched \(result.data.apps.count) external apps")
+        debugLog("✅ [ExternalAppService] Fetched \(result.data.apps.count) external apps")
 
         // ExternalAppMasterオブジェクトの配列を構築
         let externalApps = result.data.apps.map { app -> ExternalAppMaster in
@@ -58,7 +58,7 @@ class ExternalAppService {
             let updatedAt = app.updatedAt.flatMap { isoFormatter.date(from: $0) }
 
             // デバッグ: 各アプリのdefaultCoverImageUrlを出力
-            print("🖼️ [ExternalAppService] App: \(app.appName), defaultCoverImageUrl: \(app.defaultCoverImageUrl ?? "nil")")
+            debugLog("🖼️ [ExternalAppService] App: \(app.appName), defaultCoverImageUrl: \(app.defaultCoverImageUrl ?? "nil")")
 
             return ExternalAppMaster(
                 id: app.appId,
@@ -71,7 +71,7 @@ class ExternalAppService {
             )
         }
 
-        print("✅ [ExternalAppService] Converted \(externalApps.count) ExternalAppMasters")
+        debugLog("✅ [ExternalAppService] Converted \(externalApps.count) ExternalAppMasters")
         return externalApps
     }
 }

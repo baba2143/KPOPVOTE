@@ -37,7 +37,7 @@ class DirectMessageService {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("💬 [DMService] Fetching conversations")
+        debugLog("💬 [DMService] Fetching conversations")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -45,11 +45,11 @@ class DirectMessageService {
             throw DirectMessageError.invalidResponse
         }
 
-        print("📥 [DMService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [DMService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [DMService] Error: \(errorString)")
+                debugLog("❌ [DMService] Error: \(errorString)")
             }
             throw DirectMessageError.fetchFailed
         }
@@ -57,7 +57,7 @@ class DirectMessageService {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let result = try decoder.decode(ConversationsAPIResponse.self, from: data)
-        print("✅ [DMService] Fetched \(result.data.conversations.count) conversations")
+        debugLog("✅ [DMService] Fetched \(result.data.conversations.count) conversations")
 
         return result.data
     }
@@ -90,7 +90,7 @@ class DirectMessageService {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("💬 [DMService] Fetching messages for conversation: \(conversationId)")
+        debugLog("💬 [DMService] Fetching messages for conversation: \(conversationId)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -98,17 +98,17 @@ class DirectMessageService {
             throw DirectMessageError.invalidResponse
         }
 
-        print("📥 [DMService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [DMService] HTTP Status: \(httpResponse.statusCode)")
 
         // 404 means conversation doesn't exist yet (new conversation)
         if httpResponse.statusCode == 404 {
-            print("ℹ️ [DMService] Conversation not found (new conversation)")
+            debugLog("ℹ️ [DMService] Conversation not found (new conversation)")
             throw DirectMessageError.conversationNotFound
         }
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [DMService] Error: \(errorString)")
+                debugLog("❌ [DMService] Error: \(errorString)")
             }
             throw DirectMessageError.fetchFailed
         }
@@ -116,7 +116,7 @@ class DirectMessageService {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let result = try decoder.decode(MessagesAPIResponse.self, from: data)
-        print("✅ [DMService] Fetched \(result.data.messages.count) messages")
+        debugLog("✅ [DMService] Fetched \(result.data.messages.count) messages")
 
         return result.data
     }
@@ -152,7 +152,7 @@ class DirectMessageService {
 
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
 
-        print("💬 [DMService] Sending message to: \(recipientId)")
+        debugLog("💬 [DMService] Sending message to: \(recipientId)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -160,7 +160,7 @@ class DirectMessageService {
             throw DirectMessageError.invalidResponse
         }
 
-        print("📥 [DMService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [DMService] HTTP Status: \(httpResponse.statusCode)")
 
         if httpResponse.statusCode == 403 {
             throw DirectMessageError.mutualFollowRequired
@@ -168,14 +168,14 @@ class DirectMessageService {
 
         guard httpResponse.statusCode == 201 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [DMService] Error: \(errorString)")
+                debugLog("❌ [DMService] Error: \(errorString)")
             }
             throw DirectMessageError.sendFailed
         }
 
         let decoder = JSONDecoder()
         let result = try decoder.decode(SendMessageAPIResponse.self, from: data)
-        print("✅ [DMService] Message sent successfully: \(result.data.messageId)")
+        debugLog("✅ [DMService] Message sent successfully: \(result.data.messageId)")
 
         return result.data
     }
@@ -200,7 +200,7 @@ class DirectMessageService {
         let requestBody = ["conversationId": conversationId]
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
 
-        print("💬 [DMService] Marking conversation as read: \(conversationId)")
+        debugLog("💬 [DMService] Marking conversation as read: \(conversationId)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -208,16 +208,16 @@ class DirectMessageService {
             throw DirectMessageError.invalidResponse
         }
 
-        print("📥 [DMService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [DMService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [DMService] Error: \(errorString)")
+                debugLog("❌ [DMService] Error: \(errorString)")
             }
             throw DirectMessageError.markReadFailed
         }
 
-        print("✅ [DMService] Conversation marked as read")
+        debugLog("✅ [DMService] Conversation marked as read")
     }
 
     // MARK: - Check Mutual Follow

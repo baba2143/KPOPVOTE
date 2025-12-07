@@ -34,7 +34,7 @@ class FollowService {
         let requestBody = ["userId": userId]
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
 
-        print("👥 [FollowService] Following user: \(userId)")
+        debugLog("👥 [FollowService] Following user: \(userId)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -42,13 +42,13 @@ class FollowService {
             throw CommunityError.invalidResponse
         }
 
-        print("📥 [FollowService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [FollowService] HTTP Status: \(httpResponse.statusCode)")
 
         // Handle "Already following" as success (HTTP 400 with specific error)
         if httpResponse.statusCode == 400 {
             if let errorString = String(data: data, encoding: .utf8),
                errorString.contains("Already following") {
-                print("ℹ️ [FollowService] Already following this user - treating as success")
+                debugLog("ℹ️ [FollowService] Already following this user - treating as success")
                 // Return dummy FollowData since user is already following
                 return FollowData(
                     followId: "",
@@ -61,7 +61,7 @@ class FollowService {
 
         guard httpResponse.statusCode == 201 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [FollowService] Error: \(errorString)")
+                debugLog("❌ [FollowService] Error: \(errorString)")
             }
             throw CommunityError.createFailed
         }
@@ -69,7 +69,7 @@ class FollowService {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let result = try decoder.decode(FollowResponse.self, from: data)
-        print("✅ [FollowService] User followed successfully")
+        debugLog("✅ [FollowService] User followed successfully")
 
         return result.data
     }
@@ -94,7 +94,7 @@ class FollowService {
         let requestBody = ["userId": userId]
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
 
-        print("👥 [FollowService] Unfollowing user: \(userId)")
+        debugLog("👥 [FollowService] Unfollowing user: \(userId)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -102,16 +102,16 @@ class FollowService {
             throw CommunityError.invalidResponse
         }
 
-        print("📥 [FollowService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [FollowService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [FollowService] Error: \(errorString)")
+                debugLog("❌ [FollowService] Error: \(errorString)")
             }
             throw CommunityError.deleteFailed
         }
 
-        print("✅ [FollowService] User unfollowed successfully")
+        debugLog("✅ [FollowService] User unfollowed successfully")
     }
 
     // MARK: - Get Following
@@ -143,7 +143,7 @@ class FollowService {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("🔍 [FollowService] Fetching following list")
+        debugLog("🔍 [FollowService] Fetching following list")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -151,11 +151,11 @@ class FollowService {
             throw CommunityError.invalidResponse
         }
 
-        print("📥 [FollowService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [FollowService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [FollowService] Error: \(errorString)")
+                debugLog("❌ [FollowService] Error: \(errorString)")
             }
             throw CommunityError.fetchFailed
         }
@@ -163,7 +163,7 @@ class FollowService {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let result = try decoder.decode(UserListResponse.self, from: data)
-        print("✅ [FollowService] Fetched \(result.data.users.count) following users")
+        debugLog("✅ [FollowService] Fetched \(result.data.users.count) following users")
 
         return (result.data.users, result.data.hasMore)
     }
@@ -197,7 +197,7 @@ class FollowService {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("🔍 [FollowService] Fetching followers list")
+        debugLog("🔍 [FollowService] Fetching followers list")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -205,11 +205,11 @@ class FollowService {
             throw CommunityError.invalidResponse
         }
 
-        print("📥 [FollowService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [FollowService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [FollowService] Error: \(errorString)")
+                debugLog("❌ [FollowService] Error: \(errorString)")
             }
             throw CommunityError.fetchFailed
         }
@@ -217,7 +217,7 @@ class FollowService {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let result = try decoder.decode(UserListResponse.self, from: data)
-        print("✅ [FollowService] Fetched \(result.data.users.count) followers")
+        debugLog("✅ [FollowService] Fetched \(result.data.users.count) followers")
 
         return (result.data.users, result.data.hasMore)
     }
@@ -238,7 +238,7 @@ class FollowService {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("🔍 [FollowService] Fetching recommended users")
+        debugLog("🔍 [FollowService] Fetching recommended users")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -246,17 +246,17 @@ class FollowService {
             throw CommunityError.invalidResponse
         }
 
-        print("📥 [FollowService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [FollowService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [FollowService] Error: \(errorString)")
+                debugLog("❌ [FollowService] Error: \(errorString)")
             }
             throw CommunityError.fetchFailed
         }
 
         let result = try JSONDecoder().decode(RecommendedUsersResponse.self, from: data)
-        print("✅ [FollowService] Fetched \(result.data.users.count) recommended users")
+        debugLog("✅ [FollowService] Fetched \(result.data.users.count) recommended users")
 
         return result.data.users
     }

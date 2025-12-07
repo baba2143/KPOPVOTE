@@ -18,10 +18,6 @@ class AuthViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var showError = false
 
-    // Debug用: ログイン成功時のアラート表示
-    @Published var debugMessage: String?
-    @Published var showDebugAlert = false
-
     private let authService: AuthService
 
     init(authService: AuthService) {
@@ -78,16 +74,10 @@ class AuthViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            let user = try await authService.login(email: email, password: password)
-            // Debug: 成功時にアラート表示（TestFlight診断用）
-            let isAuth = authService.isAuthenticated
-            debugMessage = "✅ ログイン成功\n\nユーザー: \(user.email)\nID: \(user.id)\nisAuthenticated: \(isAuth)"
-            showDebugAlert = true
+            _ = try await authService.login(email: email, password: password)
+            // Success - auth state listener will update UI
         } catch {
-            // Debug: エラー時に詳細情報を表示
-            let errorType = String(describing: type(of: error))
-            debugMessage = "❌ ログイン失敗\n\nエラー: \(error.localizedDescription)\n\n型: \(errorType)"
-            showDebugAlert = true
+            showError(message: error.localizedDescription)
         }
 
         isLoading = false
@@ -111,11 +101,6 @@ class AuthViewModel: ObservableObject {
     func clearError() {
         errorMessage = nil
         showError = false
-    }
-
-    func clearDebugAlert() {
-        debugMessage = nil
-        showDebugAlert = false
     }
 
     // MARK: - Reset

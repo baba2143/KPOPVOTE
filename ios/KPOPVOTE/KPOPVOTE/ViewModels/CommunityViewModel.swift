@@ -28,7 +28,7 @@ class CommunityViewModel: ObservableObject {
     func loadPosts() async {
         // ゲストモードの場合はスキップ
         guard Auth.auth().currentUser != nil else {
-            print("👤 [CommunityViewModel] Guest mode - skipping posts")
+            debugLog("👤 [CommunityViewModel] Guest mode - skipping posts")
             posts = []
             isLoading = false
             return
@@ -39,7 +39,7 @@ class CommunityViewModel: ObservableObject {
         lastPostId = nil
 
         do {
-            print("📱 [CommunityViewModel] Loading posts: type=\(timelineType), biasId=\(selectedBiasId ?? "nil")")
+            debugLog("📱 [CommunityViewModel] Loading posts: type=\(timelineType), biasId=\(selectedBiasId ?? "nil")")
             let result = try await CommunityService.shared.fetchPosts(
                 type: timelineType,
                 biasId: selectedBiasId,
@@ -49,9 +49,9 @@ class CommunityViewModel: ObservableObject {
             posts = result.posts
             hasMore = result.hasMore
             lastPostId = posts.last?.id
-            print("✅ [CommunityViewModel] Loaded \(posts.count) posts, hasMore: \(hasMore)")
+            debugLog("✅ [CommunityViewModel] Loaded \(posts.count) posts, hasMore: \(hasMore)")
         } catch {
-            print("❌ [CommunityViewModel] Failed to load posts: \(error)")
+            debugLog("❌ [CommunityViewModel] Failed to load posts: \(error)")
             errorMessage = error.localizedDescription
         }
 
@@ -66,7 +66,7 @@ class CommunityViewModel: ObservableObject {
         isLoading = true
 
         do {
-            print("📱 [CommunityViewModel] Loading more posts after: \(lastPostId)")
+            debugLog("📱 [CommunityViewModel] Loading more posts after: \(lastPostId)")
             let result = try await CommunityService.shared.fetchPosts(
                 type: timelineType,
                 biasId: selectedBiasId,
@@ -76,9 +76,9 @@ class CommunityViewModel: ObservableObject {
             posts.append(contentsOf: result.posts)
             hasMore = result.hasMore
             self.lastPostId = posts.last?.id
-            print("✅ [CommunityViewModel] Loaded \(result.posts.count) more posts, total: \(posts.count)")
+            debugLog("✅ [CommunityViewModel] Loaded \(result.posts.count) more posts, total: \(posts.count)")
         } catch {
-            print("❌ [CommunityViewModel] Failed to load more posts: \(error)")
+            debugLog("❌ [CommunityViewModel] Failed to load more posts: \(error)")
             errorMessage = error.localizedDescription
         }
 
@@ -103,7 +103,7 @@ class CommunityViewModel: ObservableObject {
     /// Toggle like for a post
     func toggleLike(postId: String) async {
         do {
-            print("💗 [CommunityViewModel] Toggling like for post: \(postId)")
+            debugLog("💗 [CommunityViewModel] Toggling like for post: \(postId)")
             let result = try await CommunityService.shared.likePost(postId: postId)
 
             // Update local post state
@@ -112,9 +112,9 @@ class CommunityViewModel: ObservableObject {
                 posts[index].likesCount = result.likesCount
             }
 
-            print("✅ [CommunityViewModel] Like toggled: \(result.action)")
+            debugLog("✅ [CommunityViewModel] Like toggled: \(result.action)")
         } catch {
-            print("❌ [CommunityViewModel] Failed to toggle like: \(error)")
+            debugLog("❌ [CommunityViewModel] Failed to toggle like: \(error)")
             errorMessage = error.localizedDescription
         }
     }
@@ -123,16 +123,16 @@ class CommunityViewModel: ObservableObject {
     /// Delete a post
     func deletePost(postId: String) async {
         do {
-            print("🗑️ [CommunityViewModel] Deleting post: \(postId)")
+            debugLog("🗑️ [CommunityViewModel] Deleting post: \(postId)")
             try await CommunityService.shared.deletePost(postId: postId)
 
             // Remove from local array
             posts.removeAll { $0.id == postId }
 
-            print("✅ [CommunityViewModel] Post deleted")
+            debugLog("✅ [CommunityViewModel] Post deleted")
             deleteSuccess = true
         } catch {
-            print("❌ [CommunityViewModel] Failed to delete post: \(error)")
+            debugLog("❌ [CommunityViewModel] Failed to delete post: \(error)")
             errorMessage = error.localizedDescription
         }
     }

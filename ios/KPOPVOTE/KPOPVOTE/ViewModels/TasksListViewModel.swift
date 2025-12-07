@@ -43,15 +43,15 @@ class TasksListViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            print("📡 [TasksListViewModel] Loading all tasks...")
+            debugLog("📡 [TasksListViewModel] Loading all tasks...")
             // isCompleted = nil で全タスク取得
             allTasks = try await taskService.getUserTasks(isCompleted: nil)
-            print("✅ [TasksListViewModel] Loaded \(allTasks.count) tasks")
-            print("   - Active: \(activeTasks.count)")
-            print("   - Archived: \(archivedTasks.count)")
-            print("   - Completed: \(completedTasks.count)")
+            debugLog("✅ [TasksListViewModel] Loaded \(allTasks.count) tasks")
+            debugLog("   - Active: \(activeTasks.count)")
+            debugLog("   - Archived: \(archivedTasks.count)")
+            debugLog("   - Completed: \(completedTasks.count)")
         } catch {
-            print("❌ [TasksListViewModel] Failed to load tasks: \(error.localizedDescription)")
+            debugLog("❌ [TasksListViewModel] Failed to load tasks: \(error.localizedDescription)")
             errorMessage = "タスクの取得に失敗しました"
             showError = true
         }
@@ -62,7 +62,7 @@ class TasksListViewModel: ObservableObject {
     // MARK: - Complete Task
     func completeTask(_ task: VoteTask) async {
         do {
-            print("📡 [TasksListViewModel] Marking task as completed: \(task.id)")
+            debugLog("📡 [TasksListViewModel] Marking task as completed: \(task.id)")
             let points = try await taskService.markTaskAsCompleted(taskId: task.id)
 
             // Reload all tasks
@@ -76,9 +76,9 @@ class TasksListViewModel: ObservableObject {
             }
             showSuccessMessage = true
 
-            print("✅ [TasksListViewModel] Task completed: \(task.id)")
+            debugLog("✅ [TasksListViewModel] Task completed: \(task.id)")
         } catch {
-            print("❌ [TasksListViewModel] Failed to complete task: \(error.localizedDescription)")
+            debugLog("❌ [TasksListViewModel] Failed to complete task: \(error.localizedDescription)")
             errorMessage = "タスクの完了に失敗しました"
             showError = true
         }
@@ -87,14 +87,14 @@ class TasksListViewModel: ObservableObject {
     // MARK: - Delete Task
     func deleteTask(_ task: VoteTask) async {
         do {
-            print("📡 [TasksListViewModel] Deleting task: \(task.id)")
+            debugLog("📡 [TasksListViewModel] Deleting task: \(task.id)")
             try await taskService.deleteTask(taskId: task.id)
 
             // Remove from local array immediately for better UX
             allTasks.removeAll { $0.id == task.id }
-            print("✅ [TasksListViewModel] Task deleted: \(task.id)")
+            debugLog("✅ [TasksListViewModel] Task deleted: \(task.id)")
         } catch {
-            print("❌ [TasksListViewModel] Failed to delete task: \(error.localizedDescription)")
+            debugLog("❌ [TasksListViewModel] Failed to delete task: \(error.localizedDescription)")
             errorMessage = "タスクの削除に失敗しました"
             showError = true
 

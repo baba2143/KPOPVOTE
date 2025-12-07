@@ -42,7 +42,7 @@ class CommunityService {
 
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
 
-        print("📤 [CommunityService] Creating post: type=\(type.rawValue), biasIds=\(biasIds.count)")
+        debugLog("📤 [CommunityService] Creating post: type=\(type.rawValue), biasIds=\(biasIds.count)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -50,11 +50,11 @@ class CommunityService {
             throw CommunityError.invalidResponse
         }
 
-        print("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 201 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [CommunityService] Error: \(errorString)")
+                debugLog("❌ [CommunityService] Error: \(errorString)")
             }
             throw CommunityError.createFailed
         }
@@ -62,7 +62,7 @@ class CommunityService {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let result = try decoder.decode(PostResponse.self, from: data)
-        print("✅ [CommunityService] Post created successfully")
+        debugLog("✅ [CommunityService] Post created successfully")
 
         return result.data
     }
@@ -98,7 +98,7 @@ class CommunityService {
 
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
 
-        print("📤 [CommunityService] Updating post: \(postId)")
+        debugLog("📤 [CommunityService] Updating post: \(postId)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -106,11 +106,11 @@ class CommunityService {
             throw CommunityError.invalidResponse
         }
 
-        print("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [CommunityService] Error: \(errorString)")
+                debugLog("❌ [CommunityService] Error: \(errorString)")
             }
             throw CommunityError.updateFailed
         }
@@ -118,7 +118,7 @@ class CommunityService {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let result = try decoder.decode(PostResponse.self, from: data)
-        print("✅ [CommunityService] Post updated successfully")
+        debugLog("✅ [CommunityService] Post updated successfully")
 
         return result.data
     }
@@ -139,7 +139,7 @@ class CommunityService {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("🔍 [CommunityService] Fetching post: \(postId)")
+        debugLog("🔍 [CommunityService] Fetching post: \(postId)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -147,11 +147,11 @@ class CommunityService {
             throw CommunityError.invalidResponse
         }
 
-        print("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [CommunityService] Error: \(errorString)")
+                debugLog("❌ [CommunityService] Error: \(errorString)")
             }
             throw CommunityError.fetchFailed
         }
@@ -159,7 +159,7 @@ class CommunityService {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let result = try decoder.decode(PostResponse.self, from: data)
-        print("✅ [CommunityService] Post fetched successfully")
+        debugLog("✅ [CommunityService] Post fetched successfully")
 
         return result.data
     }
@@ -197,7 +197,7 @@ class CommunityService {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("🔍 [CommunityService] Fetching posts: type=\(type), biasId=\(biasId ?? "nil")")
+        debugLog("🔍 [CommunityService] Fetching posts: type=\(type), biasId=\(biasId ?? "nil")")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -205,11 +205,11 @@ class CommunityService {
             throw CommunityError.invalidResponse
         }
 
-        print("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [CommunityService] Error: \(errorString)")
+                debugLog("❌ [CommunityService] Error: \(errorString)")
             }
             throw CommunityError.fetchFailed
         }
@@ -217,7 +217,7 @@ class CommunityService {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let result = try decoder.decode(PostListResponse.self, from: data)
-        print("✅ [CommunityService] Fetched \(result.data.posts.count) posts")
+        debugLog("✅ [CommunityService] Fetched \(result.data.posts.count) posts")
 
         return (result.data.posts, result.data.hasMore)
     }
@@ -243,7 +243,7 @@ class CommunityService {
         let requestBody = ["postId": postId]
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
 
-        print("💗 [CommunityService] Toggling like for post: \(postId)")
+        debugLog("💗 [CommunityService] Toggling like for post: \(postId)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -251,17 +251,17 @@ class CommunityService {
             throw CommunityError.invalidResponse
         }
 
-        print("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [CommunityService] Error: \(errorString)")
+                debugLog("❌ [CommunityService] Error: \(errorString)")
             }
             throw CommunityError.updateFailed
         }
 
         let result = try JSONDecoder().decode(PostActionResponse.self, from: data)
-        print("✅ [CommunityService] Like toggled: \(result.data.action)")
+        debugLog("✅ [CommunityService] Like toggled: \(result.data.action)")
 
         return result.data
     }
@@ -292,7 +292,7 @@ class CommunityService {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("💗 [CommunityService] Fetching liked posts")
+        debugLog("💗 [CommunityService] Fetching liked posts")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -300,11 +300,11 @@ class CommunityService {
             throw CommunityError.invalidResponse
         }
 
-        print("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [CommunityService] Error: \(errorString)")
+                debugLog("❌ [CommunityService] Error: \(errorString)")
             }
             throw CommunityError.fetchFailed
         }
@@ -313,7 +313,7 @@ class CommunityService {
         decoder.dateDecodingStrategy = .iso8601
         let result = try decoder.decode(PostListResponse.self, from: data)
 
-        print("✅ [CommunityService] Fetched \(result.data.posts.count) liked posts")
+        debugLog("✅ [CommunityService] Fetched \(result.data.posts.count) liked posts")
 
         return (result.data.posts, result.data.hasMore)
     }
@@ -334,7 +334,7 @@ class CommunityService {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("🔍 [CommunityService] Fetching my votes")
+        debugLog("🔍 [CommunityService] Fetching my votes")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -342,11 +342,11 @@ class CommunityService {
             throw CommunityError.invalidResponse
         }
 
-        print("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [CommunityService] Error: \(errorString)")
+                debugLog("❌ [CommunityService] Error: \(errorString)")
             }
             throw CommunityError.fetchFailed
         }
@@ -354,7 +354,7 @@ class CommunityService {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let result = try decoder.decode(CommunityMyVotesResponse.self, from: data)
-        print("✅ [CommunityService] Fetched \(result.data.voteHistory.count) votes")
+        debugLog("✅ [CommunityService] Fetched \(result.data.voteHistory.count) votes")
 
         return result.data.voteHistory
     }
@@ -379,7 +379,7 @@ class CommunityService {
         let requestBody = ["postId": postId]
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
 
-        print("🗑️ [CommunityService] Deleting post: \(postId)")
+        debugLog("🗑️ [CommunityService] Deleting post: \(postId)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -387,16 +387,16 @@ class CommunityService {
             throw CommunityError.invalidResponse
         }
 
-        print("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [CommunityService] Error: \(errorString)")
+                debugLog("❌ [CommunityService] Error: \(errorString)")
             }
             throw CommunityError.deleteFailed
         }
 
-        print("✅ [CommunityService] Post deleted successfully")
+        debugLog("✅ [CommunityService] Post deleted successfully")
     }
 
     // MARK: - Create Comment
@@ -425,7 +425,7 @@ class CommunityService {
         ]
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
 
-        print("💬 [CommunityService] Creating comment on post: \(postId)")
+        debugLog("💬 [CommunityService] Creating comment on post: \(postId)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -433,11 +433,11 @@ class CommunityService {
             throw CommunityError.invalidResponse
         }
 
-        print("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 201 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [CommunityService] Error: \(errorString)")
+                debugLog("❌ [CommunityService] Error: \(errorString)")
 
                 // Check if it's a 403 "must follow" error
                 if httpResponse.statusCode == 403 && errorString.contains("follow") {
@@ -458,7 +458,7 @@ class CommunityService {
         }
 
         let result = try JSONDecoder().decode(CreateCommentResponse.self, from: data)
-        print("✅ [CommunityService] Comment created: \(result.data.commentId)")
+        debugLog("✅ [CommunityService] Comment created: \(result.data.commentId)")
 
         return (result.data.commentId, result.data.commentsCount)
     }
@@ -493,7 +493,7 @@ class CommunityService {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("📥 [CommunityService] Fetching comments for post: \(postId)")
+        debugLog("📥 [CommunityService] Fetching comments for post: \(postId)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -501,11 +501,11 @@ class CommunityService {
             throw CommunityError.invalidResponse
         }
 
-        print("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [CommunityService] Error: \(errorString)")
+                debugLog("❌ [CommunityService] Error: \(errorString)")
             }
             throw CommunityError.fetchFailed
         }
@@ -516,7 +516,7 @@ class CommunityService {
         }
 
         let result = try JSONDecoder().decode(GetCommentsResponse.self, from: data)
-        print("✅ [CommunityService] Fetched \(result.data.comments.count) comments")
+        debugLog("✅ [CommunityService] Fetched \(result.data.comments.count) comments")
 
         return (result.data.comments, result.data.hasMore)
     }
@@ -542,7 +542,7 @@ class CommunityService {
         request.httpMethod = "DELETE"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("🗑️ [CommunityService] Deleting comment: \(commentId)")
+        debugLog("🗑️ [CommunityService] Deleting comment: \(commentId)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -550,16 +550,16 @@ class CommunityService {
             throw CommunityError.invalidResponse
         }
 
-        print("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [CommunityService] Error: \(errorString)")
+                debugLog("❌ [CommunityService] Error: \(errorString)")
             }
             throw CommunityError.deleteFailed
         }
 
-        print("✅ [CommunityService] Comment deleted successfully")
+        debugLog("✅ [CommunityService] Comment deleted successfully")
     }
 
     // MARK: - Follow User
@@ -582,7 +582,7 @@ class CommunityService {
         let requestBody = ["targetUserId": userId]
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
 
-        print("👥 [CommunityService] Following user: \(userId)")
+        debugLog("👥 [CommunityService] Following user: \(userId)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -590,16 +590,16 @@ class CommunityService {
             throw CommunityError.invalidResponse
         }
 
-        print("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [CommunityService] Error: \(errorString)")
+                debugLog("❌ [CommunityService] Error: \(errorString)")
             }
             throw CommunityError.updateFailed
         }
 
-        print("✅ [CommunityService] User followed successfully")
+        debugLog("✅ [CommunityService] User followed successfully")
     }
 
     // MARK: - Get Recommended Users
@@ -624,7 +624,7 @@ class CommunityService {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("📱 [CommunityService] Getting recommended users: limit=\(limit)")
+        debugLog("📱 [CommunityService] Getting recommended users: limit=\(limit)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -646,7 +646,7 @@ class CommunityService {
         }
 
         let result = try JSONDecoder().decode(RecommendedUsersResponse.self, from: data)
-        print("✅ [CommunityService] Got \(result.data.users.count) recommended users")
+        debugLog("✅ [CommunityService] Got \(result.data.users.count) recommended users")
 
         return result.data.users
     }
@@ -673,7 +673,7 @@ class CommunityService {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("📱 [CommunityService] Getting following activity: limit=\(limit)")
+        debugLog("📱 [CommunityService] Getting following activity: limit=\(limit)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -695,7 +695,7 @@ class CommunityService {
         }
 
         let result = try JSONDecoder().decode(FollowingActivityResponse.self, from: data)
-        print("✅ [CommunityService] Got \(result.data.users.count) following activities")
+        debugLog("✅ [CommunityService] Got \(result.data.users.count) following activities")
 
         return result.data.users
     }
@@ -732,7 +732,7 @@ class CommunityService {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("📱 [CommunityService] Searching users: query=\(query)")
+        debugLog("📱 [CommunityService] Searching users: query=\(query)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -754,7 +754,7 @@ class CommunityService {
         }
 
         let result = try JSONDecoder().decode(SearchUsersResponse.self, from: data)
-        print("✅ [CommunityService] Found \(result.data.users.count) users")
+        debugLog("✅ [CommunityService] Found \(result.data.users.count) users")
 
         return result.data.users
     }
@@ -791,7 +791,7 @@ class CommunityService {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("📱 [CommunityService] Searching posts: query=\(query)")
+        debugLog("📱 [CommunityService] Searching posts: query=\(query)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -815,7 +815,7 @@ class CommunityService {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let result = try decoder.decode(SearchPostsResponse.self, from: data)
-        print("✅ [CommunityService] Found \(result.data.posts.count) posts")
+        debugLog("✅ [CommunityService] Found \(result.data.posts.count) posts")
 
         return result.data.posts
     }
@@ -845,7 +845,7 @@ class CommunityService {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("📤 [CommunityService] Getting profile for user: \(userId)")
+        debugLog("📤 [CommunityService] Getting profile for user: \(userId)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -853,11 +853,11 @@ class CommunityService {
             throw CommunityError.invalidResponse
         }
 
-        print("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [CommunityService] Error: \(errorString)")
+                debugLog("❌ [CommunityService] Error: \(errorString)")
             }
             throw CommunityError.fetchFailed
         }
@@ -865,7 +865,7 @@ class CommunityService {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let result = try decoder.decode(UserProfileResponse.self, from: data)
-        print("✅ [CommunityService] Got profile for: \(result.data.displayName)")
+        debugLog("✅ [CommunityService] Got profile for: \(result.data.displayName)")
 
         return result.data
     }

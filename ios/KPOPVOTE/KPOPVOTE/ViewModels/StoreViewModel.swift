@@ -35,7 +35,7 @@ class StoreViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            print("🛒 [StoreViewModel] Loading products...")
+            debugLog("🛒 [StoreViewModel] Loading products...")
 
             // Wait for IAP Manager to load products
             await iapManager.loadProducts()
@@ -55,9 +55,9 @@ class StoreViewModel: ObservableObject {
             }
 
             products = iapProducts
-            print("✅ [StoreViewModel] Loaded \(products.count) products")
+            debugLog("✅ [StoreViewModel] Loaded \(products.count) products")
         } catch {
-            print("❌ [StoreViewModel] Failed to load products: \(error.localizedDescription)")
+            debugLog("❌ [StoreViewModel] Failed to load products: \(error.localizedDescription)")
             errorMessage = "商品の読み込みに失敗しました"
             showError = true
         }
@@ -78,12 +78,12 @@ class StoreViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            print("🛒 [StoreViewModel] Purchasing: \(product.id)")
+            debugLog("🛒 [StoreViewModel] Purchasing: \(product.id)")
 
             // Execute purchase through IAP Manager
             let response = try await iapManager.purchase(product)
 
-            print("✅ [StoreViewModel] Purchase successful: +\(response.pointsGranted)P")
+            debugLog("✅ [StoreViewModel] Purchase successful: +\(response.pointsGranted)P")
 
             // Show success message
             purchaseSuccessMessage = "+\(response.pointsGranted)P 獲得しました！\n新しい残高: \(response.newBalance)P"
@@ -93,10 +93,10 @@ class StoreViewModel: ObservableObject {
             await pointsViewModel.loadPoints()
 
         } catch IAPError.userCancelled {
-            print("⚠️ [StoreViewModel] User cancelled")
+            debugLog("⚠️ [StoreViewModel] User cancelled")
             // Don't show error for user cancellation
         } catch {
-            print("❌ [StoreViewModel] Purchase failed: \(error.localizedDescription)")
+            debugLog("❌ [StoreViewModel] Purchase failed: \(error.localizedDescription)")
             errorMessage = error.localizedDescription
             showError = true
         }

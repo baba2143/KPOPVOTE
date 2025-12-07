@@ -23,9 +23,9 @@ class CreatePostViewModel: ObservableObject {
     @Published var errorMessage: String? {
         didSet {
             if let error = errorMessage {
-                print("❌ [errorMessage] Set to: \(error)")
+                debugLog("❌ [errorMessage] Set to: \(error)")
             } else {
-                print("✅ [errorMessage] Cleared")
+                debugLog("✅ [errorMessage] Cleared")
             }
         }
     }
@@ -51,7 +51,7 @@ class CreatePostViewModel: ObservableObject {
             let hasText = !textContent.isEmpty
             let hasBias = !selectedBiasIds.isEmpty
             result = hasText && hasBias
-            print("✅ [canSubmit] image - hasText: \(hasText) ('\(textContent)'), hasBias: \(hasBias) (\(selectedBiasIds)), result: \(result)")
+            debugLog("✅ [canSubmit] image - hasText: \(hasText) ('\(textContent)'), hasBias: \(hasBias) (\(selectedBiasIds)), result: \(result)")
         case .myVotes:
             result = !selectedMyVotes.isEmpty && !selectedBiasIds.isEmpty
         case .goodsTrade:
@@ -68,18 +68,18 @@ class CreatePostViewModel: ObservableObject {
     // MARK: - Create Post
     /// Submit the post
     func submitPost() async {
-        print("🚀🚀🚀 ========== submitPost() CALLED! ==========")
-        print("🚀 [submitPost] Time: \(Date())")
-        print("🚀 [submitPost] canSubmit: \(canSubmit)")
-        print("🚀 [submitPost] selectedType: \(selectedType.rawValue)")
+        debugLog("🚀🚀🚀 ========== submitPost() CALLED! ==========")
+        debugLog("🚀 [submitPost] Time: \(Date())")
+        debugLog("🚀 [submitPost] canSubmit: \(canSubmit)")
+        debugLog("🚀 [submitPost] selectedType: \(selectedType.rawValue)")
 
         guard canSubmit else {
-            print("❌ [submitPost] GUARD FAILED - canSubmit is false")
+            debugLog("❌ [submitPost] GUARD FAILED - canSubmit is false")
             errorMessage = "必須項目を入力してください"
             return
         }
 
-        print("✅ [submitPost] Guard passed, continuing...")
+        debugLog("✅ [submitPost] Guard passed, continuing...")
 
         isSubmitting = true
         errorMessage = nil
@@ -88,30 +88,30 @@ class CreatePostViewModel: ObservableObject {
             // Build PostContent based on type
             var content = PostContent()
 
-            print("📝 [CreatePostViewModel] Building post content - type: \(selectedType.rawValue)")
-            print("📝 [CreatePostViewModel] Selected biasIds: \(selectedBiasIds)")
+            debugLog("📝 [CreatePostViewModel] Building post content - type: \(selectedType.rawValue)")
+            debugLog("📝 [CreatePostViewModel] Selected biasIds: \(selectedBiasIds)")
 
             switch selectedType {
             case .image:
                 content.text = textContent
-                print("📝 [CreatePostViewModel] Image post - text length: \(textContent.count) characters")
+                debugLog("📝 [CreatePostViewModel] Image post - text length: \(textContent.count) characters")
 
                 // Upload image if selected
                 if let image = selectedImageForPost {
-                    print("📤 [CreatePostViewModel] Uploading post image... (size: \(image.size.width)x\(image.size.height))")
+                    debugLog("📤 [CreatePostViewModel] Uploading post image... (size: \(image.size.width)x\(image.size.height))")
                     let imageUrl = try await ImageUploadService.shared.uploadGoodsImage(image)
-                    print("✅ [CreatePostViewModel] Image uploaded: \(imageUrl) (length: \(imageUrl.count) chars)")
+                    debugLog("✅ [CreatePostViewModel] Image uploaded: \(imageUrl) (length: \(imageUrl.count) chars)")
                     content.images = [imageUrl]
                 } else {
                     content.images = nil
-                    print("📝 [CreatePostViewModel] No image selected")
+                    debugLog("📝 [CreatePostViewModel] No image selected")
                 }
             case .myVotes:
                 content.myVotes = selectedMyVotes
                 if !textContent.isEmpty {
                     content.text = textContent
                 }
-                print("📝 [CreatePostViewModel] My votes - count: \(selectedMyVotes.count)")
+                debugLog("📝 [CreatePostViewModel] My votes - count: \(selectedMyVotes.count)")
             case .goodsTrade:
                 // Upload goods image first
                 guard let image = selectedGoodsImage else {
@@ -120,9 +120,9 @@ class CreatePostViewModel: ObservableObject {
                     return
                 }
 
-                print("📤 [CreatePostViewModel] Uploading goods image...")
+                debugLog("📤 [CreatePostViewModel] Uploading goods image...")
                 let imageUrl = try await ImageUploadService.shared.uploadGoodsImage(image)
-                print("✅ [CreatePostViewModel] Image uploaded: \(imageUrl)")
+                debugLog("✅ [CreatePostViewModel] Image uploaded: \(imageUrl)")
 
                 // Get idol info from first selected bias
                 guard let firstBiasId = selectedBiasIds.first else {
@@ -153,18 +153,18 @@ class CreatePostViewModel: ObservableObject {
                 return
             }
 
-            print("📤 [CreatePostViewModel] Creating post: type=\(selectedType.rawValue), biasIds count: \(selectedBiasIds.count)")
+            debugLog("📤 [CreatePostViewModel] Creating post: type=\(selectedType.rawValue), biasIds count: \(selectedBiasIds.count)")
 
             // Log content summary
             if let text = content.text {
-                print("📝 [CreatePostViewModel] Content text: \(text.prefix(50))... (total: \(text.count) chars)")
+                debugLog("📝 [CreatePostViewModel] Content text: \(text.prefix(50))... (total: \(text.count) chars)")
             }
             if let images = content.images {
-                print("📝 [CreatePostViewModel] Content images: \(images.count) URLs")
-                images.forEach { print("   - URL: \($0.prefix(100))... (length: \($0.count))") }
+                debugLog("📝 [CreatePostViewModel] Content images: \(images.count) URLs")
+                images.forEach { debugLog("   - URL: \($0.prefix(100))... (length: \($0.count))") }
             }
             if let goodsTrade = content.goodsTrade {
-                print("📝 [CreatePostViewModel] Content goodsTrade: \(goodsTrade.goodsName)")
+                debugLog("📝 [CreatePostViewModel] Content goodsTrade: \(goodsTrade.goodsName)")
             }
 
             _ = try await CommunityService.shared.createPost(
@@ -173,14 +173,14 @@ class CreatePostViewModel: ObservableObject {
                 biasIds: selectedBiasIds
             )
 
-            print("✅ [CreatePostViewModel] Post created successfully")
+            debugLog("✅ [CreatePostViewModel] Post created successfully")
             isSuccess = true
         } catch {
-            print("❌ [CreatePostViewModel] Failed to create post: \(error)")
-            print("❌ [CreatePostViewModel] Error details: \(error.localizedDescription)")
+            debugLog("❌ [CreatePostViewModel] Failed to create post: \(error)")
+            debugLog("❌ [CreatePostViewModel] Error details: \(error.localizedDescription)")
             if let nsError = error as NSError? {
-                print("❌ [CreatePostViewModel] Error domain: \(nsError.domain), code: \(nsError.code)")
-                print("❌ [CreatePostViewModel] Error userInfo: \(nsError.userInfo)")
+                debugLog("❌ [CreatePostViewModel] Error domain: \(nsError.domain), code: \(nsError.code)")
+                debugLog("❌ [CreatePostViewModel] Error userInfo: \(nsError.userInfo)")
             }
             errorMessage = "投稿に失敗しました: \(error.localizedDescription)"
         }
@@ -194,7 +194,7 @@ class CreatePostViewModel: ObservableObject {
         selectedMyVotes = myVotes
         selectedType = .myVotes
 
-        print("🎯 [CreatePostViewModel] Selected \(myVotes.count) my votes")
+        debugLog("🎯 [CreatePostViewModel] Selected \(myVotes.count) my votes")
     }
 
     // MARK: - Reset

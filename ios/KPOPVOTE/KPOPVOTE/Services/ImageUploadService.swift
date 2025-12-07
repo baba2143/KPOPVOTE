@@ -26,14 +26,14 @@ class ImageUploadService {
         // Resize image if too large (max 800px for smaller file size)
         let resizedImage = resizeImage(image, maxDimension: 800)
 
-        print("📐 [ImageUploadService] Original size: \(image.size), Resized: \(resizedImage.size)")
+        debugLog("📐 [ImageUploadService] Original size: \(image.size), Resized: \(resizedImage.size)")
 
         // Convert to JPEG with good compression (0.7 = good quality, reasonable size)
         guard let imageData = resizedImage.jpegData(compressionQuality: 0.7) else {
             throw ImageUploadError.compressionFailed
         }
 
-        print("📦 [ImageUploadService] Image data size: \(imageData.count) bytes (~\(imageData.count / 1024)KB)")
+        debugLog("📦 [ImageUploadService] Image data size: \(imageData.count) bytes (~\(imageData.count / 1024)KB)")
 
         // Check file size (max 5MB)
         let maxSize = 5 * 1024 * 1024 // 5MB
@@ -49,7 +49,7 @@ class ImageUploadService {
         let storageRef = Storage.storage().reference()
         let imageRef = storageRef.child(storagePath)
 
-        print("📤 [ImageUploadService] Uploading to Firebase Storage: \(storagePath)")
+        debugLog("📤 [ImageUploadService] Uploading to Firebase Storage: \(storagePath)")
 
         // Upload image data
         let metadata = StorageMetadata()
@@ -61,7 +61,7 @@ class ImageUploadService {
         let downloadURL = try await imageRef.downloadURL()
         let downloadURLString = downloadURL.absoluteString
 
-        print("✅ [ImageUploadService] Image uploaded successfully: \(downloadURLString)")
+        debugLog("✅ [ImageUploadService] Image uploaded successfully: \(downloadURLString)")
 
         return downloadURLString
     }
@@ -77,14 +77,14 @@ class ImageUploadService {
         // Resize to square 400x400 for profile images
         let resizedImage = resizeImageToSquare(image, size: 400)
 
-        print("📐 [ImageUploadService] Profile image original size: \(image.size), Resized: \(resizedImage.size)")
+        debugLog("📐 [ImageUploadService] Profile image original size: \(image.size), Resized: \(resizedImage.size)")
 
         // Convert to JPEG with high quality (0.8)
         guard let imageData = resizedImage.jpegData(compressionQuality: 0.8) else {
             throw ImageUploadError.compressionFailed
         }
 
-        print("📦 [ImageUploadService] Profile image data size: \(imageData.count) bytes (~\(imageData.count / 1024)KB)")
+        debugLog("📦 [ImageUploadService] Profile image data size: \(imageData.count) bytes (~\(imageData.count / 1024)KB)")
 
         // Check file size (max 2MB for profile images)
         let maxSize = 2 * 1024 * 1024 // 2MB
@@ -99,7 +99,7 @@ class ImageUploadService {
         let storageRef = Storage.storage().reference()
         let imageRef = storageRef.child(storagePath)
 
-        print("📤 [ImageUploadService] Uploading profile image to Firebase Storage: \(storagePath)")
+        debugLog("📤 [ImageUploadService] Uploading profile image to Firebase Storage: \(storagePath)")
 
         // Upload image data
         let metadata = StorageMetadata()
@@ -111,7 +111,7 @@ class ImageUploadService {
         let downloadURL = try await imageRef.downloadURL()
         let downloadURLString = downloadURL.absoluteString
 
-        print("✅ [ImageUploadService] Profile image uploaded successfully: \(downloadURLString)")
+        debugLog("✅ [ImageUploadService] Profile image uploaded successfully: \(downloadURLString)")
 
         return downloadURLString
     }

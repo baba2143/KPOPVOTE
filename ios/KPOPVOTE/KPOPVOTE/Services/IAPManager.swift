@@ -39,7 +39,7 @@ class IAPManager: ObservableObject {
     /// Load products from App Store
     func loadProducts() async {
         do {
-            print("📦 [IAPManager] Loading products from App Store...")
+            debugLog("📦 [IAPManager] Loading products from App Store...")
 
             // Determine which product IDs to load based on config
             var productIDsToLoad: [String] = []
@@ -47,23 +47,23 @@ class IAPManager: ObservableObject {
             if let config = productConfig, config.isPromoCurrentlyActive {
                 // Load promo products
                 productIDsToLoad = ProductID.allPromoProducts
-                print("🎉 [IAPManager] Promo is active, loading promo products")
+                debugLog("🎉 [IAPManager] Promo is active, loading promo products")
             } else {
                 // Load normal products
                 productIDsToLoad = ProductID.allNormalProducts
-                print("📦 [IAPManager] Loading normal products")
+                debugLog("📦 [IAPManager] Loading normal products")
             }
 
             // Load products from App Store
             let storeProducts = try await Product.products(for: productIDsToLoad)
             products = storeProducts.sorted { $0.price < $1.price }
 
-            print("✅ [IAPManager] Loaded \(products.count) products")
+            debugLog("✅ [IAPManager] Loaded \(products.count) products")
             for product in products {
-                print("  - \(product.id): \(product.displayPrice)")
+                debugLog("  - \(product.id): \(product.displayPrice)")
             }
         } catch {
-            print("❌ [IAPManager] Failed to load products: \(error.localizedDescription)")
+            debugLog("❌ [IAPManager] Failed to load products: \(error.localizedDescription)")
             errorMessage = "商品の読み込みに失敗しました"
         }
     }
@@ -72,7 +72,7 @@ class IAPManager: ObservableObject {
     /// Load product configuration from Firestore
     func loadProductConfig() async {
         do {
-            print("🔧 [IAPManager] Loading product config from Firestore...")
+            debugLog("🔧 [IAPManager] Loading product config from Firestore...")
 
             // In production, fetch from Firestore
             // For now, use default config
@@ -83,9 +83,9 @@ class IAPManager: ObservableObject {
                 activeProductIds: ProductID.allNormalProducts
             )
 
-            print("✅ [IAPManager] Product config loaded")
+            debugLog("✅ [IAPManager] Product config loaded")
         } catch {
-            print("❌ [IAPManager] Failed to load product config: \(error.localizedDescription)")
+            debugLog("❌ [IAPManager] Failed to load product config: \(error.localizedDescription)")
             // Use default config on error
             productConfig = ProductConfig(
                 isPromoActive: false,
@@ -110,7 +110,7 @@ class IAPManager: ObservableObject {
             isPurchasing = false
         }
 
-        print("🛒 [IAPManager] Starting purchase for: \(product.id)")
+        debugLog("🛒 [IAPManager] Starting purchase for: \(product.id)")
 
         do {
             // Attempt purchase
@@ -121,7 +121,7 @@ class IAPManager: ObservableObject {
                 // Verify the transaction
                 let transaction = try checkVerified(verification)
 
-                print("✅ [IAPManager] Purchase successful, verifying with backend...")
+                debugLog("✅ [IAPManager] Purchase successful, verifying with backend...")
 
                 // Verify with backend and grant points
                 let response = try await verifyPurchaseWithBackend(transaction: transaction, product: product)
@@ -129,24 +129,24 @@ class IAPManager: ObservableObject {
                 // Finish the transaction
                 await transaction.finish()
 
-                print("✅ [IAPManager] Purchase completed: +\(response.pointsGranted)P")
+                debugLog("✅ [IAPManager] Purchase completed: +\(response.pointsGranted)P")
 
                 return response
 
             case .userCancelled:
-                print("⚠️ [IAPManager] User cancelled purchase")
+                debugLog("⚠️ [IAPManager] User cancelled purchase")
                 throw IAPError.userCancelled
 
             case .pending:
-                print("⏳ [IAPManager] Purchase pending")
+                debugLog("⏳ [IAPManager] Purchase pending")
                 throw IAPError.purchasePending
 
             @unknown default:
-                print("❌ [IAPManager] Unknown purchase result")
+                debugLog("❌ [IAPManager] Unknown purchase result")
                 throw IAPError.unknown
             }
         } catch {
-            print("❌ [IAPManager] Purchase failed: \(error.localizedDescription)")
+            debugLog("❌ [IAPManager] Purchase failed: \(error.localizedDescription)")
             errorMessage = "購入に失敗しました"
             throw error
         }
@@ -181,7 +181,7 @@ class IAPManager: ObservableObject {
 
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
 
-        print("📤 [IAPManager] Verifying purchase with backend...")
+        debugLog("📤 [IAPManager] Verifying purchase with backend...")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -189,11 +189,11 @@ class IAPManager: ObservableObject {
             throw IAPError.invalidResponse
         }
 
-        print("📥 [IAPManager] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [IAPManager] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [IAPManager] Error: \(errorString)")
+                debugLog("❌ [IAPManager] Error: \(errorString)")
             }
             throw IAPError.verificationFailed
         }
@@ -204,7 +204,7 @@ class IAPManager: ObservableObject {
         }
 
         let result = try JSONDecoder().decode(VerifyResponse.self, from: data)
-        print("✅ [IAPManager] Verification successful: \(result.data.pointsGranted) points granted")
+        debugLog("✅ [IAPManager] Verification successful: \(result.data.pointsGranted) points granted")
 
         return result.data
     }
@@ -239,7 +239,7 @@ class IAPManager: ObservableObject {
                 do {
                     let transaction = try checkVerified(result)
 
-                    print("🔔 [IAPManager] Transaction update: \(transaction.id)")
+                    debugLog("🔔 [IAPManager] Transaction update: \(transaction.id)")
 
                     // Update purchased products
                     await updatePurchasedProducts()
@@ -247,7 +247,7 @@ class IAPManager: ObservableObject {
                     // Finish the transaction
                     await transaction.finish()
                 } catch {
-                    print("❌ [IAPManager] Transaction verification failed: \(error.localizedDescription)")
+                    debugLog("❌ [IAPManager] Transaction verification failed: \(error.localizedDescription)")
                 }
             }
         }
@@ -263,25 +263,25 @@ class IAPManager: ObservableObject {
                 let transaction = try checkVerified(result)
                 purchasedIDs.insert(transaction.productID)
             } catch {
-                print("❌ [IAPManager] Failed to verify entitlement: \(error.localizedDescription)")
+                debugLog("❌ [IAPManager] Failed to verify entitlement: \(error.localizedDescription)")
             }
         }
 
         purchasedProductIDs = purchasedIDs
-        print("📋 [IAPManager] Updated purchased products: \(purchasedIDs)")
+        debugLog("📋 [IAPManager] Updated purchased products: \(purchasedIDs)")
     }
 
     // MARK: - Restore Purchases
     /// Restore purchases
     func restorePurchases() async {
-        print("🔄 [IAPManager] Restoring purchases...")
+        debugLog("🔄 [IAPManager] Restoring purchases...")
 
         do {
             try await AppStore.sync()
             await updatePurchasedProducts()
-            print("✅ [IAPManager] Purchases restored")
+            debugLog("✅ [IAPManager] Purchases restored")
         } catch {
-            print("❌ [IAPManager] Failed to restore purchases: \(error.localizedDescription)")
+            debugLog("❌ [IAPManager] Failed to restore purchases: \(error.localizedDescription)")
             errorMessage = "購入の復元に失敗しました"
         }
     }

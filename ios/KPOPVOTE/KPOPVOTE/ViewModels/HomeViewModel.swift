@@ -25,7 +25,7 @@ class HomeViewModel: ObservableObject {
     func loadActiveTasks() async {
         // ゲストモードの場合はスキップ
         guard Auth.auth().currentUser != nil else {
-            print("👤 [HomeViewModel] Guest mode - skipping active tasks")
+            debugLog("👤 [HomeViewModel] Guest mode - skipping active tasks")
             activeTasks = []
             return
         }
@@ -34,11 +34,11 @@ class HomeViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            print("📡 [HomeViewModel] Loading active tasks...")
+            debugLog("📡 [HomeViewModel] Loading active tasks...")
             activeTasks = try await taskService.getActiveTasks()
-            print("✅ [HomeViewModel] Loaded \(activeTasks.count) active tasks")
+            debugLog("✅ [HomeViewModel] Loaded \(activeTasks.count) active tasks")
         } catch {
-            print("❌ [HomeViewModel] Failed to load active tasks: \(error.localizedDescription)")
+            debugLog("❌ [HomeViewModel] Failed to load active tasks: \(error.localizedDescription)")
             errorMessage = "アクティブタスクの取得に失敗しました"
             showError = true
         }
@@ -49,14 +49,14 @@ class HomeViewModel: ObservableObject {
     // MARK: - Complete Task
     func completeTask(_ task: VoteTask) async {
         do {
-            print("📡 [HomeViewModel] Marking task as completed: \(task.id)")
+            debugLog("📡 [HomeViewModel] Marking task as completed: \(task.id)")
             try await taskService.markTaskAsCompleted(taskId: task.id)
 
             // Remove from active tasks
             activeTasks.removeAll { $0.id == task.id }
-            print("✅ [HomeViewModel] Task completed: \(task.id)")
+            debugLog("✅ [HomeViewModel] Task completed: \(task.id)")
         } catch {
-            print("❌ [HomeViewModel] Failed to complete task: \(error.localizedDescription)")
+            debugLog("❌ [HomeViewModel] Failed to complete task: \(error.localizedDescription)")
             errorMessage = "タスクの完了に失敗しました"
             showError = true
         }
@@ -67,11 +67,11 @@ class HomeViewModel: ObservableObject {
         isLoadingVotes = true
 
         do {
-            print("📡 [HomeViewModel] Loading featured votes...")
+            debugLog("📡 [HomeViewModel] Loading featured votes...")
             featuredVotes = try await voteService.fetchFeaturedVotes()
-            print("✅ [HomeViewModel] Loaded \(featuredVotes.count) featured votes")
+            debugLog("✅ [HomeViewModel] Loaded \(featuredVotes.count) featured votes")
         } catch {
-            print("❌ [HomeViewModel] Failed to load featured votes: \(error.localizedDescription)")
+            debugLog("❌ [HomeViewModel] Failed to load featured votes: \(error.localizedDescription)")
             // Don't show error for featured votes failure
         }
 

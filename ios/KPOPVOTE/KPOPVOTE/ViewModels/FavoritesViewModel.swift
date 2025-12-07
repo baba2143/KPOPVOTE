@@ -30,14 +30,14 @@ class FavoritesViewModel: ObservableObject {
         lastPostId = nil
 
         do {
-            print("📱 [FavoritesViewModel] Loading liked posts")
+            debugLog("📱 [FavoritesViewModel] Loading liked posts")
             let result = try await CommunityService.shared.fetchLikedPosts(limit: 20, lastPostId: nil)
             likedPosts = result.posts
             hasMorePosts = result.hasMore
             lastPostId = likedPosts.last?.id
-            print("✅ [FavoritesViewModel] Loaded \(likedPosts.count) liked posts")
+            debugLog("✅ [FavoritesViewModel] Loaded \(likedPosts.count) liked posts")
         } catch {
-            print("❌ [FavoritesViewModel] Failed to load liked posts: \(error)")
+            debugLog("❌ [FavoritesViewModel] Failed to load liked posts: \(error)")
             // API may not exist yet, show empty state gracefully
             likedPosts = []
             hasMorePosts = false
@@ -53,14 +53,14 @@ class FavoritesViewModel: ObservableObject {
         isLoadingPosts = true
 
         do {
-            print("📱 [FavoritesViewModel] Loading more liked posts after: \(lastPostId)")
+            debugLog("📱 [FavoritesViewModel] Loading more liked posts after: \(lastPostId)")
             let result = try await CommunityService.shared.fetchLikedPosts(limit: 20, lastPostId: lastPostId)
             likedPosts.append(contentsOf: result.posts)
             hasMorePosts = result.hasMore
             self.lastPostId = likedPosts.last?.id
-            print("✅ [FavoritesViewModel] Loaded \(result.posts.count) more liked posts")
+            debugLog("✅ [FavoritesViewModel] Loaded \(result.posts.count) more liked posts")
         } catch {
-            print("❌ [FavoritesViewModel] Failed to load more liked posts: \(error)")
+            debugLog("❌ [FavoritesViewModel] Failed to load more liked posts: \(error)")
         }
 
         isLoadingPosts = false
@@ -73,13 +73,13 @@ class FavoritesViewModel: ObservableObject {
         currentCollectionPage = 1
 
         do {
-            print("📱 [FavoritesViewModel] Loading saved collections")
+            debugLog("📱 [FavoritesViewModel] Loading saved collections")
             let result = try await CollectionService.shared.getSavedCollections(page: 1, limit: 20)
             savedCollections = result.data.collections
             hasMoreCollections = result.data.pagination.hasNext
-            print("✅ [FavoritesViewModel] Loaded \(savedCollections.count) saved collections")
+            debugLog("✅ [FavoritesViewModel] Loaded \(savedCollections.count) saved collections")
         } catch {
-            print("❌ [FavoritesViewModel] Failed to load saved collections: \(error)")
+            debugLog("❌ [FavoritesViewModel] Failed to load saved collections: \(error)")
             savedCollections = []
             hasMoreCollections = false
         }
@@ -95,13 +95,13 @@ class FavoritesViewModel: ObservableObject {
         currentCollectionPage += 1
 
         do {
-            print("📱 [FavoritesViewModel] Loading more saved collections page: \(currentCollectionPage)")
+            debugLog("📱 [FavoritesViewModel] Loading more saved collections page: \(currentCollectionPage)")
             let result = try await CollectionService.shared.getSavedCollections(page: currentCollectionPage, limit: 20)
             savedCollections.append(contentsOf: result.data.collections)
             hasMoreCollections = result.data.pagination.hasNext
-            print("✅ [FavoritesViewModel] Loaded \(result.data.collections.count) more saved collections")
+            debugLog("✅ [FavoritesViewModel] Loaded \(result.data.collections.count) more saved collections")
         } catch {
-            print("❌ [FavoritesViewModel] Failed to load more saved collections: \(error)")
+            debugLog("❌ [FavoritesViewModel] Failed to load more saved collections: \(error)")
             currentCollectionPage -= 1
         }
 

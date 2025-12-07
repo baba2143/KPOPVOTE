@@ -40,7 +40,7 @@ class IdolService {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("🔍 [IdolService] Fetching idols from: \(urlComponents.url!.absoluteString)")
+        debugLog("🔍 [IdolService] Fetching idols from: \(urlComponents.url!.absoluteString)")
 
         // Execute request
         let (data, response) = try await URLSession.shared.data(for: request)
@@ -50,11 +50,11 @@ class IdolService {
             throw IdolError.invalidResponse
         }
 
-        print("📥 [IdolService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [IdolService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [IdolService] Error response: \(errorString)")
+                debugLog("❌ [IdolService] Error response: \(errorString)")
             }
             throw IdolError.fetchFailed
         }
@@ -62,7 +62,7 @@ class IdolService {
         // Decode response
         let result = try JSONDecoder().decode(IdolListResponse.self, from: data)
 
-        print("✅ [IdolService] Successfully fetched \(result.data.count) idols")
+        debugLog("✅ [IdolService] Successfully fetched \(result.data.count) idols")
 
         return result.data.idols
     }

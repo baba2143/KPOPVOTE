@@ -66,19 +66,19 @@ class TaskRegistrationViewModel: ObservableObject {
     // MARK: - Load External Apps
     func loadExternalApps() async {
         do {
-            print("📡 [TaskRegistrationViewModel] Loading external apps...")
+            debugLog("📡 [TaskRegistrationViewModel] Loading external apps...")
             externalApps = try await externalAppService.getExternalApps()
-            print("✅ [TaskRegistrationViewModel] Loaded \(externalApps.count) external apps")
+            debugLog("✅ [TaskRegistrationViewModel] Loaded \(externalApps.count) external apps")
         } catch {
-            print("❌ [TaskRegistrationViewModel] Failed to load external apps: \(error.localizedDescription)")
+            debugLog("❌ [TaskRegistrationViewModel] Failed to load external apps: \(error.localizedDescription)")
             // Don't show error to user - external app selection is optional
         }
     }
 
     // MARK: - Handle External App Selection
     func handleExternalAppSelection(_ appId: String?) {
-        print("🔍 [TaskRegistrationViewModel] handleExternalAppSelection called with appId: \(appId ?? "nil")")
-        print("🔍 [TaskRegistrationViewModel] Total externalApps loaded: \(externalApps.count)")
+        debugLog("🔍 [TaskRegistrationViewModel] handleExternalAppSelection called with appId: \(appId ?? "nil")")
+        debugLog("🔍 [TaskRegistrationViewModel] Total externalApps loaded: \(externalApps.count)")
 
         selectedAppId = appId
 
@@ -87,20 +87,20 @@ class TaskRegistrationViewModel: ObservableObject {
            let selectedApp = externalApps.first(where: { $0.id == appId }),
            let defaultCoverImageUrl = selectedApp.defaultCoverImageUrl,
            !defaultCoverImageUrl.isEmpty {
-            print("🖼️ [TaskRegistrationViewModel] Auto-setting cover image from external app: \(defaultCoverImageUrl)")
-            print("🖼️ [TaskRegistrationViewModel] Selected app: \(selectedApp.appName)")
-            print("🖼️ [TaskRegistrationViewModel] defaultCoverImageUrl from selectedApp: \(selectedApp.defaultCoverImageUrl ?? "nil")")
+            debugLog("🖼️ [TaskRegistrationViewModel] Auto-setting cover image from external app: \(defaultCoverImageUrl)")
+            debugLog("🖼️ [TaskRegistrationViewModel] Selected app: \(selectedApp.appName)")
+            debugLog("🖼️ [TaskRegistrationViewModel] defaultCoverImageUrl from selectedApp: \(selectedApp.defaultCoverImageUrl ?? "nil")")
             coverImageURL = defaultCoverImageUrl
             coverImageSource = .externalApp
             selectedCoverImage = nil // Clear user-selected image
         } else {
-            print("⚠️ [TaskRegistrationViewModel] Did not set cover image. Reason:")
+            debugLog("⚠️ [TaskRegistrationViewModel] Did not set cover image. Reason:")
             if appId == nil {
-                print("   - appId is nil")
+                debugLog("   - appId is nil")
             } else if externalApps.first(where: { $0.id == appId }) == nil {
-                print("   - No app found with id: \(appId!)")
+                debugLog("   - No app found with id: \(appId!)")
             } else if let app = externalApps.first(where: { $0.id == appId }) {
-                print("   - App found: \(app.appName), but defaultCoverImageUrl is: \(app.defaultCoverImageUrl ?? "nil")")
+                debugLog("   - App found: \(app.appName), but defaultCoverImageUrl is: \(app.defaultCoverImageUrl ?? "nil")")
             }
 
             // 外部アプリが選択されていない場合、
@@ -116,22 +116,22 @@ class TaskRegistrationViewModel: ObservableObject {
     // MARK: - Upload Cover Image
     func uploadCoverImage() async {
         guard let image = selectedCoverImage else {
-            print("⚠️ [TaskRegistrationViewModel] No image selected")
+            debugLog("⚠️ [TaskRegistrationViewModel] No image selected")
             return
         }
 
         isUploadingImage = true
 
         do {
-            print("📤 [TaskRegistrationViewModel] Uploading cover image...")
+            debugLog("📤 [TaskRegistrationViewModel] Uploading cover image...")
             let downloadURL = try await taskService.uploadCoverImage(image)
-            print("✅ [TaskRegistrationViewModel] Image uploaded: \(downloadURL)")
+            debugLog("✅ [TaskRegistrationViewModel] Image uploaded: \(downloadURL)")
 
             coverImageURL = downloadURL
             coverImageSource = .userUpload
 
         } catch {
-            print("❌ [TaskRegistrationViewModel] Failed to upload image: \(error.localizedDescription)")
+            debugLog("❌ [TaskRegistrationViewModel] Failed to upload image: \(error.localizedDescription)")
             errorMessage = "画像のアップロードに失敗しました: \(error.localizedDescription)"
             showError = true
         }
@@ -166,7 +166,7 @@ class TaskRegistrationViewModel: ObservableObject {
         do {
             // Upload cover image if user selected one
             if selectedCoverImage != nil && coverImageURL == nil {
-                print("📤 [TaskRegistrationViewModel] Uploading user-selected cover image...")
+                debugLog("📤 [TaskRegistrationViewModel] Uploading user-selected cover image...")
                 await uploadCoverImage()
 
                 // Check if upload failed
@@ -180,13 +180,13 @@ class TaskRegistrationViewModel: ObservableObject {
 
             if isEditMode, let taskId = editingTaskId {
                 // Edit mode - update existing task
-                print("📡 [TaskRegistrationViewModel] Updating task: \(taskId)")
+                debugLog("📡 [TaskRegistrationViewModel] Updating task: \(taskId)")
                 if let appId = selectedAppId {
-                    print("📱 [TaskRegistrationViewModel] Selected external app: \(appId)")
+                    debugLog("📱 [TaskRegistrationViewModel] Selected external app: \(appId)")
                 }
                 if let coverImage = coverImageURL {
-                    print("🖼️ [TaskRegistrationViewModel] Cover image: \(coverImage)")
-                    print("📍 [TaskRegistrationViewModel] Cover image source: \(coverImageSource?.rawValue ?? "nil")")
+                    debugLog("🖼️ [TaskRegistrationViewModel] Cover image: \(coverImage)")
+                    debugLog("📍 [TaskRegistrationViewModel] Cover image source: \(coverImageSource?.rawValue ?? "nil")")
                 }
 
                 let task = try await taskService.updateTask(
@@ -200,16 +200,16 @@ class TaskRegistrationViewModel: ObservableObject {
                     coverImageSource: coverImageSource
                 )
 
-                print("✅ [TaskRegistrationViewModel] Task updated successfully: \(task.id)")
+                debugLog("✅ [TaskRegistrationViewModel] Task updated successfully: \(task.id)")
             } else {
                 // Create mode - register new task
-                print("📡 [TaskRegistrationViewModel] Registering task: \(title)")
+                debugLog("📡 [TaskRegistrationViewModel] Registering task: \(title)")
                 if let appId = selectedAppId {
-                    print("📱 [TaskRegistrationViewModel] Selected external app: \(appId)")
+                    debugLog("📱 [TaskRegistrationViewModel] Selected external app: \(appId)")
                 }
                 if let coverImage = coverImageURL {
-                    print("🖼️ [TaskRegistrationViewModel] Cover image: \(coverImage)")
-                    print("📍 [TaskRegistrationViewModel] Cover image source: \(coverImageSource?.rawValue ?? "nil")")
+                    debugLog("🖼️ [TaskRegistrationViewModel] Cover image: \(coverImage)")
+                    debugLog("📍 [TaskRegistrationViewModel] Cover image source: \(coverImageSource?.rawValue ?? "nil")")
                 }
 
                 let task = try await taskService.registerTask(
@@ -222,7 +222,7 @@ class TaskRegistrationViewModel: ObservableObject {
                     coverImageSource: coverImageSource
                 )
 
-                print("✅ [TaskRegistrationViewModel] Task registered successfully: \(task.id)")
+                debugLog("✅ [TaskRegistrationViewModel] Task registered successfully: \(task.id)")
             }
 
             // Notify to refresh task list
@@ -235,7 +235,7 @@ class TaskRegistrationViewModel: ObservableObject {
             }
 
         } catch {
-            print("❌ [TaskRegistrationViewModel] Failed to \(isEditMode ? "update" : "register") task: \(error.localizedDescription)")
+            debugLog("❌ [TaskRegistrationViewModel] Failed to \(isEditMode ? "update" : "register") task: \(error.localizedDescription)")
             errorMessage = "タスクの\(isEditMode ? "更新" : "登録")に失敗しました: \(error.localizedDescription)"
             showError = true
         }
@@ -285,9 +285,9 @@ class TaskRegistrationViewModel: ObservableObject {
             selectedMemberNames = ids.compactMap { id in
                 idolDict[id] ?? groupDict[id]
             }
-            print("✅ [TaskRegistrationViewModel] Loaded names for \(selectedMemberNames.count) members/groups")
+            debugLog("✅ [TaskRegistrationViewModel] Loaded names for \(selectedMemberNames.count) members/groups")
         } catch {
-            print("❌ [TaskRegistrationViewModel] Failed to load member/group names: \(error)")
+            debugLog("❌ [TaskRegistrationViewModel] Failed to load member/group names: \(error)")
         }
     }
 }

@@ -41,7 +41,7 @@ class ProfileEditViewModel: ObservableObject {
         originalBio = bio
         originalPhotoURL = user.photoURL
 
-        print("📱 [ProfileEditViewModel] Loaded profile: \(displayName), bio: \(bio.isEmpty ? "empty" : "exists"), photoURL: \(user.photoURL ?? "none")")
+        debugLog("📱 [ProfileEditViewModel] Loaded profile: \(displayName), bio: \(bio.isEmpty ? "empty" : "exists"), photoURL: \(user.photoURL ?? "none")")
     }
 
     // MARK: - Validation
@@ -98,16 +98,16 @@ class ProfileEditViewModel: ObservableObject {
             let trimmedDisplayName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
             let trimmedBio = bio.trimmingCharacters(in: .whitespacesAndNewlines)
 
-            print("💾 [ProfileEditViewModel] Saving profile...")
+            debugLog("💾 [ProfileEditViewModel] Saving profile...")
 
             // Upload image if selected
             var newPhotoURL: String?
             if let image = selectedImage {
                 isUploadingImage = true
-                print("📸 [ProfileEditViewModel] Uploading profile image...")
+                debugLog("📸 [ProfileEditViewModel] Uploading profile image...")
                 newPhotoURL = try await ImageUploadService.shared.uploadProfileImage(image)
                 isUploadingImage = false
-                print("✅ [ProfileEditViewModel] Image uploaded: \(newPhotoURL ?? "")")
+                debugLog("✅ [ProfileEditViewModel] Image uploaded: \(newPhotoURL ?? "")")
             }
 
             let updatedUser = try await ProfileService.shared.updateProfile(
@@ -117,7 +117,7 @@ class ProfileEditViewModel: ObservableObject {
                 photoURL: newPhotoURL
             )
 
-            print("✅ [ProfileEditViewModel] Profile saved successfully")
+            debugLog("✅ [ProfileEditViewModel] Profile saved successfully")
 
             // Update original values
             originalDisplayName = trimmedDisplayName
@@ -133,7 +133,7 @@ class ProfileEditViewModel: ObservableObject {
 
             return updatedUser
         } catch {
-            print("❌ [ProfileEditViewModel] Save error: \(error)")
+            debugLog("❌ [ProfileEditViewModel] Save error: \(error)")
             errorMessage = error.localizedDescription
             isUploadingImage = false
             isSaving = false

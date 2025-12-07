@@ -41,7 +41,7 @@ class ProfileService {
 
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-        print("📱 [ProfileService] Updating profile...")
+        debugLog("📱 [ProfileService] Updating profile...")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -49,7 +49,7 @@ class ProfileService {
             throw ProfileError.invalidResponse
         }
 
-        print("📥 [ProfileService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [ProfileService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             throw ProfileError.updateFailed
@@ -61,7 +61,7 @@ class ProfileService {
             throw ProfileError.updateFailed
         }
 
-        print("✅ [ProfileService] Profile updated successfully")
+        debugLog("✅ [ProfileService] Profile updated successfully")
 
         return userData
     }

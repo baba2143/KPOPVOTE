@@ -84,7 +84,7 @@ class CalendarService {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
 
-        print("📅 [CalendarService] Fetching events for artist: \(artistId)")
+        debugLog("📅 [CalendarService] Fetching events for artist: \(artistId)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -94,7 +94,7 @@ class CalendarService {
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [CalendarService] Error: \(errorString)")
+                debugLog("❌ [CalendarService] Error: \(errorString)")
             }
             throw CalendarError.serverError("Status: \(httpResponse.statusCode)")
         }
@@ -105,7 +105,7 @@ class CalendarService {
             throw CalendarError.serverError(result.error ?? "Unknown error")
         }
 
-        print("✅ [CalendarService] Fetched \(eventData.events.count) events")
+        debugLog("✅ [CalendarService] Fetched \(eventData.events.count) events")
 
         return (eventData.events, eventData.hasMore)
     }
@@ -123,7 +123,7 @@ class CalendarService {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
 
-        print("📅 [CalendarService] Fetching event detail: \(eventId)")
+        debugLog("📅 [CalendarService] Fetching event detail: \(eventId)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -162,7 +162,7 @@ class CalendarService {
         let encoder = JSONEncoder()
         request.httpBody = try encoder.encode(eventRequest)
 
-        print("📤 [CalendarService] Creating event: \(eventRequest.title)")
+        debugLog("📤 [CalendarService] Creating event: \(eventRequest.title)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -172,7 +172,7 @@ class CalendarService {
 
         guard httpResponse.statusCode == 201 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [CalendarService] Error: \(errorString)")
+                debugLog("❌ [CalendarService] Error: \(errorString)")
             }
             throw CalendarError.createFailed
         }
@@ -183,7 +183,7 @@ class CalendarService {
             throw CalendarError.serverError(result.error ?? "Unknown error")
         }
 
-        print("✅ [CalendarService] Event created: \(event.eventId)")
+        debugLog("✅ [CalendarService] Event created: \(event.eventId)")
 
         return event
     }
@@ -204,7 +204,7 @@ class CalendarService {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: updates)
 
-        print("📤 [CalendarService] Updating event: \(eventId)")
+        debugLog("📤 [CalendarService] Updating event: \(eventId)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -239,7 +239,7 @@ class CalendarService {
         request.httpMethod = "DELETE"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("🗑️ [CalendarService] Deleting event: \(eventId)")
+        debugLog("🗑️ [CalendarService] Deleting event: \(eventId)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -249,12 +249,12 @@ class CalendarService {
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [CalendarService] Error: \(errorString)")
+                debugLog("❌ [CalendarService] Error: \(errorString)")
             }
             throw CalendarError.deleteFailed
         }
 
-        print("✅ [CalendarService] Event deleted")
+        debugLog("✅ [CalendarService] Event deleted")
     }
 
     // MARK: - Toggle Attendance
@@ -271,7 +271,7 @@ class CalendarService {
         request.httpMethod = "POST"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("👥 [CalendarService] Toggling attendance for: \(eventId)")
+        debugLog("👥 [CalendarService] Toggling attendance for: \(eventId)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -289,7 +289,7 @@ class CalendarService {
             throw CalendarError.serverError(result.error ?? "Unknown error")
         }
 
-        print("✅ [CalendarService] Attendance: \(attendanceData.isAttending ? "参加予定" : "キャンセル")")
+        debugLog("✅ [CalendarService] Attendance: \(attendanceData.isAttending ? "参加予定" : "キャンセル")")
 
         return (attendanceData.isAttending, attendanceData.attendeeCount)
     }
@@ -322,7 +322,7 @@ class CalendarService {
         ]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-        print("🔍 [CalendarService] Checking duplicate for: \(title)")
+        debugLog("🔍 [CalendarService] Checking duplicate for: \(title)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 

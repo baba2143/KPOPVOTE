@@ -146,7 +146,7 @@ class BiasViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            print("📱 [BiasViewModel] Loading groups and idols...")
+            debugLog("📱 [BiasViewModel] Loading groups and idols...")
 
             // Load groups and idols in parallel
             async let groupsTask = GroupService.shared.fetchGroups()
@@ -155,12 +155,12 @@ class BiasViewModel: ObservableObject {
             allGroups = try await groupsTask
             allIdols = try await idolsTask
 
-            print("✅ [BiasViewModel] Loaded \(allGroups.count) groups and \(allIdols.count) idols")
+            debugLog("✅ [BiasViewModel] Loaded \(allGroups.count) groups and \(allIdols.count) idols")
 
             // Load current bias settings
             await loadCurrentBias()
         } catch {
-            print("❌ [BiasViewModel] Failed to load data: \(error)")
+            debugLog("❌ [BiasViewModel] Failed to load data: \(error)")
             errorMessage = error.localizedDescription
         }
 
@@ -175,7 +175,7 @@ class BiasViewModel: ObservableObject {
     /// Load current bias settings from backend
     func loadCurrentBias() async {
         do {
-            print("📱 [BiasViewModel] Loading current bias settings...")
+            debugLog("📱 [BiasViewModel] Loading current bias settings...")
             let biasSettings = try await BiasService.shared.getBias()
 
             // Separate group-level and member-level settings
@@ -199,9 +199,9 @@ class BiasViewModel: ObservableObject {
             selectedGroups = groupIds
             selectedIdols = memberIds
 
-            print("✅ [BiasViewModel] Loaded bias settings: \(selectedGroups.count) groups, \(selectedIdols.count) members selected")
+            debugLog("✅ [BiasViewModel] Loaded bias settings: \(selectedGroups.count) groups, \(selectedIdols.count) members selected")
         } catch {
-            print("⚠️ [BiasViewModel] Failed to load current bias (may be first time): \(error)")
+            debugLog("⚠️ [BiasViewModel] Failed to load current bias (may be first time): \(error)")
             // Don't show error for first-time users with no bias set
         }
     }
@@ -211,10 +211,10 @@ class BiasViewModel: ObservableObject {
     func toggleIdol(_ idol: IdolMaster) {
         if selectedIdols.contains(idol.id) {
             selectedIdols.remove(idol.id)
-            print("➖ [BiasViewModel] Deselected: \(idol.name)")
+            debugLog("➖ [BiasViewModel] Deselected: \(idol.name)")
         } else {
             selectedIdols.insert(idol.id)
-            print("➕ [BiasViewModel] Selected: \(idol.name)")
+            debugLog("➕ [BiasViewModel] Selected: \(idol.name)")
         }
     }
 
@@ -230,10 +230,10 @@ class BiasViewModel: ObservableObject {
     func toggleGroup(_ group: GroupMaster) {
         if selectedGroups.contains(group.id) {
             selectedGroups.remove(group.id)
-            print("➖ [BiasViewModel] Deselected group: \(group.name)")
+            debugLog("➖ [BiasViewModel] Deselected group: \(group.name)")
         } else {
             selectedGroups.insert(group.id)
-            print("➕ [BiasViewModel] Selected group: \(group.name)")
+            debugLog("➕ [BiasViewModel] Selected group: \(group.name)")
         }
     }
 
@@ -252,14 +252,14 @@ class BiasViewModel: ObservableObject {
 
         do {
             let biasSettings = buildBiasSettings()
-            print("📱 [BiasViewModel] Saving \(biasSettings.count) bias groups...")
+            debugLog("📱 [BiasViewModel] Saving \(biasSettings.count) bias groups...")
 
             try await BiasService.shared.setBias(biasSettings)
 
             successMessage = "推し設定を保存しました"
-            print("✅ [BiasViewModel] Successfully saved bias settings")
+            debugLog("✅ [BiasViewModel] Successfully saved bias settings")
         } catch {
-            print("❌ [BiasViewModel] Failed to save bias: \(error)")
+            debugLog("❌ [BiasViewModel] Failed to save bias: \(error)")
             errorMessage = error.localizedDescription
         }
 
@@ -284,7 +284,7 @@ class BiasViewModel: ObservableObject {
             )
 
             settings.append(setting)
-            print("📦 [BiasViewModel] Group (group-level): '\(group.name)'")
+            debugLog("📦 [BiasViewModel] Group (group-level): '\(group.name)'")
         }
 
         // Add member-level selections (group selected idols by group)
@@ -307,7 +307,7 @@ class BiasViewModel: ObservableObject {
                 )
 
                 settings.append(setting)
-                print("📦 [BiasViewModel] Group (member-level) '\(groupName)': \(selectedGroupIdols.count) members")
+                debugLog("📦 [BiasViewModel] Group (member-level) '\(groupName)': \(selectedGroupIdols.count) members")
             }
         }
 

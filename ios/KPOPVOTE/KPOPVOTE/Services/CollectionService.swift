@@ -47,7 +47,7 @@ class CollectionService {
         var request = URLRequest(url: urlComponents.url!)
         request.httpMethod = "GET"
 
-        print("🔍 [CollectionService] Fetching collections from: \(urlComponents.url!.absoluteString)")
+        debugLog("🔍 [CollectionService] Fetching collections from: \(urlComponents.url!.absoluteString)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -55,7 +55,7 @@ class CollectionService {
             throw CollectionError.invalidResponse
         }
 
-        print("📥 [CollectionService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [CollectionService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             throw CollectionError.fetchFailed
@@ -63,7 +63,7 @@ class CollectionService {
 
         // Debug: Print raw response
         if let jsonString = String(data: data, encoding: .utf8) {
-            print("📦 [CollectionService] Raw JSON response:")
+            debugLog("📦 [CollectionService] Raw JSON response:")
             print(jsonString)
         }
 
@@ -72,26 +72,26 @@ class CollectionService {
 
         do {
             let result = try decoder.decode(CollectionsListResponse.self, from: data)
-            print("✅ [CollectionService] Successfully fetched \(result.data.collections.count) collections")
+            debugLog("✅ [CollectionService] Successfully fetched \(result.data.collections.count) collections")
             return result
         } catch {
-            print("❌ [CollectionService] Decoding error: \(error)")
+            debugLog("❌ [CollectionService] Decoding error: \(error)")
             if let decodingError = error as? DecodingError {
                 switch decodingError {
                 case .typeMismatch(let type, let context):
-                    print("   Type mismatch: \(type)")
-                    print("   Context: \(context)")
+                    debugLog("   Type mismatch: \(type)")
+                    debugLog("   Context: \(context)")
                 case .valueNotFound(let type, let context):
-                    print("   Value not found: \(type)")
-                    print("   Context: \(context)")
+                    debugLog("   Value not found: \(type)")
+                    debugLog("   Context: \(context)")
                 case .keyNotFound(let key, let context):
-                    print("   Key not found: \(key)")
-                    print("   Context: \(context)")
+                    debugLog("   Key not found: \(key)")
+                    debugLog("   Context: \(context)")
                 case .dataCorrupted(let context):
-                    print("   Data corrupted:")
-                    print("   Context: \(context)")
+                    debugLog("   Data corrupted:")
+                    debugLog("   Context: \(context)")
                 @unknown default:
-                    print("   Unknown decoding error")
+                    debugLog("   Unknown decoding error")
                 }
             }
             throw error
@@ -133,7 +133,7 @@ class CollectionService {
         var request = URLRequest(url: urlComponents.url!)
         request.httpMethod = "GET"
 
-        print("🔍 [CollectionService] Searching collections: '\(query)'")
+        debugLog("🔍 [CollectionService] Searching collections: '\(query)'")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -149,7 +149,7 @@ class CollectionService {
         decoder.dateDecodingStrategy = .iso8601
 
         let result = try decoder.decode(CollectionsListResponse.self, from: data)
-        print("✅ [CollectionService] Found \(result.data.collections.count) collections")
+        debugLog("✅ [CollectionService] Found \(result.data.collections.count) collections")
 
         return result
     }
@@ -173,7 +173,7 @@ class CollectionService {
         var request = URLRequest(url: urlComponents.url!)
         request.httpMethod = "GET"
 
-        print("🔍 [CollectionService] Fetching trending collections (period: \(period))")
+        debugLog("🔍 [CollectionService] Fetching trending collections (period: \(period))")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -187,7 +187,7 @@ class CollectionService {
 
         // Debug: Print raw response
         if let jsonString = String(data: data, encoding: .utf8) {
-            print("📦 [CollectionService] Raw JSON response:")
+            debugLog("📦 [CollectionService] Raw JSON response:")
             print(jsonString)
         }
 
@@ -196,26 +196,26 @@ class CollectionService {
 
         do {
             let result = try decoder.decode(TrendingCollectionsResponse.self, from: data)
-            print("✅ [CollectionService] Fetched \(result.data.collections.count) trending collections")
+            debugLog("✅ [CollectionService] Fetched \(result.data.collections.count) trending collections")
             return result.data.collections
         } catch {
-            print("❌ [CollectionService] Decoding error: \(error)")
+            debugLog("❌ [CollectionService] Decoding error: \(error)")
             if let decodingError = error as? DecodingError {
                 switch decodingError {
                 case .typeMismatch(let type, let context):
-                    print("   Type mismatch: \(type)")
-                    print("   Context: \(context)")
+                    debugLog("   Type mismatch: \(type)")
+                    debugLog("   Context: \(context)")
                 case .valueNotFound(let type, let context):
-                    print("   Value not found: \(type)")
-                    print("   Context: \(context)")
+                    debugLog("   Value not found: \(type)")
+                    debugLog("   Context: \(context)")
                 case .keyNotFound(let key, let context):
-                    print("   Key not found: \(key)")
-                    print("   Context: \(context)")
+                    debugLog("   Key not found: \(key)")
+                    debugLog("   Context: \(context)")
                 case .dataCorrupted(let context):
-                    print("   Data corrupted:")
-                    print("   Context: \(context)")
+                    debugLog("   Data corrupted:")
+                    debugLog("   Context: \(context)")
                 @unknown default:
-                    print("   Unknown decoding error")
+                    debugLog("   Unknown decoding error")
                 }
             }
             throw error
@@ -226,39 +226,39 @@ class CollectionService {
     /// - Parameter collectionId: Collection ID
     /// - Returns: Collection detail with user-specific data
     func getCollectionDetail(collectionId: String) async throws -> CollectionDetailResponse {
-        print("🌐 [CollectionService] getCollectionDetail called with ID: \(collectionId)")
+        debugLog("🌐 [CollectionService] getCollectionDetail called with ID: \(collectionId)")
 
         guard let token = try await Auth.auth().currentUser?.getIDToken() else {
-            print("❌ [CollectionService] Not authenticated")
+            debugLog("❌ [CollectionService] Not authenticated")
             throw CollectionError.notAuthenticated
         }
 
         let url = URL(string: "\(Constants.API.collections)/\(collectionId)")!
-        print("🌐 [CollectionService] URL: \(url.absoluteString)")
+        debugLog("🌐 [CollectionService] URL: \(url.absoluteString)")
 
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("🔍 [CollectionService] Sending GET request...")
+        debugLog("🔍 [CollectionService] Sending GET request...")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse else {
-            print("❌ [CollectionService] Invalid response type")
+            debugLog("❌ [CollectionService] Invalid response type")
             throw CollectionError.invalidResponse
         }
 
-        print("📡 [CollectionService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📡 [CollectionService] HTTP Status: \(httpResponse.statusCode)")
 
         // Debug: Print raw response
         if let jsonString = String(data: data, encoding: .utf8) {
-            print("📦 [CollectionService] Raw JSON response:")
+            debugLog("📦 [CollectionService] Raw JSON response:")
             print(jsonString)
         }
 
         guard httpResponse.statusCode == 200 else {
-            print("❌ [CollectionService] HTTP error: \(httpResponse.statusCode)")
+            debugLog("❌ [CollectionService] HTTP error: \(httpResponse.statusCode)")
             throw CollectionError.fetchFailed
         }
 
@@ -267,26 +267,26 @@ class CollectionService {
 
         do {
             let result = try decoder.decode(CollectionDetailResponse.self, from: data)
-            print("✅ [CollectionService] Successfully decoded collection detail: \(result.data.collection.title)")
+            debugLog("✅ [CollectionService] Successfully decoded collection detail: \(result.data.collection.title)")
             return result
         } catch {
-            print("❌ [CollectionService] Decoding error: \(error)")
+            debugLog("❌ [CollectionService] Decoding error: \(error)")
             if let decodingError = error as? DecodingError {
                 switch decodingError {
                 case .typeMismatch(let type, let context):
-                    print("   Type mismatch: \(type)")
-                    print("   Context: \(context)")
+                    debugLog("   Type mismatch: \(type)")
+                    debugLog("   Context: \(context)")
                 case .valueNotFound(let type, let context):
-                    print("   Value not found: \(type)")
-                    print("   Context: \(context)")
+                    debugLog("   Value not found: \(type)")
+                    debugLog("   Context: \(context)")
                 case .keyNotFound(let key, let context):
-                    print("   Key not found: \(key)")
-                    print("   Context: \(context)")
+                    debugLog("   Key not found: \(key)")
+                    debugLog("   Context: \(context)")
                 case .dataCorrupted(let context):
-                    print("   Data corrupted:")
-                    print("   Context: \(context)")
+                    debugLog("   Data corrupted:")
+                    debugLog("   Context: \(context)")
                 @unknown default:
-                    print("   Unknown decoding error")
+                    debugLog("   Unknown decoding error")
                 }
             }
             throw error
@@ -319,7 +319,7 @@ class CollectionService {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("🔍 [CollectionService] Fetching saved collections")
+        debugLog("🔍 [CollectionService] Fetching saved collections")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -335,7 +335,7 @@ class CollectionService {
         decoder.dateDecodingStrategy = .iso8601
 
         let result = try decoder.decode(CollectionsListResponse.self, from: data)
-        print("✅ [CollectionService] Fetched \(result.data.collections.count) saved collections")
+        debugLog("✅ [CollectionService] Fetched \(result.data.collections.count) saved collections")
 
         return result
     }
@@ -364,7 +364,7 @@ class CollectionService {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("🔍 [CollectionService] Fetching my collections")
+        debugLog("🔍 [CollectionService] Fetching my collections")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -380,7 +380,7 @@ class CollectionService {
         decoder.dateDecodingStrategy = .iso8601
 
         let result = try decoder.decode(CollectionsListResponse.self, from: data)
-        print("✅ [CollectionService] Fetched \(result.data.collections.count) created collections")
+        debugLog("✅ [CollectionService] Fetched \(result.data.collections.count) created collections")
 
         return result
     }
@@ -402,7 +402,7 @@ class CollectionService {
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        print("🔄 [CollectionService] Toggling save for collection: \(collectionId)")
+        debugLog("🔄 [CollectionService] Toggling save for collection: \(collectionId)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -415,7 +415,7 @@ class CollectionService {
         }
 
         let result = try JSONDecoder().decode(SaveCollectionResponse.self, from: data)
-        print("✅ [CollectionService] Save toggled: \(result.data.saved ? "Saved" : "Unsaved")")
+        debugLog("✅ [CollectionService] Save toggled: \(result.data.saved ? "Saved" : "Unsaved")")
 
         return result
     }
@@ -437,7 +437,7 @@ class CollectionService {
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        print("📥 [CollectionService] Adding collection tasks: \(collectionId)")
+        debugLog("📥 [CollectionService] Adding collection tasks: \(collectionId)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -450,7 +450,7 @@ class CollectionService {
         }
 
         let result = try JSONDecoder().decode(AddToTasksResponse.self, from: data)
-        print("✅ [CollectionService] Added \(result.data.addedCount) tasks (skipped \(result.data.skippedCount) duplicates)")
+        debugLog("✅ [CollectionService] Added \(result.data.addedCount) tasks (skipped \(result.data.skippedCount) duplicates)")
 
         return result
     }
@@ -472,7 +472,7 @@ class CollectionService {
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        print("📥 [CollectionService] Adding single task: \(taskId) from collection: \(collectionId)")
+        debugLog("📥 [CollectionService] Adding single task: \(taskId) from collection: \(collectionId)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -485,7 +485,7 @@ class CollectionService {
         }
 
         let result = try JSONDecoder().decode(AddSingleTaskResponse.self, from: data)
-        print("✅ [CollectionService] Add single task result: \(result.data.message)")
+        debugLog("✅ [CollectionService] Add single task result: \(result.data.message)")
 
         return result
     }
@@ -520,7 +520,7 @@ class CollectionService {
         ]
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
 
-        print("📤 [CollectionService] Sharing collection to community: \(collectionId)")
+        debugLog("📤 [CollectionService] Sharing collection to community: \(collectionId)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -533,7 +533,7 @@ class CollectionService {
         }
 
         let result = try JSONDecoder().decode(ShareCollectionResponse.self, from: data)
-        print("✅ [CollectionService] Shared to community: postId=\(result.data.postId)")
+        debugLog("✅ [CollectionService] Shared to community: postId=\(result.data.postId)")
 
         return result
     }
@@ -589,7 +589,7 @@ class CollectionService {
 
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
 
-        print("🔄 [CollectionService] Updating collection: \(collectionId)")
+        debugLog("🔄 [CollectionService] Updating collection: \(collectionId)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -605,7 +605,7 @@ class CollectionService {
         decoder.dateDecodingStrategy = .iso8601
 
         let result = try decoder.decode(UpdateCollectionResponse.self, from: data)
-        print("✅ [CollectionService] Collection updated successfully")
+        debugLog("✅ [CollectionService] Collection updated successfully")
 
         return result
     }
@@ -622,7 +622,7 @@ class CollectionService {
         request.httpMethod = "DELETE"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("🔄 [CollectionService] Deleting collection: \(collectionId)")
+        debugLog("🔄 [CollectionService] Deleting collection: \(collectionId)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -636,7 +636,7 @@ class CollectionService {
 
         let decoder = JSONDecoder()
         let result = try decoder.decode(DeleteCollectionResponse.self, from: data)
-        print("✅ [CollectionService] Collection deleted successfully")
+        debugLog("✅ [CollectionService] Collection deleted successfully")
 
         return result
     }

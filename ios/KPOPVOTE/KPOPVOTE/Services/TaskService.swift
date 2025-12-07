@@ -34,7 +34,7 @@ class TaskService: ObservableObject {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("📡 [TaskService] Fetching tasks from: \(urlString)")
+        debugLog("📡 [TaskService] Fetching tasks from: \(urlString)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -42,24 +42,24 @@ class TaskService: ObservableObject {
             throw TaskError.invalidResponse
         }
 
-        print("📥 [TaskService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [TaskService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [TaskService] Error response: \(errorString)")
+                debugLog("❌ [TaskService] Error response: \(errorString)")
             }
             throw TaskError.serverError(httpResponse.statusCode)
         }
 
         // デバッグ: レスポンスの生データを確認
         if let responseString = String(data: data, encoding: .utf8) {
-            print("📥 [TaskService] Response JSON: \(responseString)")
+            debugLog("📥 [TaskService] Response JSON: \(responseString)")
         }
 
         // Cloud Functionのレスポンスを直接デコード
         let result = try JSONDecoder().decode(GetUserTasksResponse.self, from: data)
-        print("✅ [TaskService] Fetched \(result.data.tasks.count) tasks")
-        print("📊 [TaskService] Task count from API: \(result.data.count)")
+        debugLog("✅ [TaskService] Fetched \(result.data.tasks.count) tasks")
+        debugLog("📊 [TaskService] Task count from API: \(result.data.count)")
 
         // 現在のユーザーIDを取得
         guard let userId = Auth.auth().currentUser?.uid else {
@@ -73,8 +73,8 @@ class TaskService: ObservableObject {
             isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
 
             guard let deadline = isoFormatter.date(from: task.deadline) else {
-                print("❌ [TaskService] Failed to parse deadline: '\(task.deadline)'")
-                print("❌ [TaskService] Using Date() fallback, task will expire immediately")
+                debugLog("❌ [TaskService] Failed to parse deadline: '\(task.deadline)'")
+                debugLog("❌ [TaskService] Using Date() fallback, task will expire immediately")
                 return VoteTask(
                     id: task.taskId,
                     userId: Auth.auth().currentUser?.uid ?? "",
@@ -98,7 +98,7 @@ class TaskService: ObservableObject {
             let status: VoteTask.TaskStatus = task.isCompleted ? .completed :
                                               (deadline < Date() ? .expired : .pending)
 
-            print("📋 [TaskService] Task: \(task.title), Deadline: \(task.deadline), Status: \(status)")
+            debugLog("📋 [TaskService] Task: \(task.title), Deadline: \(task.deadline), Status: \(status)")
 
             // Convert coverImageSource string to enum
             let coverImageSource: CoverImageSource? = {
@@ -122,28 +122,28 @@ class TaskService: ObservableObject {
             )
         }
 
-        print("✅ [TaskService] Converted \(voteTasks.count) VoteTasks")
+        debugLog("✅ [TaskService] Converted \(voteTasks.count) VoteTasks")
         return voteTasks
     }
 
     // MARK: - Get Active Tasks
     func getActiveTasks() async throws -> [VoteTask] {
         let allTasks = try await getUserTasks(isCompleted: false)
-        print("📊 [TaskService] Total tasks retrieved: \(allTasks.count)")
+        debugLog("📊 [TaskService] Total tasks retrieved: \(allTasks.count)")
 
         // Filter active tasks (deadline in future and not archived)
         let now = Date()
-        print("🕐 [TaskService] Current time: \(now)")
+        debugLog("🕐 [TaskService] Current time: \(now)")
 
         let activeTasks = allTasks.filter { task in
             let timeInterval = task.deadline.timeIntervalSince(now)
             let hours = timeInterval / 3600
             let isActive = timeInterval > 0 && !task.isArchived
-            print("📋 [TaskService] Task '\(task.title)': deadline in \(hours) hours, archived: \(task.isArchived), active: \(isActive)")
+            debugLog("📋 [TaskService] Task '\(task.title)': deadline in \(hours) hours, archived: \(task.isArchived), active: \(isActive)")
             return isActive
         }
 
-        print("✅ [TaskService] Found \(activeTasks.count) active tasks out of \(allTasks.count) total")
+        debugLog("✅ [TaskService] Found \(activeTasks.count) active tasks out of \(allTasks.count) total")
         return activeTasks.sorted { $0.deadline < $1.deadline }
     }
 
@@ -169,7 +169,7 @@ class TaskService: ObservableObject {
         ]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-        print("📡 [TaskService] Marking task as completed: \(taskId)")
+        debugLog("📡 [TaskService] Marking task as completed: \(taskId)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -177,11 +177,11 @@ class TaskService: ObservableObject {
             throw TaskError.invalidResponse
         }
 
-        print("📥 [TaskService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [TaskService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [TaskService] Error response: \(errorString)")
+                debugLog("❌ [TaskService] Error response: \(errorString)")
             }
             throw TaskError.serverError(httpResponse.statusCode)
         }
@@ -192,10 +192,10 @@ class TaskService: ObservableObject {
            let dataDict = json["data"] as? [String: Any],
            let points = dataDict["pointsGranted"] as? Int {
             pointsGranted = points
-            print("✅ [TaskService] Task completed with \(points) points granted")
+            debugLog("✅ [TaskService] Task completed with \(points) points granted")
         }
 
-        print("✅ [TaskService] Task marked as completed: \(taskId)")
+        debugLog("✅ [TaskService] Task marked as completed: \(taskId)")
         return pointsGranted
     }
 
@@ -224,7 +224,7 @@ class TaskService: ObservableObject {
         let storageRef = Storage.storage().reference()
         let imageRef = storageRef.child(storagePath)
 
-        print("📤 [TaskService] Uploading cover image to: \(storagePath)")
+        debugLog("📤 [TaskService] Uploading cover image to: \(storagePath)")
 
         // Upload image data
         let metadata = StorageMetadata()
@@ -236,7 +236,7 @@ class TaskService: ObservableObject {
         let downloadURL = try await imageRef.downloadURL()
         let downloadURLString = downloadURL.absoluteString
 
-        print("✅ [TaskService] Cover image uploaded: \(downloadURLString)")
+        debugLog("✅ [TaskService] Cover image uploaded: \(downloadURLString)")
 
         return downloadURLString
     }
@@ -294,7 +294,7 @@ class TaskService: ObservableObject {
 
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-        print("📡 [TaskService] Registering new task: \(title)")
+        debugLog("📡 [TaskService] Registering new task: \(title)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -302,18 +302,18 @@ class TaskService: ObservableObject {
             throw TaskError.invalidResponse
         }
 
-        print("📥 [TaskService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [TaskService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 201 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [TaskService] Error response: \(errorString)")
+                debugLog("❌ [TaskService] Error response: \(errorString)")
             }
             throw TaskError.serverError(httpResponse.statusCode)
         }
 
         // Cloud Functionのレスポンスを直接デコード
         let result = try JSONDecoder().decode(RegisterTaskSimpleResponse.self, from: data)
-        print("✅ [TaskService] Task registered: \(result.data.taskId)")
+        debugLog("✅ [TaskService] Task registered: \(result.data.taskId)")
 
         // VoteTaskオブジェクトを構築して返す
         guard let userId = Auth.auth().currentUser?.uid else {
@@ -357,7 +357,7 @@ class TaskService: ObservableObject {
         ]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-        print("📡 [TaskService] Deleting task: \(taskId)")
+        debugLog("📡 [TaskService] Deleting task: \(taskId)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -365,16 +365,16 @@ class TaskService: ObservableObject {
             throw TaskError.invalidResponse
         }
 
-        print("📥 [TaskService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [TaskService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [TaskService] Error response: \(errorString)")
+                debugLog("❌ [TaskService] Error response: \(errorString)")
             }
             throw TaskError.serverError(httpResponse.statusCode)
         }
 
-        print("✅ [TaskService] Task deleted successfully: \(taskId)")
+        debugLog("✅ [TaskService] Task deleted successfully: \(taskId)")
     }
 
     // MARK: - Update Existing Task
@@ -428,7 +428,7 @@ class TaskService: ObservableObject {
 
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-        print("📡 [TaskService] Updating task: \(taskId)")
+        debugLog("📡 [TaskService] Updating task: \(taskId)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -436,18 +436,18 @@ class TaskService: ObservableObject {
             throw TaskError.invalidResponse
         }
 
-        print("📥 [TaskService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [TaskService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [TaskService] Error response: \(errorString)")
+                debugLog("❌ [TaskService] Error response: \(errorString)")
             }
             throw TaskError.serverError(httpResponse.statusCode)
         }
 
         // Decode response
         let result = try JSONDecoder().decode(UpdateTaskResponse.self, from: data)
-        print("✅ [TaskService] Task updated: \(result.data.taskId)")
+        debugLog("✅ [TaskService] Task updated: \(result.data.taskId)")
 
         // Return updated VoteTask
         guard let userId = Auth.auth().currentUser?.uid else {

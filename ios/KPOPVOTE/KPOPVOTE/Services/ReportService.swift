@@ -37,10 +37,10 @@ class ReportService {
             "createdAt": FieldValue.serverTimestamp()
         ]
 
-        print("📝 [ReportService] Submitting report for collection: \(collectionId)")
+        debugLog("📝 [ReportService] Submitting report for collection: \(collectionId)")
 
         try await db.collection("collectionReports").addDocument(data: reportData)
 
-        print("✅ [ReportService] Report submitted successfully")
+        debugLog("✅ [ReportService] Report submitted successfully")
     }
 }

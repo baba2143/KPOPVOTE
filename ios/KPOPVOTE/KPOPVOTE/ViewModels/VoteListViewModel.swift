@@ -78,11 +78,11 @@ class VoteListViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            print("📱 [VoteListViewModel] Loading votes with status: \(selectedStatus?.rawValue ?? "all")")
+            debugLog("📱 [VoteListViewModel] Loading votes with status: \(selectedStatus?.rawValue ?? "all")")
             votes = try await VoteService.shared.fetchVotes(status: selectedStatus)
-            print("✅ [VoteListViewModel] Loaded \(votes.count) votes")
+            debugLog("✅ [VoteListViewModel] Loaded \(votes.count) votes")
         } catch {
-            print("❌ [VoteListViewModel] Failed to load votes: \(error)")
+            debugLog("❌ [VoteListViewModel] Failed to load votes: \(error)")
             errorMessage = error.localizedDescription
         }
 
@@ -112,11 +112,11 @@ class VoteListViewModel: ObservableObject {
         isLoadingTasks = true
 
         do {
-            print("📱 [VoteListViewModel] Loading user tasks...")
+            debugLog("📱 [VoteListViewModel] Loading user tasks...")
             userTasks = try await taskService.getUserTasks()
-            print("✅ [VoteListViewModel] Loaded \(userTasks.count) tasks")
+            debugLog("✅ [VoteListViewModel] Loaded \(userTasks.count) tasks")
         } catch {
-            print("❌ [VoteListViewModel] Failed to load tasks: \(error)")
+            debugLog("❌ [VoteListViewModel] Failed to load tasks: \(error)")
             // Don't show error for tasks, just log it
         }
 
@@ -142,7 +142,7 @@ class VoteListViewModel: ObservableObject {
             }
             showSuccessMessage = true
         } catch {
-            print("❌ [VoteListViewModel] Failed to complete task: \(error)")
+            debugLog("❌ [VoteListViewModel] Failed to complete task: \(error)")
             errorMessage = "タスクの完了処理に失敗しました"
         }
     }
@@ -150,14 +150,14 @@ class VoteListViewModel: ObservableObject {
     /// Delete a task
     func deleteTask(_ task: VoteTask) async {
         do {
-            print("📡 [VoteListViewModel] Deleting task: \(task.id)")
+            debugLog("📡 [VoteListViewModel] Deleting task: \(task.id)")
             try await taskService.deleteTask(taskId: task.id)
 
             // Remove from local array immediately for better UX
             userTasks.removeAll { $0.id == task.id }
-            print("✅ [VoteListViewModel] Task deleted: \(task.id)")
+            debugLog("✅ [VoteListViewModel] Task deleted: \(task.id)")
         } catch {
-            print("❌ [VoteListViewModel] Failed to delete task: \(error.localizedDescription)")
+            debugLog("❌ [VoteListViewModel] Failed to delete task: \(error.localizedDescription)")
             errorMessage = "タスクの削除に失敗しました"
 
             // Reload to ensure consistency

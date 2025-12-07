@@ -34,7 +34,7 @@ class SubscriptionViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            print("🛒 [SubscriptionViewModel] Loading subscriptions...")
+            debugLog("🛒 [SubscriptionViewModel] Loading subscriptions...")
 
             // Wait for SubscriptionManager to load products
             await subscriptionManager.loadSubscriptions()
@@ -48,9 +48,9 @@ class SubscriptionViewModel: ObservableObject {
             }
 
             subscriptions = subProducts
-            print("✅ [SubscriptionViewModel] Loaded \(subscriptions.count) subscriptions")
+            debugLog("✅ [SubscriptionViewModel] Loaded \(subscriptions.count) subscriptions")
         } catch {
-            print("❌ [SubscriptionViewModel] Failed to load subscriptions: \(error.localizedDescription)")
+            debugLog("❌ [SubscriptionViewModel] Failed to load subscriptions: \(error.localizedDescription)")
             errorMessage = "サブスクリプションの読み込みに失敗しました"
             showError = true
         }
@@ -77,12 +77,12 @@ class SubscriptionViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            print("🛒 [SubscriptionViewModel] Subscribing: \(product.id)")
+            debugLog("🛒 [SubscriptionViewModel] Subscribing: \(product.id)")
 
             // Execute subscription through SubscriptionManager
             let response = try await subscriptionManager.subscribe(product)
 
-            print("✅ [SubscriptionViewModel] Subscription successful")
+            debugLog("✅ [SubscriptionViewModel] Subscription successful")
 
             // Show success message
             let periodText = subscription.period == .monthly ? "月額プラン" : "年額プラン"
@@ -93,10 +93,10 @@ class SubscriptionViewModel: ObservableObject {
             await loadSubscriptionStatus()
 
         } catch SubscriptionError.userCancelled {
-            print("⚠️ [SubscriptionViewModel] User cancelled")
+            debugLog("⚠️ [SubscriptionViewModel] User cancelled")
             // Don't show error for user cancellation
         } catch {
-            print("❌ [SubscriptionViewModel] Subscription failed: \(error.localizedDescription)")
+            debugLog("❌ [SubscriptionViewModel] Subscription failed: \(error.localizedDescription)")
             errorMessage = error.localizedDescription
             showError = true
         }

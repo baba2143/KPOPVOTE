@@ -38,33 +38,33 @@ class SubscriptionManager: ObservableObject {
     /// Load subscription products from App Store
     func loadSubscriptions() async {
         do {
-            print("📦 [SubscriptionManager] Loading subscriptions from App Store...")
-            print("📦 [SubscriptionManager] Requesting Product IDs: \(SubscriptionProductID.allProducts)")
-            print("📦 [SubscriptionManager] Bundle ID: \(Bundle.main.bundleIdentifier ?? "unknown")")
+            debugLog("📦 [SubscriptionManager] Loading subscriptions from App Store...")
+            debugLog("📦 [SubscriptionManager] Requesting Product IDs: \(SubscriptionProductID.allProducts)")
+            debugLog("📦 [SubscriptionManager] Bundle ID: \(Bundle.main.bundleIdentifier ?? "unknown")")
 
             let products = try await Product.products(for: SubscriptionProductID.allProducts)
             subscriptions = products.sorted { $0.price < $1.price }
 
-            print("✅ [SubscriptionManager] Loaded \(subscriptions.count) subscriptions")
+            debugLog("✅ [SubscriptionManager] Loaded \(subscriptions.count) subscriptions")
             if subscriptions.isEmpty {
-                print("⚠️ [SubscriptionManager] WARNING: No products returned from App Store")
-                print("⚠️ [SubscriptionManager] Possible causes:")
-                print("   - Product IDs not registered in App Store Connect")
-                print("   - Bundle ID mismatch")
-                print("   - Sandbox account not signed in")
-                print("   - Paid Applications contract not active")
+                debugLog("⚠️ [SubscriptionManager] WARNING: No products returned from App Store")
+                debugLog("⚠️ [SubscriptionManager] Possible causes:")
+                debugLog("   - Product IDs not registered in App Store Connect")
+                debugLog("   - Bundle ID mismatch")
+                debugLog("   - Sandbox account not signed in")
+                debugLog("   - Paid Applications contract not active")
             }
             for product in subscriptions {
-                print("  - \(product.id): \(product.displayPrice)")
+                debugLog("  - \(product.id): \(product.displayPrice)")
             }
         } catch {
-            print("❌ [SubscriptionManager] Failed to load subscriptions")
-            print("❌ [SubscriptionManager] Error: \(error)")
-            print("❌ [SubscriptionManager] Error Description: \(error.localizedDescription)")
+            debugLog("❌ [SubscriptionManager] Failed to load subscriptions")
+            debugLog("❌ [SubscriptionManager] Error: \(error)")
+            debugLog("❌ [SubscriptionManager] Error Description: \(error.localizedDescription)")
             if let nsError = error as NSError? {
-                print("❌ [SubscriptionManager] Error Domain: \(nsError.domain)")
-                print("❌ [SubscriptionManager] Error Code: \(nsError.code)")
-                print("❌ [SubscriptionManager] Error UserInfo: \(nsError.userInfo)")
+                debugLog("❌ [SubscriptionManager] Error Domain: \(nsError.domain)")
+                debugLog("❌ [SubscriptionManager] Error Code: \(nsError.code)")
+                debugLog("❌ [SubscriptionManager] Error UserInfo: \(nsError.userInfo)")
             }
             errorMessage = "サブスクリプションの読み込みに失敗しました"
         }
@@ -74,7 +74,7 @@ class SubscriptionManager: ObservableObject {
     /// Check current subscription status
     func checkSubscriptionStatus() async {
         do {
-            print("🔍 [SubscriptionManager] Checking subscription status...")
+            debugLog("🔍 [SubscriptionManager] Checking subscription status...")
 
             // Check current entitlements
             for await result in Transaction.currentEntitlements {
@@ -91,7 +91,7 @@ class SubscriptionManager: ObservableObject {
                                 autoRenewing: transaction.revocationDate == nil
                             )
 
-                            print("✅ [SubscriptionManager] Active subscription found: \(transaction.productID)")
+                            debugLog("✅ [SubscriptionManager] Active subscription found: \(transaction.productID)")
                             return
                         }
                     }
@@ -106,7 +106,7 @@ class SubscriptionManager: ObservableObject {
                 autoRenewing: false
             )
 
-            print("ℹ️ [SubscriptionManager] No active subscription")
+            debugLog("ℹ️ [SubscriptionManager] No active subscription")
         }
     }
 
@@ -124,7 +124,7 @@ class SubscriptionManager: ObservableObject {
             isPurchasing = false
         }
 
-        print("🛒 [SubscriptionManager] Starting subscription: \(product.id)")
+        debugLog("🛒 [SubscriptionManager] Starting subscription: \(product.id)")
 
         do {
             // Attempt purchase
@@ -135,7 +135,7 @@ class SubscriptionManager: ObservableObject {
                 // Verify the transaction
                 let transaction = try checkVerified(verification)
 
-                print("✅ [SubscriptionManager] Subscription successful, verifying with backend...")
+                debugLog("✅ [SubscriptionManager] Subscription successful, verifying with backend...")
 
                 // Detect if this is local testing environment (StoreKit Configuration)
                 let isLocalTesting = transaction.environment == .xcode
@@ -143,7 +143,7 @@ class SubscriptionManager: ObservableObject {
                 // Verify with backend (skip for local testing)
                 let response: SubscriptionVerificationResponse
                 if isLocalTesting {
-                    print("⚠️ [SubscriptionManager] Local testing environment detected, skipping backend verification")
+                    debugLog("⚠️ [SubscriptionManager] Local testing environment detected, skipping backend verification")
                     response = SubscriptionVerificationResponse(
                         success: true,
                         isPremium: true,
@@ -163,24 +163,24 @@ class SubscriptionManager: ObservableObject {
                 // Update subscription status
                 await checkSubscriptionStatus()
 
-                print("✅ [SubscriptionManager] Subscription completed")
+                debugLog("✅ [SubscriptionManager] Subscription completed")
 
                 return response
 
             case .userCancelled:
-                print("⚠️ [SubscriptionManager] User cancelled subscription")
+                debugLog("⚠️ [SubscriptionManager] User cancelled subscription")
                 throw SubscriptionError.userCancelled
 
             case .pending:
-                print("⏳ [SubscriptionManager] Subscription pending")
+                debugLog("⏳ [SubscriptionManager] Subscription pending")
                 throw SubscriptionError.purchasePending
 
             @unknown default:
-                print("❌ [SubscriptionManager] Unknown subscription result")
+                debugLog("❌ [SubscriptionManager] Unknown subscription result")
                 throw SubscriptionError.unknown
             }
         } catch {
-            print("❌ [SubscriptionManager] Subscription failed: \(error.localizedDescription)")
+            debugLog("❌ [SubscriptionManager] Subscription failed: \(error.localizedDescription)")
             errorMessage = "サブスクリプションに失敗しました"
             throw error
         }
@@ -218,7 +218,7 @@ class SubscriptionManager: ObservableObject {
 
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
 
-        print("📤 [SubscriptionManager] Verifying subscription with backend...")
+        debugLog("📤 [SubscriptionManager] Verifying subscription with backend...")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -226,17 +226,17 @@ class SubscriptionManager: ObservableObject {
             throw SubscriptionError.invalidResponse
         }
 
-        print("📥 [SubscriptionManager] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [SubscriptionManager] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [SubscriptionManager] Error: \(errorString)")
+                debugLog("❌ [SubscriptionManager] Error: \(errorString)")
             }
             throw SubscriptionError.verificationFailed
         }
 
         let result = try JSONDecoder().decode(SubscriptionVerificationResponse.self, from: data)
-        print("✅ [SubscriptionManager] Verification successful")
+        debugLog("✅ [SubscriptionManager] Verification successful")
 
         return result
     }
@@ -271,7 +271,7 @@ class SubscriptionManager: ObservableObject {
                 do {
                     let transaction = try checkVerified(result)
 
-                    print("🔔 [SubscriptionManager] Subscription update: \(transaction.id)")
+                    debugLog("🔔 [SubscriptionManager] Subscription update: \(transaction.id)")
 
                     // Check if this is a subscription product
                     if SubscriptionProductID.allProducts.contains(transaction.productID) {
@@ -282,7 +282,7 @@ class SubscriptionManager: ObservableObject {
                     // Finish the transaction
                     await transaction.finish()
                 } catch {
-                    print("❌ [SubscriptionManager] Transaction verification failed: \(error.localizedDescription)")
+                    debugLog("❌ [SubscriptionManager] Transaction verification failed: \(error.localizedDescription)")
                 }
             }
         }
@@ -291,14 +291,14 @@ class SubscriptionManager: ObservableObject {
     // MARK: - Restore Subscriptions
     /// Restore subscriptions
     func restoreSubscriptions() async {
-        print("🔄 [SubscriptionManager] Restoring subscriptions...")
+        debugLog("🔄 [SubscriptionManager] Restoring subscriptions...")
 
         do {
             try await AppStore.sync()
             await checkSubscriptionStatus()
-            print("✅ [SubscriptionManager] Subscriptions restored")
+            debugLog("✅ [SubscriptionManager] Subscriptions restored")
         } catch {
-            print("❌ [SubscriptionManager] Failed to restore subscriptions: \(error.localizedDescription)")
+            debugLog("❌ [SubscriptionManager] Failed to restore subscriptions: \(error.localizedDescription)")
             errorMessage = "サブスクリプションの復元に失敗しました"
         }
     }

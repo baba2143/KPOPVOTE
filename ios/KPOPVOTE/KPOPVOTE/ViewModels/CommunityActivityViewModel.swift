@@ -31,7 +31,7 @@ class CommunityActivityViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            print("📱 [CommunityActivityViewModel] Loading posts for \(biasIds.count) biases")
+            debugLog("📱 [CommunityActivityViewModel] Loading posts for \(biasIds.count) biases")
 
             // Fetch posts for each bias in parallel
             let results = await withTaskGroup(of: (biasId: String, posts: [CommunityPost]).self) { group in
@@ -45,7 +45,7 @@ class CommunityActivityViewModel: ObservableObject {
                             )
                             return (biasId: biasId, posts: posts)
                         } catch {
-                            print("❌ [CommunityActivityViewModel] Failed to load posts for bias \(biasId): \(error)")
+                            debugLog("❌ [CommunityActivityViewModel] Failed to load posts for bias \(biasId): \(error)")
                             return (biasId: biasId, posts: [])
                         }
                     }
@@ -69,10 +69,10 @@ class CommunityActivityViewModel: ObservableObject {
             // Take top N posts
             posts = Array(sortedPosts.prefix(maxPostsToShow))
 
-            print("✅ [CommunityActivityViewModel] Loaded \(posts.count) posts from \(allPosts.count) total")
+            debugLog("✅ [CommunityActivityViewModel] Loaded \(posts.count) posts from \(allPosts.count) total")
 
         } catch {
-            print("❌ [CommunityActivityViewModel] Error loading posts: \(error)")
+            debugLog("❌ [CommunityActivityViewModel] Error loading posts: \(error)")
             errorMessage = error.localizedDescription
         }
 

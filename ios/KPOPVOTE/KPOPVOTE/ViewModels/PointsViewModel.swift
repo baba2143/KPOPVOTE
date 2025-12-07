@@ -43,7 +43,7 @@ class PointsViewModel: ObservableObject {
     func loadPoints() async {
         // Phase 1: ポイント機能無効化
         guard isPointsFeatureEnabled else {
-            print("ℹ️ [PointsViewModel] Points feature is disabled in Phase 1")
+            debugLog("ℹ️ [PointsViewModel] Points feature is disabled in Phase 1")
             return
         }
 
@@ -51,7 +51,7 @@ class PointsViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            print("📡 [PointsViewModel] Loading multi-point balance...")
+            debugLog("📡 [PointsViewModel] Loading multi-point balance...")
             let balance = try await pointsService.fetchMultiPointBalance()
             premiumPoints = balance.premiumPoints
             regularPoints = balance.regularPoints
@@ -62,9 +62,9 @@ class PointsViewModel: ObservableObject {
             // 後方互換性: 合計を points に設定
             points = premiumPoints + regularPoints + eventPoints + giftPoints
 
-            print("✅ [PointsViewModel] Loaded: premium=\(premiumPoints), regular=\(regularPoints)")
+            debugLog("✅ [PointsViewModel] Loaded: premium=\(premiumPoints), regular=\(regularPoints)")
         } catch {
-            print("❌ [PointsViewModel] Failed to load points: \(error.localizedDescription)")
+            debugLog("❌ [PointsViewModel] Failed to load points: \(error.localizedDescription)")
             errorMessage = "ポイント残高の取得に失敗しました"
             showError = true
         }
@@ -80,7 +80,7 @@ class PointsViewModel: ObservableObject {
         }
 
         do {
-            print("📡 [PointsViewModel] Claiming daily login bonus...")
+            debugLog("📡 [PointsViewModel] Claiming daily login bonus...")
             let bonus = try await pointsService.claimDailyLoginBonus()
             dailyLoginBonus = bonus
 
@@ -88,12 +88,12 @@ class PointsViewModel: ObservableObject {
             if bonus.isFirstTimeToday {
                 showDailyLoginBonus = true
                 await loadPoints()
-                print("✅ [PointsViewModel] Daily login bonus claimed: +\(bonus.pointsGranted)P")
+                debugLog("✅ [PointsViewModel] Daily login bonus claimed: +\(bonus.pointsGranted)P")
             } else {
-                print("ℹ️ [PointsViewModel] Already claimed today")
+                debugLog("ℹ️ [PointsViewModel] Already claimed today")
             }
         } catch {
-            print("❌ [PointsViewModel] Failed to claim daily login: \(error.localizedDescription)")
+            debugLog("❌ [PointsViewModel] Failed to claim daily login: \(error.localizedDescription)")
             // デイリーログインエラーは表示しない（任意機能のため）
         }
     }
@@ -120,7 +120,7 @@ class PointsViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            print("📡 [PointsViewModel] Loading point history: offset=\(currentOffset)")
+            debugLog("📡 [PointsViewModel] Loading point history: offset=\(currentOffset)")
             let history = try await pointsService.fetchPointHistory(limit: limit, offset: currentOffset)
 
             if refresh {
@@ -133,9 +133,9 @@ class PointsViewModel: ObservableObject {
             currentOffset += history.transactions.count
             hasMore = transactions.count < totalCount
 
-            print("✅ [PointsViewModel] Loaded \(history.transactions.count) transactions, total: \(totalCount)")
+            debugLog("✅ [PointsViewModel] Loaded \(history.transactions.count) transactions, total: \(totalCount)")
         } catch {
-            print("❌ [PointsViewModel] Failed to load point history: \(error.localizedDescription)")
+            debugLog("❌ [PointsViewModel] Failed to load point history: \(error.localizedDescription)")
             errorMessage = "ポイント履歴の取得に失敗しました"
             showError = true
         }

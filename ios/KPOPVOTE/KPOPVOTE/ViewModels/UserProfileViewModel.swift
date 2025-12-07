@@ -19,10 +19,10 @@ class UserProfileViewModel: ObservableObject {
 
         do {
             profile = try await CommunityService.shared.getUserProfile(userId: userId)
-            print("✅ [UserProfileViewModel] Loaded profile for: \(profile?.displayName ?? "")")
+            debugLog("✅ [UserProfileViewModel] Loaded profile for: \(profile?.displayName ?? "")")
         } catch {
             errorMessage = "プロフィールの読み込みに失敗しました"
-            print("❌ [UserProfileViewModel] Error loading profile: \(error)")
+            debugLog("❌ [UserProfileViewModel] Error loading profile: \(error)")
         }
 
         isLoading = false
@@ -48,7 +48,7 @@ class UserProfileViewModel: ObservableObject {
                     isFollowedBy: profile.isFollowedBy,
                     posts: profile.posts
                 )
-                print("✅ [UserProfileViewModel] Unfollowed user")
+                debugLog("✅ [UserProfileViewModel] Unfollowed user")
             } else {
                 _ = try await FollowService.shared.followUser(userId: profile.id)
                 // Update local state
@@ -65,11 +65,11 @@ class UserProfileViewModel: ObservableObject {
                     isFollowedBy: profile.isFollowedBy,
                     posts: profile.posts
                 )
-                print("✅ [UserProfileViewModel] Followed user")
+                debugLog("✅ [UserProfileViewModel] Followed user")
             }
         } catch {
             errorMessage = "フォロー操作に失敗しました"
-            print("❌ [UserProfileViewModel] Follow error: \(error)")
+            debugLog("❌ [UserProfileViewModel] Follow error: \(error)")
         }
     }
 }

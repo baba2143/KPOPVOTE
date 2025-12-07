@@ -24,11 +24,11 @@ class SearchViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            print("📱 [SearchViewModel] Loading recommended users")
+            debugLog("📱 [SearchViewModel] Loading recommended users")
             recommendedUsers = try await CommunityService.shared.getRecommendedUsers(limit: 20)
-            print("✅ [SearchViewModel] Loaded \(recommendedUsers.count) recommended users")
+            debugLog("✅ [SearchViewModel] Loaded \(recommendedUsers.count) recommended users")
         } catch {
-            print("❌ [SearchViewModel] Failed to load recommended users: \(error)")
+            debugLog("❌ [SearchViewModel] Failed to load recommended users: \(error)")
             errorMessage = error.localizedDescription
         }
         
@@ -41,11 +41,11 @@ class SearchViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            print("📱 [SearchViewModel] Loading following activity")
+            debugLog("📱 [SearchViewModel] Loading following activity")
             followingActivity = try await CommunityService.shared.getFollowingActivity(limit: 20)
-            print("✅ [SearchViewModel] Loaded \(followingActivity.count) following users")
+            debugLog("✅ [SearchViewModel] Loaded \(followingActivity.count) following users")
         } catch {
-            print("❌ [SearchViewModel] Failed to load following activity: \(error)")
+            debugLog("❌ [SearchViewModel] Failed to load following activity: \(error)")
             errorMessage = error.localizedDescription
         }
         
@@ -58,11 +58,11 @@ class SearchViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            print("📱 [SearchViewModel] Searching users: \(query)")
+            debugLog("📱 [SearchViewModel] Searching users: \(query)")
             searchedUsers = try await CommunityService.shared.searchUsers(query: query, limit: 20)
-            print("✅ [SearchViewModel] Found \(searchedUsers.count) users")
+            debugLog("✅ [SearchViewModel] Found \(searchedUsers.count) users")
         } catch {
-            print("❌ [SearchViewModel] Failed to search users: \(error)")
+            debugLog("❌ [SearchViewModel] Failed to search users: \(error)")
             errorMessage = error.localizedDescription
         }
         
@@ -75,11 +75,11 @@ class SearchViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            print("📱 [SearchViewModel] Searching posts: \(query)")
+            debugLog("📱 [SearchViewModel] Searching posts: \(query)")
             searchedPosts = try await CommunityService.shared.searchPosts(query: query, limit: 20)
-            print("✅ [SearchViewModel] Found \(searchedPosts.count) posts")
+            debugLog("✅ [SearchViewModel] Found \(searchedPosts.count) posts")
         } catch {
-            print("❌ [SearchViewModel] Failed to search posts: \(error)")
+            debugLog("❌ [SearchViewModel] Failed to search posts: \(error)")
             errorMessage = error.localizedDescription
         }
         
@@ -95,7 +95,7 @@ class SearchViewModel: ObservableObject {
     // MARK: - Toggle Like
     func toggleLike(postId: String) async {
         do {
-            print("💗 [SearchViewModel] Toggling like for post: \(postId)")
+            debugLog("💗 [SearchViewModel] Toggling like for post: \(postId)")
             let result = try await CommunityService.shared.likePost(postId: postId)
             
             // Update local post state
@@ -104,9 +104,9 @@ class SearchViewModel: ObservableObject {
                 searchedPosts[index].likesCount = result.likesCount
             }
             
-            print("✅ [SearchViewModel] Like toggled: \(result.action)")
+            debugLog("✅ [SearchViewModel] Like toggled: \(result.action)")
         } catch {
-            print("❌ [SearchViewModel] Failed to toggle like: \(error)")
+            debugLog("❌ [SearchViewModel] Failed to toggle like: \(error)")
             errorMessage = error.localizedDescription
         }
     }

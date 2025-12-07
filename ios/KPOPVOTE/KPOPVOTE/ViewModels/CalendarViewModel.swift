@@ -100,7 +100,7 @@ class CalendarViewModel: ObservableObject {
     /// Load events for the selected artist
     func loadEvents() async {
         guard let artistId = selectedArtistId else {
-            print("⚠️ [CalendarVM] No artist selected")
+            debugLog("⚠️ [CalendarVM] No artist selected")
             return
         }
 
@@ -125,10 +125,10 @@ class CalendarViewModel: ObservableObject {
             hasMore = result.hasMore
             lastEventId = result.events.last?.eventId
 
-            print("✅ [CalendarVM] Loaded \(events.count) events")
+            debugLog("✅ [CalendarVM] Loaded \(events.count) events")
         } catch {
             errorMessage = error.localizedDescription
-            print("❌ [CalendarVM] Error: \(error)")
+            debugLog("❌ [CalendarVM] Error: \(error)")
         }
 
         isLoading = false
@@ -153,7 +153,7 @@ class CalendarViewModel: ObservableObject {
             hasMore = result.hasMore
             lastEventId = result.events.last?.eventId
         } catch {
-            print("❌ [CalendarVM] Load more error: \(error)")
+            debugLog("❌ [CalendarVM] Load more error: \(error)")
         }
 
         isLoading = false

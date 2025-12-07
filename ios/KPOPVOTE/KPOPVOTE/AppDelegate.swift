@@ -37,7 +37,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     ) -> Bool {
         // Handle Firebase Auth URL (for reCAPTCHA verification)
         if Auth.auth().canHandle(url) {
-            print("✅ [AppDelegate] Firebase Auth handled URL: \(url.scheme ?? "unknown")")
+            debugLog("✅ [AppDelegate] Firebase Auth handled URL: \(url.scheme ?? "unknown")")
             return true
         }
         return false
@@ -56,7 +56,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         // Register for remote notifications
         application.registerForRemoteNotifications()
 
-        print("📱 [AppDelegate] Push notification setup completed")
+        debugLog("📱 [AppDelegate] Push notification setup completed")
     }
 
     /// Request notification permission from user
@@ -65,14 +65,14 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
         UNUserNotificationCenter.current().requestAuthorization(options: authOptions) { granted, error in
             if let error = error {
-                print("❌ [AppDelegate] Notification permission error: \(error.localizedDescription)")
+                debugLog("❌ [AppDelegate] Notification permission error: \(error.localizedDescription)")
                 return
             }
 
             if granted {
-                print("✅ [AppDelegate] Notification permission granted")
+                debugLog("✅ [AppDelegate] Notification permission granted")
             } else {
-                print("⚠️ [AppDelegate] Notification permission denied")
+                debugLog("⚠️ [AppDelegate] Notification permission denied")
             }
         }
     }
@@ -84,7 +84,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
     ) {
         let tokenString = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
-        print("📱 [AppDelegate] APNs token received: \(tokenString.prefix(20))...")
+        debugLog("📱 [AppDelegate] APNs token received: \(tokenString.prefix(20))...")
 
         // Pass the APNs token to Firebase Auth (for Phone Authentication)
         Auth.auth().setAPNSToken(deviceToken, type: .unknown)
@@ -100,13 +100,13 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     ) {
         // Handle Firebase Auth notifications (for phone auth verification)
         if Auth.auth().canHandleNotification(userInfo) {
-            print("✅ [AppDelegate] Firebase Auth handled notification")
+            debugLog("✅ [AppDelegate] Firebase Auth handled notification")
             completionHandler(.noData)
             return
         }
 
         // Handle other notifications
-        print("📩 [AppDelegate] Remote notification received: \(userInfo)")
+        debugLog("📩 [AppDelegate] Remote notification received: \(userInfo)")
         completionHandler(.newData)
     }
 
@@ -114,7 +114,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         _ application: UIApplication,
         didFailToRegisterForRemoteNotificationsWithError error: Error
     ) {
-        print("❌ [AppDelegate] Failed to register for remote notifications: \(error.localizedDescription)")
+        debugLog("❌ [AppDelegate] Failed to register for remote notifications: \(error.localizedDescription)")
     }
 }
 
@@ -129,7 +129,7 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
         let userInfo = notification.request.content.userInfo
-        print("📩 [AppDelegate] Foreground notification received: \(userInfo)")
+        debugLog("📩 [AppDelegate] Foreground notification received: \(userInfo)")
 
         // Show notification banner even when app is in foreground
         completionHandler([.banner, .badge, .sound])
@@ -142,7 +142,7 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
         let userInfo = response.notification.request.content.userInfo
-        print("👆 [AppDelegate] Notification tapped: \(userInfo)")
+        debugLog("👆 [AppDelegate] Notification tapped: \(userInfo)")
 
         // Handle notification tap navigation
         handleNotificationTap(userInfo: userInfo)
@@ -153,11 +153,11 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
     /// Handle notification tap and navigate to appropriate screen
     private func handleNotificationTap(userInfo: [AnyHashable: Any]) {
         guard let type = userInfo["type"] as? String else {
-            print("⚠️ [AppDelegate] Notification type not found")
+            debugLog("⚠️ [AppDelegate] Notification type not found")
             return
         }
 
-        print("🔗 [AppDelegate] Handling notification type: \(type)")
+        debugLog("🔗 [AppDelegate] Handling notification type: \(type)")
 
         // Post notification for navigation
         // Views can observe this to navigate appropriately
@@ -178,11 +178,11 @@ extension AppDelegate: MessagingDelegate {
     /// Called when FCM token is received or refreshed
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
         guard let token = fcmToken else {
-            print("⚠️ [AppDelegate] FCM token is nil")
+            debugLog("⚠️ [AppDelegate] FCM token is nil")
             return
         }
 
-        print("🔑 [AppDelegate] FCM token received: \(token.prefix(20))...")
+        debugLog("🔑 [AppDelegate] FCM token received: \(token.prefix(20))...")
 
         // Register token with server
         Task {

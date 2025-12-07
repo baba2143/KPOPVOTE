@@ -88,12 +88,12 @@ class EditCollectionViewModel: ObservableObject {
                 collection.tasks.contains(where: { $0.id == userTask.id })
             }
 
-            print("✅ [EditCollectionViewModel] Loaded collection data: \(collection.title)")
+            debugLog("✅ [EditCollectionViewModel] Loaded collection data: \(collection.title)")
         } catch {
             let errorType = NetworkErrorHandler.parseError(error)
             errorMessage = errorType.userMessage
             showError = true
-            print("❌ [EditCollectionViewModel] Failed to load collection: \(error.localizedDescription)")
+            debugLog("❌ [EditCollectionViewModel] Failed to load collection: \(error.localizedDescription)")
         }
 
         isLoading = false
@@ -186,7 +186,7 @@ class EditCollectionViewModel: ObservableObject {
                 visibility: visibility.rawValue
             )
 
-            print("✅ [EditCollectionViewModel] Collection updated: \(response.data.collection.id)")
+            debugLog("✅ [EditCollectionViewModel] Collection updated: \(response.data.collection.id)")
 
             isLoading = false
             return true
@@ -194,7 +194,7 @@ class EditCollectionViewModel: ObservableObject {
             let errorType = NetworkErrorHandler.parseError(error)
             errorMessage = errorType.userMessage
             showError = true
-            print("❌ [EditCollectionViewModel] Failed to update collection: \(error.localizedDescription)")
+            debugLog("❌ [EditCollectionViewModel] Failed to update collection: \(error.localizedDescription)")
 
             isLoading = false
             return false

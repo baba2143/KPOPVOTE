@@ -32,7 +32,7 @@ class GroupService {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("🔍 [GroupService] Fetching groups from: \(urlComponents.url!.absoluteString)")
+        debugLog("🔍 [GroupService] Fetching groups from: \(urlComponents.url!.absoluteString)")
 
         // Execute request
         let (data, response) = try await URLSession.shared.data(for: request)
@@ -42,11 +42,11 @@ class GroupService {
             throw GroupError.invalidResponse
         }
 
-        print("📥 [GroupService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [GroupService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [GroupService] Error response: \(errorString)")
+                debugLog("❌ [GroupService] Error response: \(errorString)")
             }
             throw GroupError.fetchFailed
         }
@@ -54,7 +54,7 @@ class GroupService {
         // Decode response
         let result = try JSONDecoder().decode(GroupListResponse.self, from: data)
 
-        print("✅ [GroupService] Successfully fetched \(result.data.count) groups")
+        debugLog("✅ [GroupService] Successfully fetched \(result.data.count) groups")
 
         return result.data.groups
     }

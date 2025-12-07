@@ -39,7 +39,7 @@ class VoteDetailViewModel: ObservableObject {
     // MARK: - Initializer
     init(voteId: String) {
         self.voteId = voteId
-        print("🎬 [VoteDetailViewModel] Initialized with voteId: \(voteId)")
+        debugLog("🎬 [VoteDetailViewModel] Initialized with voteId: \(voteId)")
     }
 
     // MARK: - Computed Properties
@@ -74,16 +74,16 @@ class VoteDetailViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            print("📱 [VoteDetailViewModel] Loading vote detail: \(voteId)")
+            debugLog("📱 [VoteDetailViewModel] Loading vote detail: \(voteId)")
 
             // Load vote detail
             vote = try await VoteService.shared.fetchVoteDetail(voteId: voteId)
-            print("✅ [VoteDetailViewModel] Loaded vote detail")
+            debugLog("✅ [VoteDetailViewModel] Loaded vote detail")
 
             // Load ranking
             await loadRanking()
         } catch {
-            print("❌ [VoteDetailViewModel] Failed to load detail: \(error)")
+            debugLog("❌ [VoteDetailViewModel] Failed to load detail: \(error)")
             errorMessage = error.localizedDescription
         }
 
@@ -93,11 +93,11 @@ class VoteDetailViewModel: ObservableObject {
     /// Load ranking
     func loadRanking() async {
         do {
-            print("📱 [VoteDetailViewModel] Loading ranking: \(voteId)")
+            debugLog("📱 [VoteDetailViewModel] Loading ranking: \(voteId)")
             ranking = try await VoteService.shared.fetchRanking(voteId: voteId)
-            print("✅ [VoteDetailViewModel] Loaded ranking")
+            debugLog("✅ [VoteDetailViewModel] Loaded ranking")
         } catch {
-            print("❌ [VoteDetailViewModel] Failed to load ranking: \(error)")
+            debugLog("❌ [VoteDetailViewModel] Failed to load ranking: \(error)")
             // Don't show error for ranking failure
         }
     }
@@ -105,7 +105,7 @@ class VoteDetailViewModel: ObservableObject {
     /// Select choice
     func selectChoice(_ choiceId: String) {
         selectedChoiceId = choiceId
-        print("📱 [VoteDetailViewModel] Selected choice: \(choiceId)")
+        debugLog("📱 [VoteDetailViewModel] Selected choice: \(choiceId)")
     }
 
     /// Execute vote
@@ -125,7 +125,7 @@ class VoteDetailViewModel: ObservableObject {
         successMessage = nil
 
         do {
-            print("📱 [VoteDetailViewModel] Executing vote: \(voteId), choice: \(choiceId)")
+            debugLog("📱 [VoteDetailViewModel] Executing vote: \(voteId), choice: \(choiceId)")
 
             // Phase 1: ポイント機能無効化時は "none" を送信
             let pointSelectionValue = FeatureFlags.pointsEnabled ? selectedPointMode.rawValue : "none"
@@ -154,16 +154,16 @@ class VoteDetailViewModel: ObservableObject {
                 successMessage = "投票が完了しました（\(result.voteCount)票）"
             }
 
-            print("✅ [VoteDetailViewModel] Vote executed successfully")
+            debugLog("✅ [VoteDetailViewModel] Vote executed successfully")
 
             // Reload ranking to show updated results
             await loadRanking()
 
         } catch let error as VoteError {
-            print("❌ [VoteDetailViewModel] Vote execution failed: \(error)")
+            debugLog("❌ [VoteDetailViewModel] Vote execution failed: \(error)")
             errorMessage = error.localizedDescription
         } catch {
-            print("❌ [VoteDetailViewModel] Unexpected error: \(error)")
+            debugLog("❌ [VoteDetailViewModel] Unexpected error: \(error)")
             errorMessage = "投票に失敗しました"
         }
 
@@ -341,7 +341,7 @@ class VoteDetailViewModel: ObservableObject {
         selectedPointMode = mode
         calculateMaxVoteCount()
         calculatePointsToBeUsed()
-        print("📱 [VoteDetailViewModel] Point mode changed to: \(mode.rawValue)")
+        debugLog("📱 [VoteDetailViewModel] Point mode changed to: \(mode.rawValue)")
     }
 
     /// Check if current mode can vote with current settings

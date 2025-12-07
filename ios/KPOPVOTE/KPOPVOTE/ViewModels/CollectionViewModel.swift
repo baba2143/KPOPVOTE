@@ -97,10 +97,10 @@ class CollectionViewModel: ObservableObject {
 
         do {
             trendingCollections = try await collectionService.getTrendingCollections(period: period, limit: limit)
-            print("✅ [CollectionViewModel] Loaded \(trendingCollections.count) trending collections")
+            debugLog("✅ [CollectionViewModel] Loaded \(trendingCollections.count) trending collections")
         } catch {
             errorMessage = NetworkErrorHandler.getUserMessage(for: error)
-            print("❌ [CollectionViewModel] Failed to load trending: \(error.localizedDescription)")
+            debugLog("❌ [CollectionViewModel] Failed to load trending: \(error.localizedDescription)")
         }
 
         isLoading = false
@@ -129,10 +129,10 @@ class CollectionViewModel: ObservableObject {
             totalPages = response.data.pagination.totalPages
             hasNextPage = response.data.pagination.hasNext
 
-            print("✅ [CollectionViewModel] Loaded \(response.data.collections.count) collections (page \(page))")
+            debugLog("✅ [CollectionViewModel] Loaded \(response.data.collections.count) collections (page \(page))")
         } catch {
             errorMessage = NetworkErrorHandler.getUserMessage(for: error)
-            print("❌ [CollectionViewModel] Failed to load latest: \(error.localizedDescription)")
+            debugLog("❌ [CollectionViewModel] Failed to load latest: \(error.localizedDescription)")
         }
 
         isLoading = false
@@ -173,10 +173,10 @@ class CollectionViewModel: ObservableObject {
             totalPages = response.data.pagination.totalPages
             hasNextPage = response.data.pagination.hasNext
 
-            print("✅ [CollectionViewModel] Found \(response.data.collections.count) collections for '\(query)'")
+            debugLog("✅ [CollectionViewModel] Found \(response.data.collections.count) collections for '\(query)'")
         } catch {
             errorMessage = NetworkErrorHandler.getUserMessage(for: error)
-            print("❌ [CollectionViewModel] Search failed: \(error.localizedDescription)")
+            debugLog("❌ [CollectionViewModel] Search failed: \(error.localizedDescription)")
         }
 
         isLoading = false
@@ -186,7 +186,7 @@ class CollectionViewModel: ObservableObject {
     func loadSavedCollections(page: Int = 1) async {
         // ゲストモードの場合はスキップ
         guard Auth.auth().currentUser != nil else {
-            print("👤 [CollectionViewModel] Guest mode - skipping saved collections")
+            debugLog("👤 [CollectionViewModel] Guest mode - skipping saved collections")
             savedCollections = []
             isLoading = false
             return
@@ -208,10 +208,10 @@ class CollectionViewModel: ObservableObject {
             totalPages = response.data.pagination.totalPages
             hasNextPage = response.data.pagination.hasNext
 
-            print("✅ [CollectionViewModel] Loaded \(response.data.collections.count) saved collections")
+            debugLog("✅ [CollectionViewModel] Loaded \(response.data.collections.count) saved collections")
         } catch {
             errorMessage = NetworkErrorHandler.getUserMessage(for: error)
-            print("❌ [CollectionViewModel] Failed to load saved: \(error.localizedDescription)")
+            debugLog("❌ [CollectionViewModel] Failed to load saved: \(error.localizedDescription)")
         }
 
         isLoading = false
@@ -221,7 +221,7 @@ class CollectionViewModel: ObservableObject {
     func loadMyCollections(page: Int = 1) async {
         // ゲストモードの場合はスキップ
         guard Auth.auth().currentUser != nil else {
-            print("👤 [CollectionViewModel] Guest mode - skipping my collections")
+            debugLog("👤 [CollectionViewModel] Guest mode - skipping my collections")
             myCollections = []
             isLoading = false
             return
@@ -243,10 +243,10 @@ class CollectionViewModel: ObservableObject {
             totalPages = response.data.pagination.totalPages
             hasNextPage = response.data.pagination.hasNext
 
-            print("✅ [CollectionViewModel] Loaded \(response.data.collections.count) created collections")
+            debugLog("✅ [CollectionViewModel] Loaded \(response.data.collections.count) created collections")
         } catch {
             errorMessage = NetworkErrorHandler.getUserMessage(for: error)
-            print("❌ [CollectionViewModel] Failed to load my collections: \(error.localizedDescription)")
+            debugLog("❌ [CollectionViewModel] Failed to load my collections: \(error.localizedDescription)")
         }
 
         isLoading = false
@@ -254,36 +254,36 @@ class CollectionViewModel: ObservableObject {
 
     /// Load collection detail
     func loadCollectionDetail(collectionId: String) async {
-        print("🔄 [CollectionViewModel] loadCollectionDetail called with ID: \(collectionId)")
+        debugLog("🔄 [CollectionViewModel] loadCollectionDetail called with ID: \(collectionId)")
         isLoading = true
         errorMessage = nil
 
         do {
-            print("🌐 [CollectionViewModel] Calling collectionService.getCollectionDetail...")
+            debugLog("🌐 [CollectionViewModel] Calling collectionService.getCollectionDetail...")
             let response = try await collectionService.getCollectionDetail(collectionId: collectionId)
 
-            print("📦 [CollectionViewModel] Received response: \(response)")
+            debugLog("📦 [CollectionViewModel] Received response: \(response)")
             currentCollection = response.data.collection
             isSaved = response.data.isSaved
             isLiked = response.data.isLiked
             isOwner = response.data.isOwner
             isFollowingCreator = response.data.isFollowingCreator
 
-            print("✅ [CollectionViewModel] Loaded collection detail: \(response.data.collection.title)")
+            debugLog("✅ [CollectionViewModel] Loaded collection detail: \(response.data.collection.title)")
         } catch {
             let userMessage = NetworkErrorHandler.getUserMessage(for: error)
             errorMessage = userMessage
-            print("❌ [CollectionViewModel] Failed to load detail")
-            print("   Error: \(error)")
-            print("   LocalizedDescription: \(error.localizedDescription)")
-            print("   User Message: \(userMessage)")
+            debugLog("❌ [CollectionViewModel] Failed to load detail")
+            debugLog("   Error: \(error)")
+            debugLog("   LocalizedDescription: \(error.localizedDescription)")
+            debugLog("   User Message: \(userMessage)")
             if let decodingError = error as? DecodingError {
-                print("   DecodingError details: \(decodingError)")
+                debugLog("   DecodingError details: \(decodingError)")
             }
         }
 
         isLoading = false
-        print("🏁 [CollectionViewModel] loadCollectionDetail finished. currentCollection: \(currentCollection?.title ?? "nil"), error: \(errorMessage ?? "none")")
+        debugLog("🏁 [CollectionViewModel] loadCollectionDetail finished. currentCollection: \(currentCollection?.title ?? "nil"), error: \(errorMessage ?? "none")")
     }
 
     // MARK: - Action Methods
@@ -300,11 +300,11 @@ class CollectionViewModel: ObservableObject {
                 currentCollection = collection
             }
 
-            print("✅ [CollectionViewModel] Save toggled: \(isSaved)")
+            debugLog("✅ [CollectionViewModel] Save toggled: \(isSaved)")
             return true
         } catch {
             errorMessage = NetworkErrorHandler.getUserMessage(for: error)
-            print("❌ [CollectionViewModel] Save toggle failed: \(error.localizedDescription)")
+            debugLog("❌ [CollectionViewModel] Save toggle failed: \(error.localizedDescription)")
             return false
         }
     }
@@ -314,11 +314,11 @@ class CollectionViewModel: ObservableObject {
         do {
             let response = try await collectionService.addCollectionToTasks(collectionId: collectionId)
 
-            print("✅ [CollectionViewModel] Added \(response.data.addedCount) tasks")
+            debugLog("✅ [CollectionViewModel] Added \(response.data.addedCount) tasks")
             return response.data
         } catch {
             errorMessage = NetworkErrorHandler.getUserMessage(for: error)
-            print("❌ [CollectionViewModel] Add to tasks failed: \(error.localizedDescription)")
+            debugLog("❌ [CollectionViewModel] Add to tasks failed: \(error.localizedDescription)")
             return nil
         }
     }
@@ -331,11 +331,11 @@ class CollectionViewModel: ObservableObject {
                 taskId: task.id
             )
 
-            print("✅ [CollectionViewModel] Add single task result: \(response.data.message)")
+            debugLog("✅ [CollectionViewModel] Add single task result: \(response.data.message)")
             return response.data
         } catch {
             errorMessage = NetworkErrorHandler.getUserMessage(for: error)
-            print("❌ [CollectionViewModel] Add single task failed: \(error.localizedDescription)")
+            debugLog("❌ [CollectionViewModel] Add single task failed: \(error.localizedDescription)")
             return nil
         }
     }
@@ -351,11 +351,11 @@ class CollectionViewModel: ObservableObject {
             latestCollections.removeAll { $0.id == collectionId }
             trendingCollections.removeAll { $0.id == collectionId }
 
-            print("✅ [CollectionViewModel] Collection deleted successfully")
+            debugLog("✅ [CollectionViewModel] Collection deleted successfully")
             return true
         } catch {
             errorMessage = NetworkErrorHandler.getUserMessage(for: error)
-            print("❌ [CollectionViewModel] Delete collection failed: \(error.localizedDescription)")
+            debugLog("❌ [CollectionViewModel] Delete collection failed: \(error.localizedDescription)")
             return false
         }
     }
@@ -363,7 +363,7 @@ class CollectionViewModel: ObservableObject {
     /// Toggle follow/unfollow collection creator
     func toggleFollowCreator() async -> Bool {
         guard let creatorId = currentCollection?.creatorId else {
-            print("❌ [CollectionViewModel] No creator ID")
+            debugLog("❌ [CollectionViewModel] No creator ID")
             return false
         }
 
@@ -371,16 +371,16 @@ class CollectionViewModel: ObservableObject {
             if isFollowingCreator {
                 try await FollowService.shared.unfollowUser(userId: creatorId)
                 isFollowingCreator = false
-                print("✅ [CollectionViewModel] Unfollowed creator: \(creatorId)")
+                debugLog("✅ [CollectionViewModel] Unfollowed creator: \(creatorId)")
             } else {
                 _ = try await FollowService.shared.followUser(userId: creatorId)
                 isFollowingCreator = true
-                print("✅ [CollectionViewModel] Followed creator: \(creatorId)")
+                debugLog("✅ [CollectionViewModel] Followed creator: \(creatorId)")
             }
             return true
         } catch {
             errorMessage = NetworkErrorHandler.getUserMessage(for: error)
-            print("❌ [CollectionViewModel] Follow toggle failed: \(error.localizedDescription)")
+            debugLog("❌ [CollectionViewModel] Follow toggle failed: \(error.localizedDescription)")
             return false
         }
     }

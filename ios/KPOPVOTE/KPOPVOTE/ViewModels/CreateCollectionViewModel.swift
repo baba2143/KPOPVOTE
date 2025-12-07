@@ -61,12 +61,12 @@ class CreateCollectionViewModel: ObservableObject {
         do {
             // Get all non-completed tasks
             userTasks = try await taskService.getUserTasks(isCompleted: false)
-            print("✅ [CreateCollectionViewModel] Loaded \(userTasks.count) user tasks")
+            debugLog("✅ [CreateCollectionViewModel] Loaded \(userTasks.count) user tasks")
         } catch {
             let errorType = NetworkErrorHandler.parseError(error)
             errorMessage = errorType.userMessage
             showError = true
-            print("❌ [CreateCollectionViewModel] Failed to load tasks: \(error.localizedDescription)")
+            debugLog("❌ [CreateCollectionViewModel] Failed to load tasks: \(error.localizedDescription)")
         }
 
         isLoading = false
@@ -78,7 +78,7 @@ class CreateCollectionViewModel: ObservableObject {
     func toggleTaskSelection(_ task: VoteTask) {
         if selectedTasks.contains(where: { $0.id == task.id }) {
             selectedTasks.removeAll { $0.id == task.id }
-            print("📋 [CreateCollectionViewModel] Deselected task: \(task.title)")
+            debugLog("📋 [CreateCollectionViewModel] Deselected task: \(task.title)")
         } else {
             // Check max limit
             if selectedTasks.count >= 50 {
@@ -87,7 +87,7 @@ class CreateCollectionViewModel: ObservableObject {
                 return
             }
             selectedTasks.append(task)
-            print("📋 [CreateCollectionViewModel] Selected task: \(task.title)")
+            debugLog("📋 [CreateCollectionViewModel] Selected task: \(task.title)")
         }
     }
 
@@ -141,7 +141,7 @@ class CreateCollectionViewModel: ObservableObject {
             var coverImageUrl: String?
             if let image = coverImage {
                 coverImageUrl = try await uploadCoverImage(image)
-                print("✅ [CreateCollectionViewModel] Cover image uploaded: \(coverImageUrl ?? "")")
+                debugLog("✅ [CreateCollectionViewModel] Cover image uploaded: \(coverImageUrl ?? "")")
             }
 
             // Step 2: Get authentication token
@@ -178,7 +178,7 @@ class CreateCollectionViewModel: ObservableObject {
             encoder.dateEncodingStrategy = .iso8601
             request.httpBody = try encoder.encode(collectionData)
 
-            print("📡 [CreateCollectionViewModel] Creating collection: \(title)")
+            debugLog("📡 [CreateCollectionViewModel] Creating collection: \(title)")
 
             // Step 5: Send request
             let (data, response) = try await URLSession.shared.data(for: request)
@@ -187,18 +187,18 @@ class CreateCollectionViewModel: ObservableObject {
                 throw CreateCollectionError.invalidResponse
             }
 
-            print("📥 [CreateCollectionViewModel] HTTP Status: \(httpResponse.statusCode)")
+            debugLog("📥 [CreateCollectionViewModel] HTTP Status: \(httpResponse.statusCode)")
 
             guard httpResponse.statusCode == 201 else {
                 if let errorString = String(data: data, encoding: .utf8) {
-                    print("❌ [CreateCollectionViewModel] Error response: \(errorString)")
+                    debugLog("❌ [CreateCollectionViewModel] Error response: \(errorString)")
                 }
                 throw CreateCollectionError.serverError(httpResponse.statusCode)
             }
 
             // Step 6: Parse response
             let result = try JSONDecoder().decode(CreateCollectionResponse.self, from: data)
-            print("✅ [CreateCollectionViewModel] Collection created: \(result.data.collectionId)")
+            debugLog("✅ [CreateCollectionViewModel] Collection created: \(result.data.collectionId)")
 
             // Store collection ID and show community share dialog
             createdCollectionId = result.data.collectionId
@@ -213,7 +213,7 @@ class CreateCollectionViewModel: ObservableObject {
             errorMessage = errorType.userMessage
             showError = true
             isLoading = false
-            print("❌ [CreateCollectionViewModel] Create failed: \(error.localizedDescription)")
+            debugLog("❌ [CreateCollectionViewModel] Create failed: \(error.localizedDescription)")
             return false
         }
     }
@@ -247,7 +247,7 @@ class CreateCollectionViewModel: ObservableObject {
         let storageRef = Storage.storage().reference()
         let imageRef = storageRef.child(storagePath)
 
-        print("📤 [CreateCollectionViewModel] Uploading cover image to: \(storagePath)")
+        debugLog("📤 [CreateCollectionViewModel] Uploading cover image to: \(storagePath)")
 
         // Upload image data
         let metadata = StorageMetadata()
@@ -259,7 +259,7 @@ class CreateCollectionViewModel: ObservableObject {
         let downloadURL = try await imageRef.downloadURL()
         let downloadURLString = downloadURL.absoluteString
 
-        print("✅ [CreateCollectionViewModel] Cover image uploaded: \(downloadURLString)")
+        debugLog("✅ [CreateCollectionViewModel] Cover image uploaded: \(downloadURLString)")
 
         return downloadURLString
     }
@@ -299,9 +299,9 @@ class CreateCollectionViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            print("📤 [CreateCollectionViewModel] Sharing collection to community...")
-            print("   CollectionId: \(collectionId)")
-            print("   BiasIds: \(biasIds)")
+            debugLog("📤 [CreateCollectionViewModel] Sharing collection to community...")
+            debugLog("   CollectionId: \(collectionId)")
+            debugLog("   BiasIds: \(biasIds)")
 
             _ = try await collectionService.shareCollectionToCommunity(
                 collectionId: collectionId,
@@ -309,13 +309,13 @@ class CreateCollectionViewModel: ObservableObject {
                 text: text
             )
 
-            print("✅ [CreateCollectionViewModel] Successfully shared to community")
+            debugLog("✅ [CreateCollectionViewModel] Successfully shared to community")
             isSharing = false
 
             // Success - the view will dismiss automatically
 
         } catch {
-            print("❌ [CreateCollectionViewModel] Failed to share: \(error.localizedDescription)")
+            debugLog("❌ [CreateCollectionViewModel] Failed to share: \(error.localizedDescription)")
             errorMessage = "コミュニティへの投稿に失敗しました: \(error.localizedDescription)"
             showError = true
             isSharing = false

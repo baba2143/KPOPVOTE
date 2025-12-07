@@ -27,7 +27,7 @@ class VoteService {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("🔍 [VoteService] Fetching featured votes from: \(urlComponents.url!.absoluteString)")
+        debugLog("🔍 [VoteService] Fetching featured votes from: \(urlComponents.url!.absoluteString)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -35,14 +35,14 @@ class VoteService {
             throw VoteError.invalidResponse
         }
 
-        print("📥 [VoteService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [VoteService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             throw VoteError.fetchFailed
         }
 
         let result = try JSONDecoder().decode(VoteListResponse.self, from: data)
-        print("✅ [VoteService] Successfully fetched \(result.data.count) featured votes")
+        debugLog("✅ [VoteService] Successfully fetched \(result.data.count) featured votes")
 
         return result.data.votes
     }
@@ -70,7 +70,7 @@ class VoteService {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("🔍 [VoteService] Fetching votes from: \(urlComponents.url!.absoluteString)")
+        debugLog("🔍 [VoteService] Fetching votes from: \(urlComponents.url!.absoluteString)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -78,17 +78,17 @@ class VoteService {
             throw VoteError.invalidResponse
         }
 
-        print("📥 [VoteService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [VoteService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [VoteService] Error response: \(errorString)")
+                debugLog("❌ [VoteService] Error response: \(errorString)")
             }
             throw VoteError.fetchFailed
         }
 
         let result = try JSONDecoder().decode(VoteListResponse.self, from: data)
-        print("✅ [VoteService] Successfully fetched \(result.data.count) votes")
+        debugLog("✅ [VoteService] Successfully fetched \(result.data.count) votes")
 
         return result.data.votes
     }
@@ -108,7 +108,7 @@ class VoteService {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("🔍 [VoteService] Fetching vote detail: \(voteId)")
+        debugLog("🔍 [VoteService] Fetching vote detail: \(voteId)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -116,17 +116,17 @@ class VoteService {
             throw VoteError.invalidResponse
         }
 
-        print("📥 [VoteService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [VoteService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [VoteService] Error response: \(errorString)")
+                debugLog("❌ [VoteService] Error response: \(errorString)")
             }
             throw VoteError.fetchFailed
         }
 
         let result = try JSONDecoder().decode(VoteDetailResponse.self, from: data)
-        print("✅ [VoteService] Successfully fetched vote detail")
+        debugLog("✅ [VoteService] Successfully fetched vote detail")
 
         return result.data
     }
@@ -157,12 +157,12 @@ class VoteService {
         ]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-        print("📤 [VoteService] Executing vote")
-        print("  URL: \(url.absoluteString)")
-        print("  Method: POST")
-        print("  Authorization: Bearer \(String(token.prefix(20)))...")
-        print("  Content-Type: application/json")
-        print("  Body: \(String(data: request.httpBody!, encoding: .utf8) ?? "nil")")
+        debugLog("📤 [VoteService] Executing vote")
+        debugLog("  URL: \(url.absoluteString)")
+        debugLog("  Method: POST")
+        debugLog("  Authorization: Bearer \(String(token.prefix(20)))...")
+        debugLog("  Content-Type: application/json")
+        debugLog("  Body: \(String(data: request.httpBody!, encoding: .utf8) ?? "nil")")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -170,13 +170,13 @@ class VoteService {
             throw VoteError.executeFailed
         }
 
-        print("📥 [VoteService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [VoteService] HTTP Status: \(httpResponse.statusCode)")
 
         // Handle specific error cases
         if httpResponse.statusCode == 400 {
             let errorResult = try? JSONDecoder().decode(ErrorResponse.self, from: data)
             if let error = errorResult?.error {
-                print("❌ [VoteService] 400 Error: \(error)")
+                debugLog("❌ [VoteService] 400 Error: \(error)")
                 if error.contains("Already voted") {
                     throw VoteError.alreadyVoted
                 } else if error.contains("Insufficient points") {
@@ -192,21 +192,21 @@ class VoteService {
             let errorResult = try? JSONDecoder().decode(ErrorResponse.self, from: data)
             let errorMessage = errorResult?.error ?? "No error message"
             let responseBody = String(data: data, encoding: .utf8) ?? "nil"
-            print("❌ [VoteService] 401 Unauthorized")
-            print("  Error message: \(errorMessage)")
-            print("  Response body: \(responseBody)")
+            debugLog("❌ [VoteService] 401 Unauthorized")
+            debugLog("  Error message: \(errorMessage)")
+            debugLog("  Response body: \(responseBody)")
             throw VoteError.notAuthenticated
         }
 
         guard httpResponse.statusCode == 200 else {
             let responseBody = String(data: data, encoding: .utf8) ?? "nil"
-            print("❌ [VoteService] Unexpected status code: \(httpResponse.statusCode)")
-            print("  Response body: \(responseBody)")
+            debugLog("❌ [VoteService] Unexpected status code: \(httpResponse.statusCode)")
+            debugLog("  Response body: \(responseBody)")
             throw VoteError.executeFailed
         }
 
         let result = try JSONDecoder().decode(VoteExecuteResponse.self, from: data)
-        print("✅ [VoteService] Successfully executed vote")
+        debugLog("✅ [VoteService] Successfully executed vote")
 
         return result.data
     }
@@ -226,7 +226,7 @@ class VoteService {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("🔍 [VoteService] Fetching ranking: \(voteId)")
+        debugLog("🔍 [VoteService] Fetching ranking: \(voteId)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -234,17 +234,17 @@ class VoteService {
             throw VoteError.invalidResponse
         }
 
-        print("📥 [VoteService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [VoteService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [VoteService] Error response: \(errorString)")
+                debugLog("❌ [VoteService] Error response: \(errorString)")
             }
             throw VoteError.fetchFailed
         }
 
         let result = try JSONDecoder().decode(RankingResponse.self, from: data)
-        print("✅ [VoteService] Successfully fetched ranking")
+        debugLog("✅ [VoteService] Successfully fetched ranking")
 
         return result.data
     }

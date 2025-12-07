@@ -73,24 +73,24 @@ class DMConversationViewModel: ObservableObject {
         lastMessageId = nil
 
         do {
-            print("📱 [DMConversationViewModel] Loading messages for: \(conversationId)")
+            debugLog("📱 [DMConversationViewModel] Loading messages for: \(conversationId)")
             let result = try await DirectMessageService.shared.fetchMessages(conversationId: conversationId, limit: 50, lastMessageId: nil)
             // Messages come newest first, reverse for display (oldest at top)
             messages = result.messages.reversed()
             hasMore = result.hasMore
             lastMessageId = result.messages.last?.id
-            print("✅ [DMConversationViewModel] Loaded \(messages.count) messages")
+            debugLog("✅ [DMConversationViewModel] Loaded \(messages.count) messages")
 
             // Mark as read
             try? await DirectMessageService.shared.markAsRead(conversationId: conversationId)
         } catch DirectMessageError.conversationNotFound {
             // New conversation - no messages yet, this is normal
-            print("ℹ️ [DMConversationViewModel] New conversation, no messages yet")
+            debugLog("ℹ️ [DMConversationViewModel] New conversation, no messages yet")
             messages = []
             hasMore = false
             // Don't set errorMessage - this is expected for new conversations
         } catch {
-            print("❌ [DMConversationViewModel] Failed to load messages: \(error)")
+            debugLog("❌ [DMConversationViewModel] Failed to load messages: \(error)")
             errorMessage = error.localizedDescription
             messages = []
             hasMore = false
@@ -106,16 +106,16 @@ class DMConversationViewModel: ObservableObject {
         isLoading = true
 
         do {
-            print("📱 [DMConversationViewModel] Loading more messages before: \(lastMessageId)")
+            debugLog("📱 [DMConversationViewModel] Loading more messages before: \(lastMessageId)")
             let result = try await DirectMessageService.shared.fetchMessages(conversationId: conversationId, limit: 50, lastMessageId: lastMessageId)
             // Insert older messages at the beginning
             let olderMessages = result.messages.reversed()
             messages.insert(contentsOf: olderMessages, at: 0)
             hasMore = result.hasMore
             self.lastMessageId = result.messages.last?.id
-            print("✅ [DMConversationViewModel] Loaded \(result.messages.count) more messages")
+            debugLog("✅ [DMConversationViewModel] Loaded \(result.messages.count) more messages")
         } catch {
-            print("❌ [DMConversationViewModel] Failed to load more messages: \(error)")
+            debugLog("❌ [DMConversationViewModel] Failed to load more messages: \(error)")
         }
 
         isLoading = false
@@ -132,7 +132,7 @@ class DMConversationViewModel: ObservableObject {
         inputText = "" // Clear immediately for better UX
 
         do {
-            print("📱 [DMConversationViewModel] Sending message to: \(participantId)")
+            debugLog("📱 [DMConversationViewModel] Sending message to: \(participantId)")
             let result = try await DirectMessageService.shared.sendMessage(recipientId: participantId, text: messageToSend)
 
             // Create optimistic message for immediate display
@@ -148,13 +148,13 @@ class DMConversationViewModel: ObservableObject {
                 createdAt: Date()
             )
             messages.append(newMessage)
-            print("✅ [DMConversationViewModel] Message sent: \(result.messageId)")
+            debugLog("✅ [DMConversationViewModel] Message sent: \(result.messageId)")
         } catch DirectMessageError.mutualFollowRequired {
-            print("❌ [DMConversationViewModel] Mutual follow required")
+            debugLog("❌ [DMConversationViewModel] Mutual follow required")
             errorMessage = "相互フォローのユーザーにのみDMを送信できます"
             inputText = messageToSend // Restore text on error
         } catch {
-            print("❌ [DMConversationViewModel] Failed to send message: \(error)")
+            debugLog("❌ [DMConversationViewModel] Failed to send message: \(error)")
             errorMessage = error.localizedDescription
             inputText = messageToSend // Restore text on error
         }
@@ -168,7 +168,7 @@ class DMConversationViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            print("📱 [DMConversationViewModel] Sending image to: \(participantId)")
+            debugLog("📱 [DMConversationViewModel] Sending image to: \(participantId)")
             let result = try await DirectMessageService.shared.sendMessage(recipientId: participantId, imageURL: imageURL)
 
             // Create optimistic message for immediate display
@@ -184,12 +184,12 @@ class DMConversationViewModel: ObservableObject {
                 createdAt: Date()
             )
             messages.append(newMessage)
-            print("✅ [DMConversationViewModel] Image sent: \(result.messageId)")
+            debugLog("✅ [DMConversationViewModel] Image sent: \(result.messageId)")
         } catch DirectMessageError.mutualFollowRequired {
-            print("❌ [DMConversationViewModel] Mutual follow required")
+            debugLog("❌ [DMConversationViewModel] Mutual follow required")
             errorMessage = "相互フォローのユーザーにのみDMを送信できます"
         } catch {
-            print("❌ [DMConversationViewModel] Failed to send image: \(error)")
+            debugLog("❌ [DMConversationViewModel] Failed to send image: \(error)")
             errorMessage = error.localizedDescription
         }
 

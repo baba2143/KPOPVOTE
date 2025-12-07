@@ -27,15 +27,15 @@ class DMListViewModel: ObservableObject {
         lastConversationId = nil
 
         do {
-            print("📱 [DMListViewModel] Loading conversations")
+            debugLog("📱 [DMListViewModel] Loading conversations")
             let result = try await DirectMessageService.shared.fetchConversations(limit: 20, lastConversationId: nil)
             conversations = result.conversations
             hasMore = result.hasMore
             totalUnreadCount = result.totalUnreadCount
             lastConversationId = conversations.last?.id
-            print("✅ [DMListViewModel] Loaded \(conversations.count) conversations, unread: \(totalUnreadCount)")
+            debugLog("✅ [DMListViewModel] Loaded \(conversations.count) conversations, unread: \(totalUnreadCount)")
         } catch {
-            print("❌ [DMListViewModel] Failed to load conversations: \(error)")
+            debugLog("❌ [DMListViewModel] Failed to load conversations: \(error)")
             errorMessage = error.localizedDescription
             conversations = []
             hasMore = false
@@ -51,14 +51,14 @@ class DMListViewModel: ObservableObject {
         isLoading = true
 
         do {
-            print("📱 [DMListViewModel] Loading more conversations after: \(lastConversationId)")
+            debugLog("📱 [DMListViewModel] Loading more conversations after: \(lastConversationId)")
             let result = try await DirectMessageService.shared.fetchConversations(limit: 20, lastConversationId: lastConversationId)
             conversations.append(contentsOf: result.conversations)
             hasMore = result.hasMore
             self.lastConversationId = conversations.last?.id
-            print("✅ [DMListViewModel] Loaded \(result.conversations.count) more conversations")
+            debugLog("✅ [DMListViewModel] Loaded \(result.conversations.count) more conversations")
         } catch {
-            print("❌ [DMListViewModel] Failed to load more conversations: \(error)")
+            debugLog("❌ [DMListViewModel] Failed to load more conversations: \(error)")
         }
 
         isLoading = false

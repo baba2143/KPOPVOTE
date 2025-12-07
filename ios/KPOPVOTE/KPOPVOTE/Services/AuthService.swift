@@ -56,13 +56,13 @@ class AuthService: ObservableObject {
     func register(email: String, password: String) async throws -> User {
         do {
             // 1. Create Firebase Auth account
-            print("🔐 [Register] Creating Firebase Auth account for: \(email)")
+            debugLog("🔐 [Register] Creating Firebase Auth account for: \(email)")
             let authResult = try await Auth.auth().createUser(withEmail: email, password: password)
-            print("✅ [Register] Firebase Auth account created: \(authResult.user.uid)")
+            debugLog("✅ [Register] Firebase Auth account created: \(authResult.user.uid)")
 
             // 2. Register user in Cloud Functions
             let url = URL(string: Constants.API.register)!
-            print("📡 [Register] Calling API: \(url.absoluteString)")
+            debugLog("📡 [Register] Calling API: \(url.absoluteString)")
 
             var request = URLRequest(url: url)
             request.httpMethod = "POST"
@@ -74,19 +74,19 @@ class AuthService: ObservableObject {
             ]
             request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-            print("📤 [Register] Request body: \(body)")
+            debugLog("📤 [Register] Request body: \(body)")
 
             let (data, response) = try await URLSession.shared.data(for: request)
 
             // Log response details
             if let httpResponse = response as? HTTPURLResponse {
-                print("📥 [Register] HTTP Status: \(httpResponse.statusCode)")
+                debugLog("📥 [Register] HTTP Status: \(httpResponse.statusCode)")
                 if let responseString = String(data: data, encoding: .utf8) {
-                    print("📥 [Register] Response body: \(responseString)")
+                    debugLog("📥 [Register] Response body: \(responseString)")
                 }
 
                 guard httpResponse.statusCode == 200 else {
-                    print("❌ [Register] API returned non-200 status: \(httpResponse.statusCode)")
+                    debugLog("❌ [Register] API returned non-200 status: \(httpResponse.statusCode)")
                     // Try to parse error message from response
                     if let errorResponse = try? JSONDecoder().decode(ApiErrorResponse.self, from: data) {
                         throw AuthError.apiError(errorResponse.error)
@@ -98,11 +98,11 @@ class AuthService: ObservableObject {
             let result: RegisterResponse
             do {
                 result = try JSONDecoder().decode(RegisterResponse.self, from: data)
-                print("✅ [Register] Successfully decoded response")
+                debugLog("✅ [Register] Successfully decoded response")
             } catch let decodingError {
-                print("❌ [Register] JSON Decoding Error: \(decodingError)")
+                debugLog("❌ [Register] JSON Decoding Error: \(decodingError)")
                 if let responseString = String(data: data, encoding: .utf8) {
-                    print("❌ [Register] Raw response was: \(responseString)")
+                    debugLog("❌ [Register] Raw response was: \(responseString)")
                 }
                 throw AuthError.apiError("レスポンス解析エラー")
             }
@@ -125,14 +125,14 @@ class AuthService: ObservableObject {
             // Sync pending bias data from tutorial
             await syncPendingBiasData()
 
-            print("✅ [Register] Registration complete for: \(email)")
+            debugLog("✅ [Register] Registration complete for: \(email)")
             return user
 
         } catch let error as AuthError {
-            print("❌ [Register] AuthError: \(error.localizedDescription)")
+            debugLog("❌ [Register] AuthError: \(error.localizedDescription)")
             throw error
         } catch let error as NSError {
-            print("❌ [Register] NSError: domain=\(error.domain), code=\(error.code), description=\(error.localizedDescription)")
+            debugLog("❌ [Register] NSError: domain=\(error.domain), code=\(error.code), description=\(error.localizedDescription)")
             // Firebase Auth specific error handling
             if error.domain == "FIRAuthErrorDomain" {
                 switch error.code {
@@ -145,13 +145,13 @@ class AuthService: ObservableObject {
                 case 17020: // ERROR_NETWORK_REQUEST_FAILED
                     throw AuthError.networkError
                 default:
-                    print("❌ [Register] Unknown Firebase Auth error code: \(error.code)")
+                    debugLog("❌ [Register] Unknown Firebase Auth error code: \(error.code)")
                     throw AuthError.apiError("Firebase Auth: \(error.localizedDescription)")
                 }
             }
             throw AuthError.registrationFailed
         } catch {
-            print("❌ [Register] Unexpected error: \(error.localizedDescription)")
+            debugLog("❌ [Register] Unexpected error: \(error.localizedDescription)")
             throw AuthError.registrationFailed
         }
     }
@@ -160,18 +160,18 @@ class AuthService: ObservableObject {
     func login(email: String, password: String) async throws -> User {
         do {
             // 1. Firebase Auth login
-            print("🔐 [Login] Attempting Firebase Auth login for: \(email)")
+            debugLog("🔐 [Login] Attempting Firebase Auth login for: \(email)")
             let authResult = try await Auth.auth().signIn(withEmail: email, password: password)
-            print("✅ [Login] Firebase Auth successful: \(authResult.user.uid)")
+            debugLog("✅ [Login] Firebase Auth successful: \(authResult.user.uid)")
 
             // 2. Get ID Token
-            print("🎫 [Login] Getting ID token...")
+            debugLog("🎫 [Login] Getting ID token...")
             let token = try await authResult.user.getIDToken()
-            print("✅ [Login] ID token obtained")
+            debugLog("✅ [Login] ID token obtained")
 
             // 3. Verify with Cloud Functions
             let url = URL(string: Constants.API.login)!
-            print("📡 [Login] Calling API: \(url.absoluteString)")
+            debugLog("📡 [Login] Calling API: \(url.absoluteString)")
 
             var request = URLRequest(url: url)
             request.httpMethod = "POST"
@@ -181,13 +181,13 @@ class AuthService: ObservableObject {
 
             // Log response details
             if let httpResponse = response as? HTTPURLResponse {
-                print("📥 [Login] HTTP Status: \(httpResponse.statusCode)")
+                debugLog("📥 [Login] HTTP Status: \(httpResponse.statusCode)")
                 if let responseString = String(data: data, encoding: .utf8) {
-                    print("📥 [Login] Response body: \(responseString)")
+                    debugLog("📥 [Login] Response body: \(responseString)")
                 }
 
                 guard httpResponse.statusCode == 200 else {
-                    print("❌ [Login] API returned non-200 status: \(httpResponse.statusCode)")
+                    debugLog("❌ [Login] API returned non-200 status: \(httpResponse.statusCode)")
                     throw AuthError.loginFailed
                 }
             }
@@ -195,11 +195,11 @@ class AuthService: ObservableObject {
             let result: LoginResponse
             do {
                 result = try JSONDecoder().decode(LoginResponse.self, from: data)
-                print("✅ [Login] Successfully decoded response")
+                debugLog("✅ [Login] Successfully decoded response")
             } catch let decodingError {
-                print("❌ [Login] JSON Decoding Error: \(decodingError)")
+                debugLog("❌ [Login] JSON Decoding Error: \(decodingError)")
                 if let responseString = String(data: data, encoding: .utf8) {
-                    print("❌ [Login] Raw response was: \(responseString)")
+                    debugLog("❌ [Login] Raw response was: \(responseString)")
                 }
                 throw AuthError.apiError("ログインレスポンス解析エラー")
             }
@@ -218,7 +218,7 @@ class AuthService: ObservableObject {
             self.objectWillChange.send()
             self.currentUser = user
             self.isAuthenticated = true
-            print("✅ [Login] isAuthenticated set to true")
+            debugLog("✅ [Login] isAuthenticated set to true")
 
             // Register FCM token after successful login
             PushNotificationManager.shared.onUserLogin()
@@ -226,14 +226,14 @@ class AuthService: ObservableObject {
             // Sync pending bias data from tutorial
             await syncPendingBiasData()
 
-            print("✅ [Login] Login complete for: \(email)")
+            debugLog("✅ [Login] Login complete for: \(email)")
             return user
 
         } catch let error as AuthError {
-            print("❌ [Login] AuthError: \(error.localizedDescription)")
+            debugLog("❌ [Login] AuthError: \(error.localizedDescription)")
             throw error
         } catch {
-            print("❌ [Login] Unexpected error: \(error.localizedDescription)")
+            debugLog("❌ [Login] Unexpected error: \(error.localizedDescription)")
             throw AuthError.loginFailed
         }
     }
@@ -244,13 +244,13 @@ class AuthService: ObservableObject {
         isAuthenticated = false
         currentUser = nil
         AppStorageManager.shared.isGuestMode = true
-        print("👤 [Auth] User entered guest mode")
+        debugLog("👤 [Auth] User entered guest mode")
     }
 
     func exitGuestMode() {
         isGuest = false
         AppStorageManager.shared.isGuestMode = false
-        print("👤 [Auth] User exited guest mode")
+        debugLog("👤 [Auth] User exited guest mode")
     }
 
     // MARK: - Logout
@@ -270,18 +270,18 @@ class AuthService: ObservableObject {
         await MainActor.run {
             self.currentUser = user
         }
-        print("✅ [Auth] Current user updated: \(user.displayName ?? user.email), photoURL: \(user.photoURL ?? "nil")")
+        debugLog("✅ [Auth] Current user updated: \(user.displayName ?? user.email), photoURL: \(user.photoURL ?? "nil")")
     }
 
     // MARK: - Sync Pending Bias Data (チュートリアルで選択した推しをサーバーに同期)
     func syncPendingBiasData() async {
         // Check if there's pending bias data
         guard let pendingBiasIds = AppStorageManager.shared.pendingBiasIds, !pendingBiasIds.isEmpty else {
-            print("📱 [Auth] No pending bias data to sync")
+            debugLog("📱 [Auth] No pending bias data to sync")
             return
         }
 
-        print("📱 [Auth] Found \(pendingBiasIds.count) pending bias IDs to sync")
+        debugLog("📱 [Auth] Found \(pendingBiasIds.count) pending bias IDs to sync")
 
         do {
             // Fetch all idols to map IDs to idol objects
@@ -291,7 +291,7 @@ class AuthService: ObservableObject {
             let selectedIdols = allIdols.filter { pendingBiasIds.contains($0.id) }
 
             if selectedIdols.isEmpty {
-                print("⚠️ [Auth] No matching idols found for pending IDs")
+                debugLog("⚠️ [Auth] No matching idols found for pending IDs")
                 AppStorageManager.shared.clearPendingBias()
                 return
             }
@@ -321,10 +321,10 @@ class AuthService: ObservableObject {
             // Clear pending data
             AppStorageManager.shared.clearPendingBias()
 
-            print("✅ [Auth] Successfully synced \(selectedIdols.count) bias settings to server")
+            debugLog("✅ [Auth] Successfully synced \(selectedIdols.count) bias settings to server")
 
         } catch {
-            print("❌ [Auth] Failed to sync pending bias data: \(error.localizedDescription)")
+            debugLog("❌ [Auth] Failed to sync pending bias data: \(error.localizedDescription)")
             // Don't clear pending data on failure - will retry on next login
         }
     }
@@ -334,23 +334,23 @@ class AuthService: ObservableObject {
     /// - Parameter phoneNumber: Phone number with country code (e.g., +81901234567)
     /// - Returns: Verification ID for code verification
     func sendVerificationCode(phoneNumber: String) async throws -> String {
-        print("📱 [PhoneAuth] Sending verification code to: \(phoneNumber)")
+        debugLog("📱 [PhoneAuth] Sending verification code to: \(phoneNumber)")
 
         return try await withCheckedThrowingContinuation { continuation in
             PhoneAuthProvider.provider().verifyPhoneNumber(phoneNumber, uiDelegate: nil) { verificationID, error in
                 if let error = error {
-                    print("❌ [PhoneAuth] Error sending verification code: \(error.localizedDescription)")
+                    debugLog("❌ [PhoneAuth] Error sending verification code: \(error.localizedDescription)")
                     continuation.resume(throwing: AuthError.phoneVerificationFailed(error.localizedDescription))
                     return
                 }
 
                 guard let verificationID = verificationID else {
-                    print("❌ [PhoneAuth] No verification ID received")
+                    debugLog("❌ [PhoneAuth] No verification ID received")
                     continuation.resume(throwing: AuthError.phoneVerificationFailed("認証IDが取得できませんでした"))
                     return
                 }
 
-                print("✅ [PhoneAuth] Verification code sent, ID: \(verificationID.prefix(10))...")
+                debugLog("✅ [PhoneAuth] Verification code sent, ID: \(verificationID.prefix(10))...")
                 Task { @MainActor in
                     self.verificationID = verificationID
                     self.phoneNumber = phoneNumber
@@ -366,7 +366,7 @@ class AuthService: ObservableObject {
     ///   - code: 6-digit verification code from SMS
     /// - Returns: Authenticated User
     func verifyCodeAndSignIn(verificationID: String, code: String) async throws -> User {
-        print("📱 [PhoneAuth] Verifying code...")
+        debugLog("📱 [PhoneAuth] Verifying code...")
 
         let credential = PhoneAuthProvider.provider().credential(
             withVerificationID: verificationID,
@@ -375,7 +375,7 @@ class AuthService: ObservableObject {
 
         do {
             let authResult = try await Auth.auth().signIn(with: credential)
-            print("✅ [PhoneAuth] Firebase Auth successful: \(authResult.user.uid)")
+            debugLog("✅ [PhoneAuth] Firebase Auth successful: \(authResult.user.uid)")
 
             // Get ID Token
             let token = try await authResult.user.getIDToken()
@@ -401,14 +401,14 @@ class AuthService: ObservableObject {
             // Sync pending bias data from tutorial
             await syncPendingBiasData()
 
-            print("✅ [PhoneAuth] Login complete")
+            debugLog("✅ [PhoneAuth] Login complete")
             return user
 
         } catch let error as AuthError {
-            print("❌ [PhoneAuth] AuthError: \(error.localizedDescription)")
+            debugLog("❌ [PhoneAuth] AuthError: \(error.localizedDescription)")
             throw error
         } catch let error as NSError {
-            print("❌ [PhoneAuth] NSError: domain=\(error.domain), code=\(error.code)")
+            debugLog("❌ [PhoneAuth] NSError: domain=\(error.domain), code=\(error.code)")
 
             // Firebase Auth specific error handling
             if error.domain == "FIRAuthErrorDomain" {
@@ -430,7 +430,7 @@ class AuthService: ObservableObject {
     /// Register or login user with phone number via Cloud Functions
     private func registerOrLoginWithPhone(uid: String, phoneNumber: String, token: String) async throws -> User {
         let url = URL(string: Constants.API.login)!
-        print("📡 [PhoneAuth] Calling API: \(url.absoluteString)")
+        debugLog("📡 [PhoneAuth] Calling API: \(url.absoluteString)")
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -446,10 +446,10 @@ class AuthService: ObservableObject {
         let (data, response) = try await URLSession.shared.data(for: request)
 
         if let httpResponse = response as? HTTPURLResponse {
-            print("📥 [PhoneAuth] HTTP Status: \(httpResponse.statusCode)")
+            debugLog("📥 [PhoneAuth] HTTP Status: \(httpResponse.statusCode)")
 
             guard httpResponse.statusCode == 200 else {
-                print("❌ [PhoneAuth] API returned non-200 status")
+                debugLog("❌ [PhoneAuth] API returned non-200 status")
                 throw AuthError.loginFailed
             }
         }
@@ -486,7 +486,7 @@ class AuthService: ObservableObject {
             }
 
             let result = try JSONDecoder().decode(LoginResponse.self, from: data)
-            print("🔄 [Auth] loadUserData - photoURL from API: \(result.data.photoURL ?? "nil")")
+            debugLog("🔄 [Auth] loadUserData - photoURL from API: \(result.data.photoURL ?? "nil")")
 
             let user = User(
                 id: result.data.uid,
@@ -500,7 +500,7 @@ class AuthService: ObservableObject {
             await MainActor.run {
                 self.currentUser = user
                 self.isAuthenticated = true
-                print("🔄 [Auth] loadUserData - currentUser.photoURL set to: \(self.currentUser?.photoURL ?? "nil")")
+                debugLog("🔄 [Auth] loadUserData - currentUser.photoURL set to: \(self.currentUser?.photoURL ?? "nil")")
             }
 
             // Register FCM token after auth state restored
@@ -510,7 +510,7 @@ class AuthService: ObservableObject {
             await syncPendingBiasData()
 
         } catch {
-            print("❌ [Auth] Failed to load user data: \(error.localizedDescription)")
+            debugLog("❌ [Auth] Failed to load user data: \(error.localizedDescription)")
         }
     }
 }

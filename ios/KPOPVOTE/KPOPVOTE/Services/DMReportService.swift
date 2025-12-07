@@ -53,11 +53,11 @@ class DMReportService {
             "createdAt": FieldValue.serverTimestamp()
         ]
 
-        print("📝 [DMReportService] Reporting message: \(messageId) in conversation: \(conversationId)")
+        debugLog("📝 [DMReportService] Reporting message: \(messageId) in conversation: \(conversationId)")
 
         try await db.collection("dmReports").addDocument(data: reportData)
 
-        print("✅ [DMReportService] Message report submitted successfully")
+        debugLog("✅ [DMReportService] Message report submitted successfully")
     }
 
     // MARK: - Report User
@@ -87,11 +87,11 @@ class DMReportService {
             "createdAt": FieldValue.serverTimestamp()
         ]
 
-        print("📝 [DMReportService] Reporting user: \(reporteeId) in conversation: \(conversationId)")
+        debugLog("📝 [DMReportService] Reporting user: \(reporteeId) in conversation: \(conversationId)")
 
         try await db.collection("dmReports").addDocument(data: reportData)
 
-        print("✅ [DMReportService] User report submitted successfully")
+        debugLog("✅ [DMReportService] User report submitted successfully")
     }
 }
 

@@ -39,7 +39,7 @@ class PushNotificationManager {
 
         // Only register if user is logged in
         guard let authToken = UserDefaults.standard.string(forKey: Constants.UserDefaultsKeys.authToken) else {
-            print("📱 [PushNotificationManager] User not logged in, skipping token registration")
+            debugLog("📱 [PushNotificationManager] User not logged in, skipping token registration")
             return
         }
 
@@ -61,25 +61,25 @@ class PushNotificationManager {
             let (data, response) = try await URLSession.shared.data(for: request)
 
             guard let httpResponse = response as? HTTPURLResponse else {
-                print("❌ [PushNotificationManager] Invalid response")
+                debugLog("❌ [PushNotificationManager] Invalid response")
                 return
             }
 
             if httpResponse.statusCode == 200 {
-                print("✅ [PushNotificationManager] Token registered successfully")
+                debugLog("✅ [PushNotificationManager] Token registered successfully")
             } else {
                 let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
-                print("❌ [PushNotificationManager] Token registration failed: \(httpResponse.statusCode) - \(errorMessage)")
+                debugLog("❌ [PushNotificationManager] Token registration failed: \(httpResponse.statusCode) - \(errorMessage)")
             }
         } catch {
-            print("❌ [PushNotificationManager] Token registration error: \(error.localizedDescription)")
+            debugLog("❌ [PushNotificationManager] Token registration error: \(error.localizedDescription)")
         }
     }
 
     /// Unregister FCM token from the server (call on logout)
     func unregisterToken() async {
         guard let authToken = UserDefaults.standard.string(forKey: Constants.UserDefaultsKeys.authToken) else {
-            print("📱 [PushNotificationManager] No auth token, skipping token unregistration")
+            debugLog("📱 [PushNotificationManager] No auth token, skipping token unregistration")
             return
         }
 
@@ -99,18 +99,18 @@ class PushNotificationManager {
             let (data, response) = try await URLSession.shared.data(for: request)
 
             guard let httpResponse = response as? HTTPURLResponse else {
-                print("❌ [PushNotificationManager] Invalid response")
+                debugLog("❌ [PushNotificationManager] Invalid response")
                 return
             }
 
             if httpResponse.statusCode == 200 {
-                print("✅ [PushNotificationManager] Token unregistered successfully")
+                debugLog("✅ [PushNotificationManager] Token unregistered successfully")
             } else {
                 let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
-                print("❌ [PushNotificationManager] Token unregistration failed: \(httpResponse.statusCode) - \(errorMessage)")
+                debugLog("❌ [PushNotificationManager] Token unregistration failed: \(httpResponse.statusCode) - \(errorMessage)")
             }
         } catch {
-            print("❌ [PushNotificationManager] Token unregistration error: \(error.localizedDescription)")
+            debugLog("❌ [PushNotificationManager] Token unregistration error: \(error.localizedDescription)")
         }
 
         currentToken = nil
@@ -120,7 +120,7 @@ class PushNotificationManager {
 
     /// Called when user logs in - register current token if available
     func onUserLogin() {
-        print("📱 [PushNotificationManager] User logged in, checking for pending token registration")
+        debugLog("📱 [PushNotificationManager] User logged in, checking for pending token registration")
 
         if let token = currentToken {
             Task {
@@ -131,7 +131,7 @@ class PushNotificationManager {
 
     /// Called when user logs out - unregister token
     func onUserLogout() {
-        print("📱 [PushNotificationManager] User logging out, unregistering token")
+        debugLog("📱 [PushNotificationManager] User logging out, unregistering token")
 
         Task {
             await unregisterToken()

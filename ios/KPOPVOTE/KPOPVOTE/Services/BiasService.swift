@@ -27,7 +27,7 @@ class BiasService {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        print("🔍 [BiasService] Getting bias settings")
+        debugLog("🔍 [BiasService] Getting bias settings")
 
         // Execute request
         let (data, response) = try await URLSession.shared.data(for: request)
@@ -37,11 +37,11 @@ class BiasService {
             throw BiasError.invalidResponse
         }
 
-        print("📥 [BiasService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [BiasService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [BiasService] Error response: \(errorString)")
+                debugLog("❌ [BiasService] Error response: \(errorString)")
             }
             throw BiasError.fetchFailed
         }
@@ -49,7 +49,7 @@ class BiasService {
         // Decode response
         let result = try JSONDecoder().decode(BiasResponse.self, from: data)
 
-        print("✅ [BiasService] Successfully fetched bias settings: \(result.data.myBias.count) groups")
+        debugLog("✅ [BiasService] Successfully fetched bias settings: \(result.data.myBias.count) groups")
 
         return result.data.myBias
     }
@@ -73,7 +73,7 @@ class BiasService {
         let body = ["myBias": biasSettings]
         request.httpBody = try JSONEncoder().encode(body)
 
-        print("📤 [BiasService] Setting bias: \(biasSettings.count) groups")
+        debugLog("📤 [BiasService] Setting bias: \(biasSettings.count) groups")
 
         // Execute request
         let (data, response) = try await URLSession.shared.data(for: request)
@@ -83,11 +83,11 @@ class BiasService {
             throw BiasError.invalidResponse
         }
 
-        print("📥 [BiasService] HTTP Status: \(httpResponse.statusCode)")
+        debugLog("📥 [BiasService] HTTP Status: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
             if let errorString = String(data: data, encoding: .utf8) {
-                print("❌ [BiasService] Error response: \(errorString)")
+                debugLog("❌ [BiasService] Error response: \(errorString)")
             }
             throw BiasError.saveFailed
         }
@@ -95,7 +95,7 @@ class BiasService {
         // Decode response to verify
         _ = try JSONDecoder().decode(BiasResponse.self, from: data)
 
-        print("✅ [BiasService] Successfully saved bias settings")
+        debugLog("✅ [BiasService] Successfully saved bias settings")
     }
 }
 
