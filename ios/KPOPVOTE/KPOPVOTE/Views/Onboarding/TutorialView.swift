@@ -111,16 +111,28 @@ struct TutorialIntroView: View {
 
     private let pages: [TutorialPage] = [
         TutorialPage(
-            icon: "hand.raised.fill",
-            title: "推しに投票しよう",
-            description: "K-POPアイドルの投票に参加して、あなたの推しを応援できます",
+            icon: "arrow.triangle.branch",
+            title: "複数のKPOPアプリの投票を一元管理",
+            description: "OSHI Pickはあなたの応援する推しの投票をタスク管理できます。これで推しへの投票を忘れたり、見逃したりすることがなくなります！",
             color: Constants.Colors.accentPink
         ),
         TutorialPage(
-            icon: "person.3.fill",
-            title: "コミュニティで繋がる",
-            description: "同じ推しを持つファンと投稿をシェアして交流できます",
+            icon: "hands.sparkles",
+            title: "みんなで推しアイドルを応援",
+            description: "現在参加中の投票を共有することで、友達がどの投票に力を入れているかが分かります",
             color: Constants.Colors.accentBlue
+        ),
+        TutorialPage(
+            icon: "bubble.left.and.bubble.right",
+            title: "同じ推しアイドルの友達とつながる",
+            description: "コミュニティで推しに関する情報を投稿したり、グッズ交換のやり取りもできます",
+            color: Constants.Colors.gradientPurple
+        ),
+        TutorialPage(
+            icon: "calendar.badge.plus",
+            title: "みんなで作る推しカレンダー",
+            description: "推しアイドルのカムバ、TV出演情報、ライブスケジュールなどユーザー同士で登録し、共有できるカレンダーを作れます",
+            color: Constants.Colors.accentPink
         )
     ]
 
