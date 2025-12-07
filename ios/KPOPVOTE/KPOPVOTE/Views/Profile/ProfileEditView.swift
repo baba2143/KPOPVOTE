@@ -11,8 +11,6 @@ struct ProfileEditView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var authService: AuthService
     @StateObject private var viewModel = ProfileEditViewModel()
-    @StateObject private var biasViewModel = BiasViewModel()
-    @State private var showBiasPicker = false
     @State private var showImagePicker = false
 
     private var isGuest: Bool {
@@ -102,9 +100,6 @@ struct ProfileEditView: View {
 
                             // Bio Section
                             bioSection
-
-                            // Bias Section
-                            biasSection
                         }
                         .padding()
                     }
@@ -139,13 +134,6 @@ struct ProfileEditView: View {
                 if let user = authService.currentUser {
                     viewModel.loadCurrentProfile(user: user)
                 }
-                await biasViewModel.loadIdols()
-            }
-            .sheet(isPresented: $showBiasPicker) {
-                BiasPickerView(
-                    selectedBiasIds: $viewModel.selectedBiasIds,
-                    allIdols: biasViewModel.allIdols
-                )
             }
             .sheet(isPresented: $showImagePicker) {
                 ImagePicker(selectedImage: $viewModel.selectedImage)
@@ -320,173 +308,6 @@ struct ProfileEditView: View {
         .padding()
         .background(Constants.Colors.cardDark)
         .cornerRadius(16)
-    }
-
-    // MARK: - Bias Section
-    @ViewBuilder
-    private var biasSection: some View {
-        VStack(alignment: .leading, spacing: Constants.Spacing.small) {
-            HStack {
-                Text("推しアイドル")
-                    .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
-                    .foregroundColor(Constants.Colors.textWhite)
-
-                Spacer()
-
-                Button(action: {
-                    showBiasPicker = true
-                }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "plus.circle.fill")
-                        Text("追加")
-                    }
-                    .font(.system(size: Constants.Typography.captionSize, weight: .semibold))
-                    .foregroundColor(Constants.Colors.accentPink)
-                }
-            }
-
-            if viewModel.selectedBiasIds.isEmpty {
-                Text("推しアイドルを選択してください")
-                    .font(.system(size: Constants.Typography.bodySize))
-                    .foregroundColor(Constants.Colors.textGray)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.vertical, Constants.Spacing.large)
-            } else {
-                FlowLayout(spacing: 8) {
-                    ForEach(viewModel.selectedBiasIds, id: \.self) { idolId in
-                        if let idol = biasViewModel.allIdols.first(where: { $0.id == idolId }) {
-                            BiasTag(
-                                name: idol.name,
-                                onRemove: {
-                                    viewModel.removeBias(idolId: idolId)
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-        }
-        .padding()
-        .background(Constants.Colors.cardDark)
-        .cornerRadius(16)
-    }
-}
-
-// MARK: - Bias Tag Component
-struct BiasTag: View {
-    let name: String
-    let onRemove: () -> Void
-
-    var body: some View {
-        HStack(spacing: 6) {
-            Text(name)
-                .font(.system(size: Constants.Typography.captionSize, weight: .semibold))
-                .foregroundColor(.white)
-
-            Button(action: onRemove) {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 14))
-                    .foregroundColor(.white.opacity(0.7))
-            }
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(Constants.Colors.accentPink)
-        .cornerRadius(16)
-    }
-}
-
-// MARK: - Bias Picker View
-struct BiasPickerView: View {
-    @Environment(\.dismiss) private var dismiss
-    @Binding var selectedBiasIds: [String]
-    let allIdols: [IdolMaster]
-    @State private var searchText = ""
-
-    var filteredIdols: [IdolMaster] {
-        if searchText.isEmpty {
-            return allIdols
-        }
-        return allIdols.filter { idol in
-            idol.name.localizedCaseInsensitiveContains(searchText) ||
-            idol.groupName.localizedCaseInsensitiveContains(searchText)
-        }
-    }
-
-    var groupedIdols: [String: [IdolMaster]] {
-        Dictionary(grouping: filteredIdols, by: { $0.groupName })
-    }
-
-    var body: some View {
-        NavigationView {
-            ZStack {
-                Constants.Colors.backgroundDark
-                    .ignoresSafeArea()
-
-                VStack {
-                    // Search Bar
-                    HStack {
-                        Image(systemName: "magnifyingglass")
-                            .foregroundColor(Constants.Colors.textGray)
-                        TextField("アイドルを検索", text: $searchText)
-                    }
-                    .padding(12)
-                    .background(Constants.Colors.cardDark)
-                    .cornerRadius(12)
-                    .padding()
-
-                    // Idol List
-                    ScrollView {
-                        LazyVStack(alignment: .leading, spacing: Constants.Spacing.medium) {
-                            ForEach(groupedIdols.keys.sorted(), id: \.self) { groupName in
-                                VStack(alignment: .leading, spacing: Constants.Spacing.small) {
-                                    Text(groupName)
-                                        .font(.system(size: Constants.Typography.headlineSize, weight: .bold))
-                                        .foregroundColor(Constants.Colors.textWhite)
-                                        .padding(.horizontal)
-
-                                    ForEach(groupedIdols[groupName] ?? [], id: \.id) { idol in
-                                        HStack {
-                                            Text(idol.name)
-                                                .font(.system(size: Constants.Typography.bodySize))
-                                                .foregroundColor(Constants.Colors.textWhite)
-
-                                            Spacer()
-
-                                            if selectedBiasIds.contains(idol.id) {
-                                                Image(systemName: "checkmark.circle.fill")
-                                                    .foregroundColor(Constants.Colors.accentPink)
-                                            }
-                                        }
-                                        .padding()
-                                        .background(Constants.Colors.cardDark)
-                                        .cornerRadius(12)
-                                        .onTapGesture {
-                                            if selectedBiasIds.contains(idol.id) {
-                                                selectedBiasIds.removeAll { $0 == idol.id }
-                                            } else {
-                                                selectedBiasIds.append(idol.id)
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        .padding()
-                    }
-                }
-            }
-            .navigationTitle("推しアイドルを選択")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("完了") {
-                        dismiss()
-                    }
-                    .foregroundColor(Constants.Colors.accentPink)
-                }
-            }
-        }
     }
 }
 

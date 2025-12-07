@@ -13,7 +13,6 @@ import UIKit
 class ProfileEditViewModel: ObservableObject {
     @Published var displayName: String = ""
     @Published var bio: String = ""
-    @Published var selectedBiasIds: [String] = []
     @Published var isSaving: Bool = false
     @Published var errorMessage: String?
     @Published var showSuccess: Bool = false
@@ -29,20 +28,17 @@ class ProfileEditViewModel: ObservableObject {
 
     private var originalDisplayName: String = ""
     private var originalBio: String = ""
-    private var originalBiasIds: [String] = []
     private var originalPhotoURL: String?
 
     // MARK: - Load Current Profile
     func loadCurrentProfile(user: User) {
         displayName = user.displayName ?? ""
         bio = user.bio ?? ""
-        selectedBiasIds = user.biasIds
         currentPhotoURL = user.photoURL
 
         // Store original values
         originalDisplayName = displayName
         originalBio = bio
-        originalBiasIds = selectedBiasIds
         originalPhotoURL = user.photoURL
 
         print("📱 [ProfileEditViewModel] Loaded profile: \(displayName), bio: \(bio.isEmpty ? "empty" : "exists"), photoURL: \(user.photoURL ?? "none")")
@@ -81,7 +77,6 @@ class ProfileEditViewModel: ObservableObject {
 
         return trimmedDisplayName != originalDisplayName ||
                trimmedBio != originalBio ||
-               selectedBiasIds != originalBiasIds ||
                selectedImage != nil
     }
 
@@ -118,7 +113,7 @@ class ProfileEditViewModel: ObservableObject {
             let updatedUser = try await ProfileService.shared.updateProfile(
                 displayName: trimmedDisplayName,
                 bio: trimmedBio.isEmpty ? nil : trimmedBio,
-                biasIds: selectedBiasIds,
+                biasIds: nil,  // biasIdsはBiasSettingsViewで管理するため、ここでは送信しない
                 photoURL: newPhotoURL
             )
 
@@ -127,7 +122,6 @@ class ProfileEditViewModel: ObservableObject {
             // Update original values
             originalDisplayName = trimmedDisplayName
             originalBio = trimmedBio
-            originalBiasIds = selectedBiasIds
             if let newPhotoURL = newPhotoURL {
                 originalPhotoURL = newPhotoURL
                 currentPhotoURL = newPhotoURL
@@ -145,18 +139,5 @@ class ProfileEditViewModel: ObservableObject {
             isSaving = false
             return nil
         }
-    }
-
-    // MARK: - Add/Remove Bias
-    func toggleBias(idolId: String) {
-        if selectedBiasIds.contains(idolId) {
-            selectedBiasIds.removeAll { $0 == idolId }
-        } else {
-            selectedBiasIds.append(idolId)
-        }
-    }
-
-    func removeBias(idolId: String) {
-        selectedBiasIds.removeAll { $0 == idolId }
     }
 }
