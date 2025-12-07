@@ -93,6 +93,12 @@ export { createComment } from "./community/createComment";
 export { getComments } from "./community/getComments";
 export { deleteComment } from "./community/deleteComment";
 
+// Direct Message functions
+export { sendDirectMessage } from "./directMessage/sendDirectMessage";
+export { getConversations } from "./directMessage/getConversations";
+export { getMessages } from "./directMessage/getMessages";
+export { markAsRead } from "./directMessage/markAsRead";
+
 // Points functions - Phase 1除外（ポイント機能）
 // export { getPoints } from "./points/getPoints";
 // export { getPointHistory } from "./points/getPointHistory";

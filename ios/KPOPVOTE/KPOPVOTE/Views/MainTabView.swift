@@ -407,6 +407,11 @@ struct ProfileView: View {
     @State private var showNotifications = false
     @State private var showFavorites = false
     @State private var showAbout = false
+    @State private var showFollowingList = false
+    @State private var showFollowersList = false
+    @State private var showMessages = false
+    @State private var followingCount = 0
+    @State private var followersCount = 0
 
     var body: some View {
         NavigationView {
@@ -423,6 +428,42 @@ struct ProfileView: View {
                                 .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
                                 .foregroundColor(Constants.Colors.textWhite)
                         }
+
+                        // Follow/Follower Counts
+                        HStack(spacing: Constants.Spacing.large) {
+                            Button {
+                                showFollowingList = true
+                            } label: {
+                                VStack(spacing: 4) {
+                                    Text("\(followingCount)")
+                                        .font(.system(size: 18, weight: .bold))
+                                        .foregroundColor(Constants.Colors.textWhite)
+                                    Text("フォロー")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(Constants.Colors.textGray)
+                                }
+                            }
+                            .buttonStyle(.plain)
+
+                            Divider()
+                                .frame(height: 30)
+                                .background(Constants.Colors.textGray.opacity(0.3))
+
+                            Button {
+                                showFollowersList = true
+                            } label: {
+                                VStack(spacing: 4) {
+                                    Text("\(followersCount)")
+                                        .font(.system(size: 18, weight: .bold))
+                                        .foregroundColor(Constants.Colors.textWhite)
+                                    Text("フォロワー")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(Constants.Colors.textGray)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .padding(.top, 8)
 
                         // Points Display - Only show if pointsEnabled
                         if FeatureFlags.pointsEnabled {
@@ -614,6 +655,13 @@ struct ProfileView: View {
                             .buttonStyle(.plain)
                             Divider().padding(.leading, 60).background(Constants.Colors.textGray.opacity(0.3))
                             Button {
+                                showMessages = true
+                            } label: {
+                                SettingsRow(icon: "envelope.fill", title: "メッセージ", color: Constants.Colors.accentBlue)
+                            }
+                            .buttonStyle(.plain)
+                            Divider().padding(.leading, 60).background(Constants.Colors.textGray.opacity(0.3))
+                            Button {
                                 showFavorites = true
                             } label: {
                                 SettingsRow(icon: "star.fill", title: "お気に入り", color: .yellow)
@@ -687,9 +735,44 @@ struct ProfileView: View {
             .sheet(isPresented: $showFavorites) {
                 FavoritesView()
             }
+            .sheet(isPresented: $showMessages) {
+                DMListView()
+                    .environmentObject(authService)
+            }
             .sheet(isPresented: $showAbout) {
                 AboutView()
             }
+            .sheet(isPresented: $showFollowingList) {
+                FollowListView(listType: .following)
+            }
+            .sheet(isPresented: $showFollowersList) {
+                FollowListView(listType: .followers)
+            }
+            .task {
+                await loadFollowCounts()
+            }
+        }
+    }
+
+    // MARK: - Load Follow Counts
+    private func loadFollowCounts() async {
+        // Step 1: キャッシュされた値を即座に表示（瞬時のフィードバック）
+        if let user = authService.currentUser {
+            followingCount = user.followingCount
+            followersCount = user.followersCount
+        }
+
+        // Step 2: APIから最新データを取得して更新
+        do {
+            let followService = FollowService.shared
+            let (following, _) = try await followService.fetchFollowing(limit: 100)
+            let (followers, _) = try await followService.fetchFollowers(limit: 100)
+
+            followingCount = following.count
+            followersCount = followers.count
+        } catch {
+            print("Failed to load follow counts: \(error)")
+            // エラー時はキャッシュ値を維持（すでに表示済み）
         }
     }
 

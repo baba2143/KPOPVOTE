@@ -11,6 +11,7 @@ struct UserProfileView: View {
     let userId: String
     @StateObject private var viewModel = UserProfileViewModel()
     @Environment(\.dismiss) private var dismiss
+    @State private var showDMConversation = false
 
     var body: some View {
         ZStack {
@@ -58,6 +59,17 @@ struct UserProfileView: View {
         }
         .task {
             await viewModel.loadProfile(userId: userId)
+        }
+        .sheet(isPresented: $showDMConversation) {
+            if let profile = viewModel.profile {
+                NavigationStack {
+                    DMConversationView(
+                        recipientId: userId,
+                        recipientName: profile.displayName,
+                        recipientPhotoURL: profile.photoURL
+                    )
+                }
+            }
         }
     }
 
@@ -114,18 +126,35 @@ struct UserProfileView: View {
 
     @ViewBuilder
     private func followButton(_ profile: UserProfile) -> some View {
-        Button {
-            Task {
-                await viewModel.toggleFollow()
+        HStack(spacing: 12) {
+            // Follow Button
+            Button {
+                Task {
+                    await viewModel.toggleFollow()
+                }
+            } label: {
+                Text(profile.isFollowing ? "フォロー中" : "フォロー")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(profile.isFollowing ? Color.gray : Constants.Colors.accentPink)
+                    .cornerRadius(8)
             }
-        } label: {
-            Text(profile.isFollowing ? "フォロー中" : "フォロー")
-                .font(.headline)
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(profile.isFollowing ? Color.gray : Constants.Colors.accentPink)
-                .cornerRadius(8)
+
+            // DM Button (show only for mutual follows)
+            if profile.isFollowing && profile.isFollowedBy {
+                Button {
+                    showDMConversation = true
+                } label: {
+                    Image(systemName: "envelope.fill")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .frame(width: 50, height: 50)
+                        .background(Constants.Colors.accentBlue)
+                        .cornerRadius(8)
+                }
+            }
         }
     }
 

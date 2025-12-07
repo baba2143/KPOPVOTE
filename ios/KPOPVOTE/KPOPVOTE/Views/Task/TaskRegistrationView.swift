@@ -11,6 +11,7 @@ struct TaskRegistrationView: View {
     @ObservedObject var viewModel: TaskRegistrationViewModel
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var authService: AuthService
+    @State private var showVoteURLHelp = false
 
     init(task: VoteTask? = nil) {
         self.viewModel = TaskRegistrationViewModel(task: task)
@@ -151,6 +152,18 @@ struct TaskRegistrationView: View {
                                 .font(.system(size: Constants.Typography.captionSize))
                                 .foregroundColor(.red)
                         }
+
+                        Button(action: { showVoteURLHelp = true }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "questionmark.circle")
+                                Text("アプリの投票URLの取得方法")
+                            }
+                            .font(.system(size: 13))
+                            .foregroundColor(Constants.Colors.accentBlue)
+                        }
+                    }
+                    .sheet(isPresented: $showVoteURLHelp) {
+                        VoteURLHelpView()
                     }
 
                     // Deadline Picker

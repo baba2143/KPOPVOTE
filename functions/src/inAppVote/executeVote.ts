@@ -184,6 +184,9 @@ export const executeVote = functions.https.onRequest(async (req, res) => {
         voteId,
         choiceId,
         voteCount,
+        totalPointsDeducted: 0,
+        premiumPointsDeducted: 0,
+        regularPointsDeducted: 0,
       },
     } as ApiResponse<unknown>);
   } catch (error: unknown) {

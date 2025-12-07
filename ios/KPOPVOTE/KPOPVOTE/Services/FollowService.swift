@@ -44,6 +44,21 @@ class FollowService {
 
         print("📥 [FollowService] HTTP Status: \(httpResponse.statusCode)")
 
+        // Handle "Already following" as success (HTTP 400 with specific error)
+        if httpResponse.statusCode == 400 {
+            if let errorString = String(data: data, encoding: .utf8),
+               errorString.contains("Already following") {
+                print("ℹ️ [FollowService] Already following this user - treating as success")
+                // Return dummy FollowData since user is already following
+                return FollowData(
+                    followId: "",
+                    followerId: Auth.auth().currentUser?.uid ?? "",
+                    followingId: userId,
+                    createdAt: ISO8601DateFormatter().string(from: Date())
+                )
+            }
+        }
+
         guard httpResponse.statusCode == 201 else {
             if let errorString = String(data: data, encoding: .utf8) {
                 print("❌ [FollowService] Error: \(errorString)")
@@ -106,7 +121,7 @@ class FollowService {
     ///   - limit: Number of users to fetch
     ///   - lastFollowId: Last follow ID for pagination
     /// - Returns: Array of users and hasMore flag
-    func fetchFollowing(userId: String? = nil, limit: Int = 20, lastFollowId: String? = nil) async throws -> (users: [User], hasMore: Bool) {
+    func fetchFollowing(userId: String? = nil, limit: Int = 20, lastFollowId: String? = nil) async throws -> (users: [FollowUser], hasMore: Bool) {
         guard let token = try await Auth.auth().currentUser?.getIDToken() else {
             throw CommunityError.notAuthenticated
         }
@@ -160,7 +175,7 @@ class FollowService {
     ///   - limit: Number of users to fetch
     ///   - lastFollowId: Last follow ID for pagination
     /// - Returns: Array of users and hasMore flag
-    func fetchFollowers(userId: String? = nil, limit: Int = 20, lastFollowId: String? = nil) async throws -> (users: [User], hasMore: Bool) {
+    func fetchFollowers(userId: String? = nil, limit: Int = 20, lastFollowId: String? = nil) async throws -> (users: [FollowUser], hasMore: Bool) {
         guard let token = try await Auth.auth().currentUser?.getIDToken() else {
             throw CommunityError.notAuthenticated
         }
@@ -266,8 +281,22 @@ struct UserListResponse: Codable {
 }
 
 struct UserListData: Codable {
-    let users: [User]
+    let users: [FollowUser]
     let hasMore: Bool
+}
+
+struct FollowUser: Codable, Identifiable {
+    let followId: String
+    let userId: String
+    let displayName: String?
+    let photoURL: String?
+    let followersCount: Int
+    let followingCount: Int
+    let postsCount: Int
+    let isFollowedByCurrentUser: Bool
+    let followedAt: String?
+
+    var id: String { followId }
 }
 
 struct RecommendedUsersResponse: Codable {

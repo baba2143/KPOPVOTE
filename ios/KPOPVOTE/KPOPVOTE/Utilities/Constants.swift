@@ -158,6 +158,12 @@ enum Constants {
         // FCM (Push Notifications)
         static let registerFcmToken = "\(apiBaseURL)/registerFcmToken"
         static let unregisterFcmToken = "\(apiBaseURL)/unregisterFcmToken"
+
+        // Direct Message
+        static let sendDirectMessage = "\(apiBaseURL)/sendDirectMessage"
+        static let getConversations = "\(apiBaseURL)/getConversations"
+        static let getMessages = "\(apiBaseURL)/getMessages"
+        static let markAsRead = "\(apiBaseURL)/markAsRead"
     }
 
     // MARK: - UserDefaults Keys

@@ -449,7 +449,7 @@ export interface FollowRequest {
 export interface Notification {
   id: string;
   userId: string;
-  type: "follow" | "like" | "comment" | "mention" | "vote" | "system";
+  type: "follow" | "like" | "comment" | "mention" | "vote" | "system" | "dm";
   title: string;
   body: string;
   isRead: boolean;
@@ -459,6 +459,7 @@ export interface Notification {
   relatedPostId?: string;
   relatedVoteId?: string;
   relatedCommentId?: string;
+  relatedConversationId?: string;
   createdAt: Date;
 }
 

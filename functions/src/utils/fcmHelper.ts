@@ -28,6 +28,9 @@ export interface PushNotificationPayload {
     collectionId?: string;
     userId?: string;
     notificationId?: string;
+    conversationId?: string;
+    messageId?: string;
+    senderId?: string;
   };
 }
 
