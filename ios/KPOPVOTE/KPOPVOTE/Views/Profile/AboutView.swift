@@ -16,6 +16,7 @@ struct AboutView: View {
     @State private var showTerms = false
     @State private var showPrivacy = false
     @State private var showLicenses = false
+    @State private var showEmailCopiedAlert = false
 
     // App version info
     private var appVersion: String {
@@ -66,6 +67,11 @@ struct AboutView: View {
             }
             .sheet(isPresented: $showLicenses) {
                 LicensesView()
+            }
+            .alert("メールアドレスをコピーしました", isPresented: $showEmailCopiedAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("info@switch-media-jp.com\n\nお使いのメールアプリでお問い合わせください。")
             }
         }
     }
@@ -188,11 +194,38 @@ struct AboutView: View {
         let subject = "KPOPVOTE App Feedback"
         let body = "App Version: \(appVersion) (\(buildNumber))\n\n"
 
-        let urlString = "mailto:\(email)?subject=\(subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")&body=\(body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
+        let encodedSubject = subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        let encodedBody = body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
 
-        if let url = URL(string: urlString) {
-            UIApplication.shared.open(url)
+        // Note: Check third-party apps first because mailto: canOpenURL returns true
+        // even when Mail app is not installed (iOS shows restore dialog instead)
+
+        // 1. Try Gmail
+        if let gmailURL = URL(string: "googlegmail://co?to=\(email)&subject=\(encodedSubject)&body=\(encodedBody)"),
+           UIApplication.shared.canOpenURL(gmailURL) {
+            UIApplication.shared.open(gmailURL)
+            return
         }
+
+        // 2. Try Outlook
+        if let outlookURL = URL(string: "ms-outlook://compose?to=\(email)&subject=\(encodedSubject)&body=\(encodedBody)"),
+           UIApplication.shared.canOpenURL(outlookURL) {
+            UIApplication.shared.open(outlookURL)
+            return
+        }
+
+        // 3. Try Yahoo Mail
+        if let yahooURL = URL(string: "ymail://mail/compose?to=\(email)&subject=\(encodedSubject)&body=\(encodedBody)"),
+           UIApplication.shared.canOpenURL(yahooURL) {
+            UIApplication.shared.open(yahooURL)
+            return
+        }
+
+        // 4. Fallback: Copy email and show alert
+        // Note: We skip mailto: because canOpenURL returns true even without Mail app installed,
+        // which causes iOS to show the confusing "Restore Mail?" dialog
+        UIPasteboard.general.string = email
+        showEmailCopiedAlert = true
     }
 }
 
