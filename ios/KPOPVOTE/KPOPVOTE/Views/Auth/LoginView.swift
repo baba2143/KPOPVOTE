@@ -2,26 +2,26 @@
 //  LoginView.swift
 //  KPOPVOTE
 //
-//  K-VOTE COLLECTOR - Login View
+//  K-VOTE COLLECTOR - Login View (Phone Authentication)
 //
 
 import SwiftUI
+import Combine
 
 struct LoginView: View {
-    @StateObject private var viewModel: AuthViewModel
-    @State private var showRegister = false
-    private let authService: AuthService
+    @StateObject private var viewModel: PhoneAuthLoginViewModel
+    @ObservedObject var authService: AuthService
 
     init(authService: AuthService) {
         self.authService = authService
-        _viewModel = StateObject(wrappedValue: AuthViewModel(authService: authService))
+        _viewModel = StateObject(wrappedValue: PhoneAuthLoginViewModel(authService: authService))
     }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
-                // Background
-                Constants.Colors.background
+                // Background (ダークモード)
+                Constants.Colors.backgroundDark
                     .ignoresSafeArea()
 
                 ScrollView {
@@ -34,43 +34,65 @@ struct LoginView: View {
 
                             Text("K-VOTE COLLECTOR")
                                 .font(.system(size: Constants.Typography.titleSize, weight: .bold))
-                                .foregroundColor(Constants.Colors.textPrimary)
+                                .foregroundColor(Constants.Colors.textWhite)
 
-                            Text("推しの投票を管理しよう")
+                            Text("電話番号で認証")
                                 .font(.system(size: Constants.Typography.captionSize))
-                                .foregroundColor(Constants.Colors.textSecondary)
+                                .foregroundColor(Constants.Colors.textGray)
                         }
                         .padding(.top, 60)
 
-                        // Login Form
+                        // Phone Number Input Form
                         VStack(spacing: Constants.Spacing.medium) {
-                            // Email TextField
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("メールアドレス")
+                                Text("電話番号")
                                     .font(.system(size: Constants.Typography.captionSize, weight: .semibold))
-                                    .foregroundColor(Constants.Colors.textSecondary)
+                                    .foregroundColor(Constants.Colors.textGray)
 
-                                TextField("example@email.com", text: $viewModel.email)
-                                    .unifiedInputStyle()
-                                    .textInputAutocapitalization(.never)
-                                    .keyboardType(.emailAddress)
-                                    .autocorrectionDisabled()
+                                HStack(spacing: 8) {
+                                    // Country Code Picker
+                                    Menu {
+                                        ForEach(viewModel.countryCodes, id: \.code) { country in
+                                            Button(action: {
+                                                viewModel.selectedCountryCode = country.code
+                                            }) {
+                                                Text("\(country.flag) \(country.name) (\(country.code))")
+                                            }
+                                        }
+                                    } label: {
+                                        HStack(spacing: 4) {
+                                            Text(viewModel.selectedCountryFlag)
+                                                .font(.system(size: 20))
+                                            Text(viewModel.selectedCountryCode)
+                                                .font(.system(size: Constants.Typography.bodySize))
+                                                .foregroundColor(Constants.Colors.textWhite)
+                                            Image(systemName: "chevron.down")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(Constants.Colors.textGray)
+                                        }
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 14)
+                                        .background(Constants.Colors.cardDark)
+                                        .cornerRadius(10)
+                                    }
+
+                                    // Phone Number TextField
+                                    TextField("09012345678", text: $viewModel.phoneNumber)
+                                        .keyboardType(.phonePad)
+                                        .unifiedInputStyle()
+                                }
+
+                                if let error = viewModel.phoneNumberError {
+                                    Text(error)
+                                        .font(.system(size: Constants.Typography.captionSize))
+                                        .foregroundColor(.red)
+                                }
                             }
 
-                            // Password TextField
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("パスワード")
-                                    .font(.system(size: Constants.Typography.captionSize, weight: .semibold))
-                                    .foregroundColor(Constants.Colors.textSecondary)
-
-                                SecureField("6文字以上", text: $viewModel.password)
-                                    .unifiedInputStyle()
-                            }
-
-                            // Login Button
+                            // Send Code Button
                             Button(action: {
                                 Task {
-                                    await viewModel.login()
+                                    await viewModel.sendVerificationCode()
                                 }
                             }) {
                                 HStack {
@@ -78,30 +100,30 @@ struct LoginView: View {
                                         ProgressView()
                                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                     } else {
-                                        Text("ログイン")
+                                        Image(systemName: "message.fill")
+                                        Text("認証コードを送信")
                                             .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
                                     }
                                 }
                                 .frame(maxWidth: .infinity)
                                 .padding()
-                                .background(viewModel.isValidLogin ? Constants.Colors.primaryBlue : Color.gray)
+                                .background(viewModel.isValidPhoneNumber ? Constants.Colors.primaryBlue : Color.gray)
                                 .foregroundColor(.white)
                                 .cornerRadius(10)
                             }
-                            .disabled(!viewModel.isValidLogin || viewModel.isLoading)
+                            .disabled(!viewModel.isValidPhoneNumber || viewModel.isLoading)
                         }
                         .padding()
-                        .background(Constants.Colors.cardBackground)
+                        .background(Constants.Colors.cardDark)
                         .cornerRadius(16)
-                        .shadow(radius: 4)
 
-                        // Register Link
+                        // Guest Mode Button
                         Button(action: {
-                            showRegister = true
+                            authService.loginAsGuest()
                         }) {
-                            Text("アカウントをお持ちでない方はこちら")
+                            Text("ゲストとして利用")
                                 .font(.system(size: Constants.Typography.captionSize))
-                                .foregroundColor(Constants.Colors.primaryBlue)
+                                .foregroundColor(Constants.Colors.textGray)
                         }
 
                         Spacer()
@@ -116,18 +138,132 @@ struct LoginView: View {
             } message: {
                 Text(viewModel.errorMessage ?? "エラーが発生しました")
             }
-            // Debug用アラート（TestFlight診断用）
-            .alert("デバッグ情報", isPresented: $viewModel.showDebugAlert) {
-                Button("OK") {
-                    viewModel.clearDebugAlert()
-                }
-            } message: {
-                Text(viewModel.debugMessage ?? "")
+            .navigationDestination(isPresented: $viewModel.showVerificationView) {
+                VerificationCodeView(
+                    authService: authService,
+                    verificationID: viewModel.verificationID ?? "",
+                    phoneNumber: viewModel.fullPhoneNumber
+                )
+                .environmentObject(authService)
             }
-            .sheet(isPresented: $showRegister) {
-                RegisterView(authService: authService)
+            .onChange(of: authService.isAuthenticated) { newValue in
+                if newValue {
+                    // 認証成功時にNavigationをリセットしてContentViewにMainTabViewを表示させる
+                    print("✅ [LoginView] isAuthenticated changed to true, resetting navigation")
+                    viewModel.showVerificationView = false
+                }
             }
         }
+    }
+}
+
+// MARK: - PhoneAuthLoginViewModel
+@MainActor
+class PhoneAuthLoginViewModel: ObservableObject {
+    @Published var phoneNumber = ""
+    @Published var selectedCountryCode = "+81"
+    @Published var isLoading = false
+    @Published var errorMessage: String?
+    @Published var showError = false
+    @Published var phoneNumberError: String?
+    @Published var showVerificationView = false
+    @Published var verificationID: String?
+
+    private let authService: AuthService
+    private var cancellables = Set<AnyCancellable>()
+
+    struct CountryCode {
+        let code: String
+        let name: String
+        let flag: String
+    }
+
+    let countryCodes: [CountryCode] = [
+        CountryCode(code: "+81", name: "日本", flag: "🇯🇵"),
+        CountryCode(code: "+82", name: "韓国", flag: "🇰🇷"),
+        CountryCode(code: "+1", name: "アメリカ", flag: "🇺🇸"),
+        CountryCode(code: "+86", name: "中国", flag: "🇨🇳"),
+        CountryCode(code: "+886", name: "台湾", flag: "🇹🇼"),
+        CountryCode(code: "+852", name: "香港", flag: "🇭🇰"),
+        CountryCode(code: "+65", name: "シンガポール", flag: "🇸🇬"),
+        CountryCode(code: "+60", name: "マレーシア", flag: "🇲🇾"),
+        CountryCode(code: "+66", name: "タイ", flag: "🇹🇭"),
+        CountryCode(code: "+63", name: "フィリピン", flag: "🇵🇭"),
+        CountryCode(code: "+62", name: "インドネシア", flag: "🇮🇩"),
+        CountryCode(code: "+84", name: "ベトナム", flag: "🇻🇳"),
+    ]
+
+    var selectedCountryFlag: String {
+        countryCodes.first { $0.code == selectedCountryCode }?.flag ?? "🌏"
+    }
+
+    var fullPhoneNumber: String {
+        // Remove leading zeros and format
+        let cleanedNumber = phoneNumber.replacingOccurrences(of: "-", with: "")
+            .replacingOccurrences(of: " ", with: "")
+            .replacingOccurrences(of: "^0+", with: "", options: .regularExpression)
+        return "\(selectedCountryCode)\(cleanedNumber)"
+    }
+
+    var isValidPhoneNumber: Bool {
+        let cleanedNumber = phoneNumber.replacingOccurrences(of: "-", with: "")
+            .replacingOccurrences(of: " ", with: "")
+
+        // Japanese phone numbers: 10-11 digits (with or without leading 0)
+        if selectedCountryCode == "+81" {
+            return cleanedNumber.count >= 10 && cleanedNumber.count <= 11 && cleanedNumber.allSatisfy { $0.isNumber }
+        }
+
+        // Other countries: minimum 6 digits
+        return cleanedNumber.count >= 6 && cleanedNumber.allSatisfy { $0.isNumber }
+    }
+
+    init(authService: AuthService) {
+        self.authService = authService
+
+        // authService.isAuthenticatedを監視して認証成功時にNavigationをリセット
+        // ViewModelはNavigationStackの状態に関係なく常にアクティブなので確実に検知できる
+        authService.$isAuthenticated
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] isAuthenticated in
+                if isAuthenticated {
+                    print("✅ [PhoneAuthLoginViewModel] isAuthenticated changed to true, resetting navigation")
+                    self?.showVerificationView = false
+                }
+            }
+            .store(in: &cancellables)
+    }
+
+    func sendVerificationCode() async {
+        guard isValidPhoneNumber else {
+            phoneNumberError = "有効な電話番号を入力してください"
+            return
+        }
+
+        phoneNumberError = nil
+        isLoading = true
+
+        do {
+            let verificationID = try await authService.sendVerificationCode(phoneNumber: fullPhoneNumber)
+            self.verificationID = verificationID
+            showVerificationView = true
+        } catch let error as AuthError {
+            showError(message: error.localizedDescription)
+        } catch {
+            showError(message: "認証コードの送信に失敗しました")
+        }
+
+        isLoading = false
+    }
+
+    private func showError(message: String) {
+        errorMessage = message
+        showError = true
+    }
+
+    func clearError() {
+        errorMessage = nil
+        showError = false
     }
 }
 

@@ -75,15 +75,32 @@ export const login = functions.https.onRequest(async (req, res) => {
       .doc(uid)
       .get();
 
-    if (!userDoc.exists) {
-      res.status(404).json({
-        success: false,
-        error: "User profile not found in database",
-      } as ApiResponse<null>);
-      return;
-    }
+    let userProfile;
 
-    const userProfile = userDoc.data()!;
+    if (!userDoc.exists) {
+      // 電話番号認証の新規ユーザーの場合、プロファイルを自動作成
+      console.log(`[login] Creating new user profile for: ${uid}`);
+
+      const phoneNumber = req.body?.phoneNumber || decodedToken.phone_number || "";
+      const newUserData = {
+        uid: uid,
+        email: decodedToken.email || "",
+        phoneNumber: phoneNumber,
+        displayName: "",
+        photoURL: null,
+        points: 100, // 初期ポイント
+        isSuspended: false,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+
+      await admin.firestore().collection("users").doc(uid).set(newUserData);
+      console.log(`[login] New user profile created for: ${uid}`);
+
+      userProfile = newUserData;
+    } else {
+      userProfile = userDoc.data()!;
+    }
 
     // Check if user is suspended
     if (userProfile.isSuspended) {
@@ -99,8 +116,8 @@ export const login = functions.https.onRequest(async (req, res) => {
       success: true,
       data: {
         uid: uid,
-        email: userProfile.email || decodedToken.email,
-        displayName: userProfile.displayName,
+        email: userProfile.email || decodedToken.email || "",
+        displayName: userProfile.displayName || null,
         photoURL: userProfile.photoURL || null,
         points: userProfile.points || 0,
         isSuspended: userProfile.isSuspended || false,

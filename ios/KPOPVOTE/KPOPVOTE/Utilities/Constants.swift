@@ -87,6 +87,9 @@ enum Constants {
         // Idol Master
         static let listIdols = "\(apiBaseURL)/listIdols"
 
+        // Group Master
+        static let listGroups = "\(apiBaseURL)/listGroups"
+
         // In-App Vote
         static let listInAppVotes = "\(apiBaseURL)/listInAppVotes"
         static let getInAppVoteDetail = "\(apiBaseURL)/getInAppVoteDetail"

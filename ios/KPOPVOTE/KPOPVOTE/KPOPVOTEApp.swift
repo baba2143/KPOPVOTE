@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import FirebaseCore
 import FirebaseMessaging
 
 @main
@@ -14,7 +13,8 @@ struct KPOPVOTEApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     init() {
-        FirebaseApp.configure()
+        // FirebaseApp.configure() は AppDelegate.didFinishLaunchingWithOptions で実行済み
+        // （Auth.auth() を使う前に初期化が必要なため）
 
         // Global UITextField/UITextView appearance settings
         // Set text color to white for all text inputs

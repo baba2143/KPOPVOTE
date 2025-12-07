@@ -63,12 +63,32 @@ struct BiasSettings: Codable, Hashable {
     let artistName: String
     let memberIds: [String]
     let memberNames: [String]
+    let isGroupLevel: Bool
 
-    init(artistId: String, artistName: String, memberIds: [String], memberNames: [String]) {
+    init(artistId: String, artistName: String, memberIds: [String], memberNames: [String], isGroupLevel: Bool = false) {
         self.artistId = artistId
         self.artistName = artistName
         self.memberIds = memberIds
         self.memberNames = memberNames
+        self.isGroupLevel = isGroupLevel
+    }
+
+    // Custom decoder to handle missing isGroupLevel from existing data
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        artistId = try container.decode(String.self, forKey: .artistId)
+        artistName = try container.decode(String.self, forKey: .artistName)
+        memberIds = try container.decode([String].self, forKey: .memberIds)
+        memberNames = try container.decode([String].self, forKey: .memberNames)
+        isGroupLevel = try container.decodeIfPresent(Bool.self, forKey: .isGroupLevel) ?? false
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case artistId
+        case artistName
+        case memberIds
+        case memberNames
+        case isGroupLevel
     }
 }
 

@@ -8,11 +8,20 @@
 import Foundation
 import Combine
 
+// MARK: - Selection Mode
+enum BiasSelectionMode: String, CaseIterable {
+    case group = "グループ"
+    case member = "メンバー"
+}
+
 @MainActor
 class BiasViewModel: ObservableObject {
     // MARK: - Published Properties
     @Published var allIdols: [IdolMaster] = []
+    @Published var allGroups: [GroupMaster] = []
     @Published var selectedIdols: Set<String> = [] // idol IDs
+    @Published var selectedGroups: Set<String> = [] // group IDs
+    @Published var selectionMode: BiasSelectionMode = .group
     @Published var isLoading = false
     @Published var isSaving = false
     @Published var errorMessage: String?
@@ -77,31 +86,90 @@ class BiasViewModel: ObservableObject {
         allIdols.filter { selectedIdols.contains($0.id) }
     }
 
-    /// Count of selected idols
+    /// Selected group objects
+    var selectedGroupObjects: [GroupMaster] {
+        allGroups.filter { selectedGroups.contains($0.id) }
+    }
+
+    /// Count of selected items (groups or idols depending on mode)
     var selectedCount: Int {
-        selectedIdols.count
+        switch selectionMode {
+        case .group:
+            return selectedGroups.count
+        case .member:
+            return selectedIdols.count
+        }
+    }
+
+    /// Filtered groups by search text
+    var filteredGroups: [GroupMaster] {
+        if searchText.isEmpty {
+            return allGroups
+        }
+        let query = searchText.lowercased()
+        return allGroups.filter { $0.name.lowercased().contains(query) }
+    }
+
+    /// Group alphabet counts
+    var groupAlphabetCounts: [String: Int] {
+        var counts: [String: Int] = [:]
+        for group in allGroups {
+            let char = getFirstChar(group.name)
+            counts[char, default: 0] += 1
+        }
+        return counts
+    }
+
+    /// Filtered groups by alphabet
+    var filteredGroupsByAlphabet: [GroupMaster] {
+        var groups = allGroups
+
+        // Alphabet filter
+        if selectedChar != "ALL" {
+            groups = groups.filter { getFirstChar($0.name) == selectedChar }
+        }
+
+        // Text search
+        if !searchText.isEmpty {
+            let query = searchText.lowercased()
+            groups = groups.filter { $0.name.lowercased().contains(query) }
+        }
+
+        return groups.sorted { $0.name < $1.name }
     }
 
     // MARK: - Methods
 
-    /// Load all idols from backend
-    func loadIdols() async {
+    /// Load all data (groups and idols) from backend
+    func loadData() async {
         isLoading = true
         errorMessage = nil
 
         do {
-            print("📱 [BiasViewModel] Loading idols...")
-            allIdols = try await IdolService.shared.fetchIdols()
-            print("✅ [BiasViewModel] Loaded \(allIdols.count) idols")
+            print("📱 [BiasViewModel] Loading groups and idols...")
+
+            // Load groups and idols in parallel
+            async let groupsTask = GroupService.shared.fetchGroups()
+            async let idolsTask = IdolService.shared.fetchIdols()
+
+            allGroups = try await groupsTask
+            allIdols = try await idolsTask
+
+            print("✅ [BiasViewModel] Loaded \(allGroups.count) groups and \(allIdols.count) idols")
 
             // Load current bias settings
             await loadCurrentBias()
         } catch {
-            print("❌ [BiasViewModel] Failed to load idols: \(error)")
+            print("❌ [BiasViewModel] Failed to load data: \(error)")
             errorMessage = error.localizedDescription
         }
 
         isLoading = false
+    }
+
+    /// Load all idols from backend (legacy - for backward compatibility)
+    func loadIdols() async {
+        await loadData()
     }
 
     /// Load current bias settings from backend
@@ -110,11 +178,28 @@ class BiasViewModel: ObservableObject {
             print("📱 [BiasViewModel] Loading current bias settings...")
             let biasSettings = try await BiasService.shared.getBias()
 
-            // Extract all memberIds from biasSettings
-            let memberIds = biasSettings.flatMap { $0.memberIds }
-            selectedIdols = Set(memberIds)
+            // Separate group-level and member-level settings
+            var groupIds: Set<String> = []
+            var memberIds: Set<String> = []
 
-            print("✅ [BiasViewModel] Loaded bias settings: \(selectedIdols.count) members selected")
+            for setting in biasSettings {
+                if setting.isGroupLevel {
+                    // Find group by name (artistName matches group name)
+                    if let group = allGroups.first(where: { $0.name == setting.artistName }) {
+                        groupIds.insert(group.id)
+                    }
+                } else {
+                    // Member-level selection
+                    for memberId in setting.memberIds {
+                        memberIds.insert(memberId)
+                    }
+                }
+            }
+
+            selectedGroups = groupIds
+            selectedIdols = memberIds
+
+            print("✅ [BiasViewModel] Loaded bias settings: \(selectedGroups.count) groups, \(selectedIdols.count) members selected")
         } catch {
             print("⚠️ [BiasViewModel] Failed to load current bias (may be first time): \(error)")
             // Don't show error for first-time users with no bias set
@@ -140,6 +225,25 @@ class BiasViewModel: ObservableObject {
         selectedIdols.contains(idol.id)
     }
 
+    /// Toggle group selection
+    /// - Parameter group: Group to toggle
+    func toggleGroup(_ group: GroupMaster) {
+        if selectedGroups.contains(group.id) {
+            selectedGroups.remove(group.id)
+            print("➖ [BiasViewModel] Deselected group: \(group.name)")
+        } else {
+            selectedGroups.insert(group.id)
+            print("➕ [BiasViewModel] Selected group: \(group.name)")
+        }
+    }
+
+    /// Check if group is selected
+    /// - Parameter group: Group to check
+    /// - Returns: True if selected
+    func isGroupSelected(_ group: GroupMaster) -> Bool {
+        selectedGroups.contains(group.id)
+    }
+
     /// Save bias settings to backend
     func saveBias() async {
         isSaving = true
@@ -162,12 +266,28 @@ class BiasViewModel: ObservableObject {
         isSaving = false
     }
 
-    /// Build BiasSettings array from selected idols
-    /// - Returns: Array of BiasSettings grouped by artist
+    /// Build BiasSettings array from selected groups and idols
+    /// - Returns: Array of BiasSettings
     private func buildBiasSettings() -> [BiasSettings] {
         var settings: [BiasSettings] = []
 
-        // Group selected idols by group
+        // Add group-level selections
+        for group in selectedGroupObjects {
+            let artistId = group.id
+
+            let setting = BiasSettings(
+                artistId: artistId,
+                artistName: group.name,
+                memberIds: [],
+                memberNames: [],
+                isGroupLevel: true
+            )
+
+            settings.append(setting)
+            print("📦 [BiasViewModel] Group (group-level): '\(group.name)'")
+        }
+
+        // Add member-level selections (group selected idols by group)
         for (groupName, idols) in groupedIdols {
             let selectedGroupIdols = idols.filter { selectedIdols.contains($0.id) }
 
@@ -182,12 +302,12 @@ class BiasViewModel: ObservableObject {
                     artistId: artistId,
                     artistName: groupName,
                     memberIds: selectedGroupIdols.map { $0.id },
-                    memberNames: selectedGroupIdols.map { $0.name }
+                    memberNames: selectedGroupIdols.map { $0.name },
+                    isGroupLevel: false
                 )
 
                 settings.append(setting)
-
-                print("📦 [BiasViewModel] Group '\(groupName)': \(selectedGroupIdols.count) members")
+                print("📦 [BiasViewModel] Group (member-level) '\(groupName)': \(selectedGroupIdols.count) members")
             }
         }
 

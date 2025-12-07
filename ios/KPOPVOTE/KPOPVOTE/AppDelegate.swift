@@ -2,12 +2,14 @@
 //  AppDelegate.swift
 //  KPOPVOTE
 //
-//  K-VOTE COLLECTOR - Push Notification Handling
+//  K-VOTE COLLECTOR - Push Notification & Phone Auth Handling
 //
 
 import UIKit
 import UserNotifications
+import FirebaseCore
 import FirebaseMessaging
+import FirebaseAuth
 
 class AppDelegate: NSObject, UIApplicationDelegate {
 
@@ -17,10 +19,28 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
+        // Firebase を最初に初期化（Auth.auth() を使う前に必須）
+        FirebaseApp.configure()
+
         // Set up push notifications
         setupPushNotifications(application: application)
 
         return true
+    }
+
+    // MARK: - URL Handling for Firebase Phone Auth (reCAPTCHA)
+
+    func application(
+        _ app: UIApplication,
+        open url: URL,
+        options: [UIApplication.OpenURLOptionsKey: Any] = [:]
+    ) -> Bool {
+        // Handle Firebase Auth URL (for reCAPTCHA verification)
+        if Auth.auth().canHandle(url) {
+            print("✅ [AppDelegate] Firebase Auth handled URL: \(url.scheme ?? "unknown")")
+            return true
+        }
+        return false
     }
 
     // MARK: - Push Notification Setup
@@ -66,8 +86,28 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         let tokenString = deviceToken.map { String(format: "%02.2hhx", $0) }.joined()
         print("📱 [AppDelegate] APNs token received: \(tokenString.prefix(20))...")
 
+        // Pass the APNs token to Firebase Auth (for Phone Authentication)
+        Auth.auth().setAPNSToken(deviceToken, type: .unknown)
+
         // Pass the APNs token to Firebase Messaging
         Messaging.messaging().apnsToken = deviceToken
+    }
+
+    func application(
+        _ application: UIApplication,
+        didReceiveRemoteNotification userInfo: [AnyHashable: Any],
+        fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
+    ) {
+        // Handle Firebase Auth notifications (for phone auth verification)
+        if Auth.auth().canHandleNotification(userInfo) {
+            print("✅ [AppDelegate] Firebase Auth handled notification")
+            completionHandler(.noData)
+            return
+        }
+
+        // Handle other notifications
+        print("📩 [AppDelegate] Remote notification received: \(userInfo)")
+        completionHandler(.newData)
     }
 
     func application(

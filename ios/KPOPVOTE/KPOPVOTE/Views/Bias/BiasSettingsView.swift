@@ -10,6 +10,7 @@ import SwiftUI
 struct BiasSettingsView: View {
     @StateObject private var viewModel = BiasViewModel()
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var authService: AuthService
 
     private var isGuest: Bool {
         AppStorageManager.shared.isGuestMode
@@ -34,14 +35,29 @@ struct BiasSettingsView: View {
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
 
-                    Button(action: { dismiss() }) {
-                        Text("閉じる")
+                    VStack(spacing: 12) {
+                        Button(action: {
+                            dismiss()
+                            authService.exitGuestMode()
+                        }) {
+                            HStack {
+                                Image(systemName: "person.fill")
+                                Text("ログイン・新規登録")
+                            }
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(.white)
-                            .padding(.horizontal, 32)
+                            .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
                             .background(Color.blue)
                             .cornerRadius(24)
+                        }
+                        .padding(.horizontal, 32)
+
+                        Button(action: { dismiss() }) {
+                            Text("閉じる")
+                                .font(.system(size: 14))
+                                .foregroundColor(.secondary)
+                        }
                     }
 
                     Spacer()
@@ -73,12 +89,26 @@ struct BiasSettingsView: View {
                 } else {
                     // Main content
                     VStack(spacing: 0) {
+                        // Selection mode picker
+                        Picker("選択モード", selection: $viewModel.selectionMode) {
+                            ForEach(BiasSelectionMode.allCases, id: \.self) { mode in
+                                Text(mode.rawValue).tag(mode)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 12)
+                        .padding(.bottom, 8)
+
                         // Search bar
                         HStack {
                             Image(systemName: "magnifyingglass")
                                 .foregroundColor(.gray)
 
-                            TextField("アイドル名・グループ名で検索", text: $viewModel.searchText)
+                            TextField(
+                                viewModel.selectionMode == .group ? "グループ名で検索" : "アイドル名・グループ名で検索",
+                                text: $viewModel.searchText
+                            )
                                 .textFieldStyle(.plain)
                                 .autocorrectionDisabled()
 
@@ -93,7 +123,6 @@ struct BiasSettingsView: View {
                         .background(Color(.systemGray6))
                         .cornerRadius(10)
                         .padding(.horizontal, 16)
-                        .padding(.top, 12)
                         .padding(.bottom, 4)
 
                         // Alphabet filter tabs
@@ -102,7 +131,9 @@ struct BiasSettingsView: View {
                                 ForEach(viewModel.ALPHABET, id: \.self) { char in
                                     AlphabetTabView(
                                         char: char,
-                                        count: char == "ALL" ? viewModel.allIdols.count : (viewModel.alphabetCounts[char] ?? 0),
+                                        count: viewModel.selectionMode == .group
+                                            ? (char == "ALL" ? viewModel.allGroups.count : (viewModel.groupAlphabetCounts[char] ?? 0))
+                                            : (char == "ALL" ? viewModel.allIdols.count : (viewModel.alphabetCounts[char] ?? 0)),
                                         isSelected: viewModel.selectedChar == char,
                                         onTap: {
                                             viewModel.selectedChar = char
@@ -115,45 +146,86 @@ struct BiasSettingsView: View {
                         }
                         .background(Color(.systemGroupedBackground))
 
-                        // Idol list
-                        List {
-                            // Selected idols section
-                            if viewModel.selectedCount > 0 {
-                            Section {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text("選択中 (\(viewModel.selectedCount))")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
+                        // List content based on mode
+                        if viewModel.selectionMode == .group {
+                            // Group list
+                            List {
+                                // Selected groups section
+                                if viewModel.selectedGroups.count > 0 {
+                                    Section {
+                                        VStack(alignment: .leading, spacing: 8) {
+                                            Text("選択中 (\(viewModel.selectedGroups.count))")
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
 
-                                    BiasChipView(
-                                        selectedIdols: viewModel.selectedIdolObjects,
-                                        onRemove: { idol in
-                                            viewModel.toggleIdol(idol)
+                                            GroupChipView(
+                                                selectedGroups: viewModel.selectedGroupObjects,
+                                                onRemove: { group in
+                                                    viewModel.toggleGroup(group)
+                                                }
+                                            )
                                         }
-                                    )
+                                        .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
+                                    }
                                 }
-                                .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
-                            }
-                        }
 
-                        // Grouped idol list
-                        ForEach(viewModel.groupNames, id: \.self) { groupName in
-                            Section {
-                                ForEach(viewModel.groupedIdols[groupName] ?? []) { idol in
-                                    IdolRowView(
-                                        idol: idol,
-                                        isSelected: viewModel.isSelected(idol),
-                                        onTap: {
-                                            viewModel.toggleIdol(idol)
-                                        }
-                                    )
+                                // Group list
+                                Section {
+                                    ForEach(viewModel.filteredGroupsByAlphabet) { group in
+                                        GroupRowView(
+                                            group: group,
+                                            isSelected: viewModel.isGroupSelected(group),
+                                            onTap: {
+                                                viewModel.toggleGroup(group)
+                                            }
+                                        )
+                                    }
+                                } header: {
+                                    Text("グループ一覧 (\(viewModel.filteredGroupsByAlphabet.count))")
                                 }
-                            } header: {
-                                Text("\(groupName) (\(viewModel.groupedIdols[groupName]?.count ?? 0))")
                             }
+                            .listStyle(.insetGrouped)
+                        } else {
+                            // Idol list (existing implementation)
+                            List {
+                                // Selected idols section
+                                if viewModel.selectedIdols.count > 0 {
+                                    Section {
+                                        VStack(alignment: .leading, spacing: 8) {
+                                            Text("選択中 (\(viewModel.selectedIdols.count))")
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+
+                                            BiasChipView(
+                                                selectedIdols: viewModel.selectedIdolObjects,
+                                                onRemove: { idol in
+                                                    viewModel.toggleIdol(idol)
+                                                }
+                                            )
+                                        }
+                                        .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
+                                    }
+                                }
+
+                                // Grouped idol list
+                                ForEach(viewModel.groupNames, id: \.self) { groupName in
+                                    Section {
+                                        ForEach(viewModel.groupedIdols[groupName] ?? []) { idol in
+                                            IdolRowView(
+                                                idol: idol,
+                                                isSelected: viewModel.isSelected(idol),
+                                                onTap: {
+                                                    viewModel.toggleIdol(idol)
+                                                }
+                                            )
+                                        }
+                                    } header: {
+                                        Text("\(groupName) (\(viewModel.groupedIdols[groupName]?.count ?? 0))")
+                                    }
+                                }
                             }
+                            .listStyle(.insetGrouped)
                         }
-                        .listStyle(.insetGrouped)
                     }
                 }
             }
@@ -298,6 +370,92 @@ struct IdolRowView: View {
             .padding(.vertical, 4)
         }
         .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Group Row View
+struct GroupRowView: View {
+    let group: GroupMaster
+    let isSelected: Bool
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 12) {
+                // Checkbox
+                Image(systemName: isSelected ? "checkmark.square.fill" : "square")
+                    .foregroundColor(isSelected ? .blue : .gray)
+                    .font(.title3)
+
+                // Group image
+                AsyncImage(url: URL(string: group.imageUrl ?? "")) { image in
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                } placeholder: {
+                    Circle()
+                        .fill(Color.blue.opacity(0.3))
+                        .overlay(
+                            Text(group.name.prefix(1))
+                                .font(.headline)
+                                .foregroundColor(.white)
+                        )
+                }
+                .frame(width: 44, height: 44)
+                .clipShape(Circle())
+
+                // Group name
+                Text(group.name)
+                    .font(.body)
+                    .foregroundColor(.primary)
+
+                Spacer()
+            }
+            .padding(.vertical, 4)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Group Chip View
+struct GroupChipView: View {
+    let selectedGroups: [GroupMaster]
+    let onRemove: (GroupMaster) -> Void
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(selectedGroups) { group in
+                    HStack(spacing: 4) {
+                        // Group image
+                        AsyncImage(url: URL(string: group.imageUrl ?? "")) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                        } placeholder: {
+                            Circle()
+                                .fill(Color.blue.opacity(0.3))
+                        }
+                        .frame(width: 20, height: 20)
+                        .clipShape(Circle())
+
+                        Text(group.name)
+                            .font(.caption)
+                            .lineLimit(1)
+
+                        Button(action: { onRemove(group) }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.blue.opacity(0.1))
+                    .cornerRadius(16)
+                }
+            }
+        }
     }
 }
 

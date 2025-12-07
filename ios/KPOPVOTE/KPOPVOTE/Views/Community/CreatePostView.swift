@@ -9,6 +9,7 @@ import SwiftUI
 
 struct CreatePostView: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var authService: AuthService
     @StateObject private var viewModel = CreatePostViewModel()
     @StateObject private var biasViewModel = BiasViewModel()
     @State private var showImagePicker = false
@@ -40,14 +41,29 @@ struct CreatePostView: View {
                     .foregroundColor(Constants.Colors.textGray)
                     .multilineTextAlignment(.center)
 
-                Button(action: { dismiss() }) {
-                    Text("閉じる")
+                VStack(spacing: 12) {
+                    Button(action: {
+                        dismiss()
+                        authService.exitGuestMode()
+                    }) {
+                        HStack {
+                            Image(systemName: "person.fill")
+                            Text("ログイン・新規登録")
+                        }
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.white)
-                        .padding(.horizontal, 32)
+                        .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)
                         .background(Constants.Colors.accentPink)
                         .cornerRadius(24)
+                    }
+                    .padding(.horizontal, 32)
+
+                    Button(action: { dismiss() }) {
+                        Text("閉じる")
+                            .font(.system(size: 14))
+                            .foregroundColor(Constants.Colors.textGray)
+                    }
                 }
 
                 Spacer()
