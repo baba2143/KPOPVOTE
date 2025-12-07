@@ -1,8 +1,8 @@
 //
 //  TaskRegistrationView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Task Registration Form
+//  OSHI Pick - Task Registration Form
 //
 
 import SwiftUI

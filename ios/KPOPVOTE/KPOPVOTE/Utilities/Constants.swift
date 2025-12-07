@@ -1,8 +1,8 @@
 //
 //  Constants.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Application Constants
+//  OSHI Pick - Application Constants
 //
 
 import SwiftUI

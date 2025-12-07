@@ -1,8 +1,8 @@
 //
 //  PointSelectionView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Point Selection Component
+//  OSHI Pick - Point Selection Component
 //
 
 import SwiftUI

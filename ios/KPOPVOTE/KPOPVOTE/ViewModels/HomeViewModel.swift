@@ -1,8 +1,8 @@
 //
 //  HomeViewModel.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Home View Model
+//  OSHI Pick - Home View Model
 //
 
 import Foundation

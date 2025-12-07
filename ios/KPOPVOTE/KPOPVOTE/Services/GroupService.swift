@@ -1,8 +1,8 @@
 //
 //  GroupService.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Group Master Service
+//  OSHI Pick - Group Master Service
 //
 
 import Foundation

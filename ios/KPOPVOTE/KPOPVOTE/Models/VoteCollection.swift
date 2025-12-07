@@ -1,8 +1,8 @@
 //
 //  VoteCollection.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Vote Collection Models
+//  OSHI Pick - Vote Collection Models
 //
 
 import Foundation

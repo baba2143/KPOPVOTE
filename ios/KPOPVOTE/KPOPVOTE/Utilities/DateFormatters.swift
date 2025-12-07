@@ -1,8 +1,8 @@
 //
 //  DateFormatters.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Japanese Date Formatting Utilities
+//  OSHI Pick - Japanese Date Formatting Utilities
 //
 
 import Foundation

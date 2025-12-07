@@ -1,8 +1,8 @@
 //
 //  SubscriptionManager.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Auto-Renewable Subscription Manager
+//  OSHI Pick - Auto-Renewable Subscription Manager
 //
 
 import Foundation

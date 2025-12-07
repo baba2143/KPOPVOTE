@@ -1,8 +1,8 @@
 //
 //  AppStorageManager.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - App Storage Manager
+//  OSHI Pick - App Storage Manager
 //
 
 import Foundation

@@ -1,8 +1,8 @@
 //
 //  EventDetailView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Event Detail View
+//  OSHI Pick - Event Detail View
 //
 
 import SwiftUI

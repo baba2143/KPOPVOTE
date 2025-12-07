@@ -1,8 +1,8 @@
 //
 //  CreateMenuView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Custom Glassmorphism Create Menu
+//  OSHI Pick - Custom Glassmorphism Create Menu
 //
 
 import SwiftUI

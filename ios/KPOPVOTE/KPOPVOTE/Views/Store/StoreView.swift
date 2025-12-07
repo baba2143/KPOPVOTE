@@ -1,8 +1,8 @@
 //
 //  StoreView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Store View (Point Purchase)
+//  OSHI Pick - Store View (Point Purchase)
 //
 
 import SwiftUI

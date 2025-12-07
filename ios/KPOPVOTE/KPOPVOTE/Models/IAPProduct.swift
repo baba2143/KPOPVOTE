@@ -1,8 +1,8 @@
 //
 //  IAPProduct.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - In-App Purchase Product Models
+//  OSHI Pick - In-App Purchase Product Models
 //
 
 import Foundation

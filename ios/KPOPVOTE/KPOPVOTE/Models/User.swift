@@ -1,8 +1,8 @@
 //
 //  User.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - User Model
+//  OSHI Pick - User Model
 //
 
 import Foundation

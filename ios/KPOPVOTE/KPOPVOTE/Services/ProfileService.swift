@@ -1,8 +1,8 @@
 //
 //  ProfileService.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Profile Service
+//  OSHI Pick - Profile Service
 //
 
 import Foundation

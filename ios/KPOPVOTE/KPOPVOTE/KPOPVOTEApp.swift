@@ -1,6 +1,6 @@
 //
-//  KPOPVOTEApp.swift
-//  KPOPVOTE
+//  OSHI PickApp.swift
+//  OSHI Pick
 //
 //  Created by MAKOTO BABA on R 7/11/12.
 //

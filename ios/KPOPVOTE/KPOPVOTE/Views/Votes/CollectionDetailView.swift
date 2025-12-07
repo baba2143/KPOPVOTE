@@ -1,8 +1,8 @@
 //
 //  CollectionDetailView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Collection Detail View (Phase 2)
+//  OSHI Pick - Collection Detail View (Phase 2)
 //
 
 import SwiftUI

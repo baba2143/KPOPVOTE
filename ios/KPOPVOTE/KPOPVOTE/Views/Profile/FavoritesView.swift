@@ -1,8 +1,8 @@
 //
 //  FavoritesView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Favorites View
+//  OSHI Pick - Favorites View
 //
 
 import SwiftUI

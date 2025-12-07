@@ -1,8 +1,8 @@
 //
 //  VoteHistory.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Vote History Model
+//  OSHI Pick - Vote History Model
 //
 
 import Foundation

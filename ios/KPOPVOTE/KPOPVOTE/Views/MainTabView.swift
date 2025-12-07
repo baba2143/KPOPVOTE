@@ -1,8 +1,8 @@
 //
 //  MainTabView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Main Tab Navigation
+//  OSHI Pick - Main Tab Navigation
 //
 
 import SwiftUI

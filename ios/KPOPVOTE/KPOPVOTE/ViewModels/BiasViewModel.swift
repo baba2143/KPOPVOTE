@@ -1,8 +1,8 @@
 //
 //  BiasViewModel.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Bias Settings ViewModel
+//  OSHI Pick - Bias Settings ViewModel
 //
 
 import Foundation

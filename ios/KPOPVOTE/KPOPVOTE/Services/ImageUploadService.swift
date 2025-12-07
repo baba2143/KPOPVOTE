@@ -1,8 +1,8 @@
 //
 //  ImageUploadService.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Image Upload Service
+//  OSHI Pick - Image Upload Service
 //
 
 import Foundation

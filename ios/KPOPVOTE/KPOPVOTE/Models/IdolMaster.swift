@@ -1,8 +1,8 @@
 //
 //  IdolMaster.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Idol Master Model
+//  OSHI Pick - Idol Master Model
 //
 
 import Foundation

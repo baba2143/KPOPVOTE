@@ -1,8 +1,8 @@
 //
 //  SubscriptionViewModel.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Subscription View Model
+//  OSHI Pick - Subscription View Model
 //
 
 import Foundation

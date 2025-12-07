@@ -1,8 +1,8 @@
 //
 //  CommunityError.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Community Service Errors
+//  OSHI Pick - Community Service Errors
 //
 
 import Foundation

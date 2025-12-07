@@ -1,8 +1,8 @@
 //
 //  PushNotificationManager.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - FCM Token Management
+//  OSHI Pick - FCM Token Management
 //
 
 import Foundation

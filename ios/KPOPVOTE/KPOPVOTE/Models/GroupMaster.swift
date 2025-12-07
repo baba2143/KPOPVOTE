@@ -1,8 +1,8 @@
 //
 //  GroupMaster.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Group Master Model
+//  OSHI Pick - Group Master Model
 //
 
 import Foundation

@@ -1,8 +1,8 @@
 //
 //  ProductCard.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Product Card Component
+//  OSHI Pick - Product Card Component
 //
 
 import SwiftUI

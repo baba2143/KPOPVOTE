@@ -1,8 +1,8 @@
 //
 //  CalendarContainerView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Calendar Container View
+//  OSHI Pick - Calendar Container View
 //
 
 import SwiftUI

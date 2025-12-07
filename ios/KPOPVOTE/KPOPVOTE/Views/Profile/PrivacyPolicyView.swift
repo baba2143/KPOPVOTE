@@ -1,8 +1,8 @@
 //
 //  PrivacyPolicyView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Privacy Policy View
+//  OSHI Pick - Privacy Policy View
 //
 
 import SwiftUI

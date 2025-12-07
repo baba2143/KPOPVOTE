@@ -1,8 +1,8 @@
 //
 //  CommunityService.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Community Service (Posts)
+//  OSHI Pick - Community Service (Posts)
 //
 
 import Foundation

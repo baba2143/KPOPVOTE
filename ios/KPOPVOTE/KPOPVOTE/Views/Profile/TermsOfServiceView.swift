@@ -1,8 +1,8 @@
 //
 //  TermsOfServiceView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Terms of Service View
+//  OSHI Pick - Terms of Service View
 //
 
 import SwiftUI

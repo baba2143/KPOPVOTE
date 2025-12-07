@@ -1,8 +1,8 @@
 //
 //  Follow.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Follow Relationship Model
+//  OSHI Pick - Follow Relationship Model
 //
 
 import Foundation

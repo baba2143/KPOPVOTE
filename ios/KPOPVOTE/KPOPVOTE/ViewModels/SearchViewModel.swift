@@ -1,8 +1,8 @@
 //
 //  SearchViewModel.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Search ViewModel
+//  OSHI Pick - Search ViewModel
 //
 
 import Foundation

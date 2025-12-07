@@ -1,8 +1,8 @@
 //
 //  PremiumView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Premium Membership View
+//  OSHI Pick - Premium Membership View
 //
 
 import SwiftUI

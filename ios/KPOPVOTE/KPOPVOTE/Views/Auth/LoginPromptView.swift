@@ -1,8 +1,8 @@
 //
 //  LoginPromptView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Login Prompt Modal
+//  OSHI Pick - Login Prompt Modal
 //
 
 import SwiftUI

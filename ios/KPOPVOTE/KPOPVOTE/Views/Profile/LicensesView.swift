@@ -1,8 +1,8 @@
 //
 //  LicensesView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Licenses View
+//  OSHI Pick - Licenses View
 //
 
 import SwiftUI

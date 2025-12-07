@@ -1,8 +1,8 @@
 //
 //  EditCollectionViewModel.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Edit Collection ViewModel
+//  OSHI Pick - Edit Collection ViewModel
 //
 
 import Foundation

@@ -1,8 +1,8 @@
 //
 //  LoginView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Login View (Phone Authentication)
+//  OSHI Pick - Login View (Phone Authentication)
 //
 
 import SwiftUI
@@ -32,7 +32,7 @@ struct LoginView: View {
                                 .font(.system(size: 60))
                                 .foregroundColor(Constants.Colors.primaryBlue)
 
-                            Text("K-VOTE COLLECTOR")
+                            Text("OSHI Pick")
                                 .font(.system(size: Constants.Typography.titleSize, weight: .bold))
                                 .foregroundColor(Constants.Colors.textWhite)
 

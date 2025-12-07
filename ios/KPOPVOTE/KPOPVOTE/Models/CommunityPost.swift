@@ -1,8 +1,8 @@
 //
 //  CommunityPost.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Community Post Model
+//  OSHI Pick - Community Post Model
 //
 
 import Foundation

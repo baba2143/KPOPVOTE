@@ -1,8 +1,8 @@
 //
 //  UserStoryCircle.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - User Story Circle Component
+//  OSHI Pick - User Story Circle Component
 //
 
 import SwiftUI

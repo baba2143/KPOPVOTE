@@ -1,8 +1,8 @@
 //
 //  ProfileEditViewModel.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Profile Edit ViewModel
+//  OSHI Pick - Profile Edit ViewModel
 //
 
 import Foundation

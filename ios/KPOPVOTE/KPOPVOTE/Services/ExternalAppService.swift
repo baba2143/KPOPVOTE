@@ -1,8 +1,8 @@
 //
 //  ExternalAppService.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - External App Service
+//  OSHI Pick - External App Service
 //
 
 import Foundation

@@ -1,8 +1,8 @@
 //
 //  VoteCardView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Vote Card Component
+//  OSHI Pick - Vote Card Component
 //
 
 import SwiftUI

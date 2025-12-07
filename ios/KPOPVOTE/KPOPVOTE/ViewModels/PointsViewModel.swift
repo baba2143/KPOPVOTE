@@ -1,8 +1,8 @@
 //
 //  PointsViewModel.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Points View Model
+//  OSHI Pick - Points View Model
 //
 
 import Foundation

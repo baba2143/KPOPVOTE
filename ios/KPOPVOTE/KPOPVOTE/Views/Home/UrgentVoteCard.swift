@@ -1,8 +1,8 @@
 //
 //  UrgentVoteCard.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Urgent Vote Card Component
+//  OSHI Pick - Urgent Vote Card Component
 //
 
 import SwiftUI

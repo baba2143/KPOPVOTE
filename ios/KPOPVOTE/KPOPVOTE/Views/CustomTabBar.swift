@@ -1,8 +1,8 @@
 //
 //  CustomTabBar.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Custom Tab Bar with Floating Center Button
+//  OSHI Pick - Custom Tab Bar with Floating Center Button
 //
 
 import SwiftUI

@@ -1,8 +1,8 @@
 //
 //  TutorialView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Tutorial/Onboarding View
+//  OSHI Pick - Tutorial/Onboarding View
 //  新フロー: 機能説明 → 推し選択 → アカウント登録促進
 //
 

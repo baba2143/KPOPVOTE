@@ -1,8 +1,8 @@
 //
 //  BiasService.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Bias Settings Service
+//  OSHI Pick - Bias Settings Service
 //
 
 import Foundation

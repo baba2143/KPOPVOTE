@@ -1,8 +1,8 @@
 //
 //  CollectionService.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Collection Service (Phase 2)
+//  OSHI Pick - Collection Service (Phase 2)
 //
 
 import Foundation

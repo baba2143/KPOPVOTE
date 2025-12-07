@@ -1,8 +1,8 @@
 //
 //  NetworkErrorHandler.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Network Error Handling Utility (Phase 2 Week 4)
+//  OSHI Pick - Network Error Handling Utility (Phase 2 Week 4)
 //
 
 import Foundation

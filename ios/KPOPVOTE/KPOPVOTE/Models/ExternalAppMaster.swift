@@ -1,8 +1,8 @@
 //
 //  ExternalAppMaster.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - External App Master Model
+//  OSHI Pick - External App Master Model
 //
 
 import Foundation

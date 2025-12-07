@@ -1,8 +1,8 @@
 //
 //  PostEditView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Post Edit View
+//  OSHI Pick - Post Edit View
 //
 
 import SwiftUI

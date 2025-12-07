@@ -1,8 +1,8 @@
 //
 //  CreatePostViewModel.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Create Post ViewModel
+//  OSHI Pick - Create Post ViewModel
 //
 
 import Foundation

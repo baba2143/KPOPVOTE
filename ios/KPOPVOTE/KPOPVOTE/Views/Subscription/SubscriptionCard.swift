@@ -1,8 +1,8 @@
 //
 //  SubscriptionCard.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Subscription Card Component
+//  OSHI Pick - Subscription Card Component
 //
 
 import SwiftUI

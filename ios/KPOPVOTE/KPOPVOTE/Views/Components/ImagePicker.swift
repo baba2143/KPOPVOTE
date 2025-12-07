@@ -1,8 +1,8 @@
 //
 //  ImagePicker.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Image Picker Component
+//  OSHI Pick - Image Picker Component
 //
 
 import SwiftUI

@@ -1,8 +1,8 @@
 //
 //  RankingView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Vote Ranking Component
+//  OSHI Pick - Vote Ranking Component
 //
 
 import SwiftUI

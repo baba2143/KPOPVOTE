@@ -1,8 +1,8 @@
 //
 //  SearchView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Search View (Instagram-style)
+//  OSHI Pick - Search View (Instagram-style)
 //
 
 import SwiftUI

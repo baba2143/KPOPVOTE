@@ -1,8 +1,8 @@
 //
 //  FollowService.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Follow Service
+//  OSHI Pick - Follow Service
 //
 
 import Foundation

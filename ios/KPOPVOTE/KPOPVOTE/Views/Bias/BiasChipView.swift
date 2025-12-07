@@ -1,8 +1,8 @@
 //
 //  BiasChipView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Bias Chip Component
+//  OSHI Pick - Bias Chip Component
 //
 
 import SwiftUI

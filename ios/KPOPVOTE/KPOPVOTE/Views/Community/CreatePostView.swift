@@ -1,8 +1,8 @@
 //
 //  CreatePostView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Create Post Sheet View
+//  OSHI Pick - Create Post Sheet View
 //
 
 import SwiftUI

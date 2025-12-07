@@ -1,8 +1,8 @@
 //
 //  UserStoryBar.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - User Story Horizontal Bar
+//  OSHI Pick - User Story Horizontal Bar
 //
 
 import SwiftUI

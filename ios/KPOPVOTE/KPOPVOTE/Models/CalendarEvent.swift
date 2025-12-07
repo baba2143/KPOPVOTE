@@ -1,8 +1,8 @@
 //
 //  CalendarEvent.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Calendar Event Model
+//  OSHI Pick - Calendar Event Model
 //
 
 import Foundation

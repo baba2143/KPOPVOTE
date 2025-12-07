@@ -1,8 +1,8 @@
 //
 //  BiasSelectionSheet.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Bias Selection Sheet for Community Sharing
+//  OSHI Pick - Bias Selection Sheet for Community Sharing
 //
 
 import SwiftUI

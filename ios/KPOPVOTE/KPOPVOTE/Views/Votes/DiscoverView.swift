@@ -1,8 +1,8 @@
 //
 //  DiscoverView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Votes Tab Discover View (Phase 2)
+//  OSHI Pick - Votes Tab Discover View (Phase 2)
 //
 
 import SwiftUI

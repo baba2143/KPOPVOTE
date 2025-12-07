@@ -1,8 +1,8 @@
 //
 //  RegisterView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Register View
+//  OSHI Pick - Register View
 //
 
 import SwiftUI

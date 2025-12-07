@@ -1,8 +1,8 @@
 //
 //  TaskRegistrationViewModel.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Task Registration ViewModel
+//  OSHI Pick - Task Registration ViewModel
 //
 
 import Foundation

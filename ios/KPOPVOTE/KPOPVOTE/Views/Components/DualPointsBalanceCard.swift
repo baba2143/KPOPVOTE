@@ -1,8 +1,8 @@
 //
 //  DualPointsBalanceCard.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Dual Points Balance Card Component
+//  OSHI Pick - Dual Points Balance Card Component
 //
 
 import SwiftUI

@@ -1,8 +1,8 @@
 //
 //  AppDelegate.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Push Notification & Phone Auth Handling
+//  OSHI Pick - Push Notification & Phone Auth Handling
 //
 
 import UIKit

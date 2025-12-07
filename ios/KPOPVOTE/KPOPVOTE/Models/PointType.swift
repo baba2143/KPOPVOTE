@@ -1,8 +1,8 @@
 //
 //  PointType.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Point Type Model
+//  OSHI Pick - Point Type Model
 //
 
 import Foundation

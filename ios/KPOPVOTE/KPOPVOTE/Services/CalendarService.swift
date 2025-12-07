@@ -1,8 +1,8 @@
 //
 //  CalendarService.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Calendar Service
+//  OSHI Pick - Calendar Service
 //
 
 import Foundation

@@ -1,8 +1,8 @@
 //
 //  FeaturedVoteSlider.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Featured Vote Slider for HOME
+//  OSHI Pick - Featured Vote Slider for HOME
 //
 
 import SwiftUI

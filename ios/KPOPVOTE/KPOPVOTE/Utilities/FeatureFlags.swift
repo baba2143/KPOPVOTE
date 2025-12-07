@@ -1,6 +1,6 @@
 //
 //  FeatureFlags.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
 //  Phase 1: ポイント・課金機能無効化のためのフィーチャーフラグ
 //  Phase 2で再有効化時は各フラグをtrueに変更

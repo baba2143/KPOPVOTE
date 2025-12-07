@@ -1,8 +1,8 @@
 //
 //  PostCardView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Post Card Component
+//  OSHI Pick - Post Card Component
 //
 
 import SwiftUI

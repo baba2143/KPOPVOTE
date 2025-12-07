@@ -1,6 +1,6 @@
 //
 //  ContentView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
 //  Created by MAKOTO BABA on R 7/11/12.
 //
@@ -177,7 +177,7 @@ struct HomeView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Text("K-VOTE COLLECTOR")
+                    Text("OSHI Pick")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(.white)
                 }

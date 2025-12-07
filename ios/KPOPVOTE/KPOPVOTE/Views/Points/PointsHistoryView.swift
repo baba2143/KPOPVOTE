@@ -1,8 +1,8 @@
 //
 //  PointsHistoryView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Points History View
+//  OSHI Pick - Points History View
 //
 
 import SwiftUI

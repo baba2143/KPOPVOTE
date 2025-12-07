@@ -1,8 +1,8 @@
 //
 //  CommunityView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Community Timeline Main View
+//  OSHI Pick - Community Timeline Main View
 //
 
 import SwiftUI

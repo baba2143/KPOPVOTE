@@ -1,8 +1,8 @@
 //
 //  BiasSettingsView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Bias Settings Screen
+//  OSHI Pick - Bias Settings Screen
 //
 
 import SwiftUI

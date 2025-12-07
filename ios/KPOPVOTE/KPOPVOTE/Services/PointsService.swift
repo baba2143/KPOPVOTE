@@ -1,8 +1,8 @@
 //
 //  PointsService.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Points Service
+//  OSHI Pick - Points Service
 //
 
 import Foundation

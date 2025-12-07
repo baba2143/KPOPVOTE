@@ -1,6 +1,6 @@
 //
 //  UnifiedTextFieldStyle.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
 //  Unified TextField/SecureField Style - Consistent UI across all input fields
 //

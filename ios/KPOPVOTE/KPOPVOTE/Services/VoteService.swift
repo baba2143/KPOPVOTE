@@ -1,8 +1,8 @@
 //
 //  VoteService.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - In-App Vote Service
+//  OSHI Pick - In-App Vote Service
 //
 
 import Foundation

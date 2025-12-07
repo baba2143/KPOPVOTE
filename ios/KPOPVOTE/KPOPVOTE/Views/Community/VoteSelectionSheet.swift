@@ -1,8 +1,8 @@
 //
 //  VoteSelectionSheet.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Vote Selection Sheet for Post Creation
+//  OSHI Pick - Vote Selection Sheet for Post Creation
 //
 
 import SwiftUI

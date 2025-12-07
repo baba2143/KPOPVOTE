@@ -1,8 +1,8 @@
 //
 //  CalendarMonthView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Calendar Month View
+//  OSHI Pick - Calendar Month View
 //
 
 import SwiftUI

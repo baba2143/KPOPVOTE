@@ -1,8 +1,8 @@
 //
 //  IAPManager.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - In-App Purchase Manager using StoreKit 2
+//  OSHI Pick - In-App Purchase Manager using StoreKit 2
 //
 
 import Foundation

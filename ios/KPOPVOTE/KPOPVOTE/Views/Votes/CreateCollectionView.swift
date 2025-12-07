@@ -1,8 +1,8 @@
 //
 //  CreateCollectionView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Create Collection View (Phase 2 - Week 3)
+//  OSHI Pick - Create Collection View (Phase 2 - Week 3)
 //
 
 import SwiftUI

@@ -1,8 +1,8 @@
 //
 //  TabCoordinator.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Tab Navigation Coordinator (Phase 2 Week 4)
+//  OSHI Pick - Tab Navigation Coordinator (Phase 2 Week 4)
 //
 
 import SwiftUI

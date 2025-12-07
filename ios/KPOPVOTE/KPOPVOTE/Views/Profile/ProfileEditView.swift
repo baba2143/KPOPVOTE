@@ -1,8 +1,8 @@
 //
 //  ProfileEditView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Profile Edit View
+//  OSHI Pick - Profile Edit View
 //
 
 import SwiftUI

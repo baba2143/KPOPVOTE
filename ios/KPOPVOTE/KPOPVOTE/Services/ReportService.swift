@@ -1,8 +1,8 @@
 //
 //  ReportService.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Report Service
+//  OSHI Pick - Report Service
 //
 
 import Foundation

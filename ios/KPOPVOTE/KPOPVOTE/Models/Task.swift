@@ -1,8 +1,8 @@
 //
 //  Task.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Task Model
+//  OSHI Pick - Task Model
 //
 
 import Foundation

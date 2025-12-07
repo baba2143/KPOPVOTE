@@ -1,8 +1,8 @@
 //
 //  TaskService.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Task Management Service
+//  OSHI Pick - Task Management Service
 //
 
 import Foundation

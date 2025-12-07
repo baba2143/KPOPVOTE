@@ -1,8 +1,8 @@
 //
 //  CalendarViewModel.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Calendar ViewModel
+//  OSHI Pick - Calendar ViewModel
 //
 
 import Foundation

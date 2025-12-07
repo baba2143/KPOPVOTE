@@ -1,8 +1,8 @@
 //
 //  StoreViewModel.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Store View Model
+//  OSHI Pick - Store View Model
 //
 
 import Foundation

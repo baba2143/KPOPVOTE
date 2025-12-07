@@ -1,8 +1,8 @@
 //
 //  VotesTabView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Votes Tab Container (Phase 2)
+//  OSHI Pick - Votes Tab Container (Phase 2)
 //
 
 import SwiftUI

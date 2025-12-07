@@ -1,8 +1,8 @@
 //
 //  Comment.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Comment Model
+//  OSHI Pick - Comment Model
 //
 
 import Foundation

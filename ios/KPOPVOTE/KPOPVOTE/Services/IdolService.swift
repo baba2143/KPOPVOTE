@@ -1,8 +1,8 @@
 //
 //  IdolService.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Idol Master Service
+//  OSHI Pick - Idol Master Service
 //
 
 import Foundation

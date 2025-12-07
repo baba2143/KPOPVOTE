@@ -1,8 +1,8 @@
 //
 //  VerificationCodeView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - SMS Verification Code Input View
+//  OSHI Pick - SMS Verification Code Input View
 //
 
 import SwiftUI

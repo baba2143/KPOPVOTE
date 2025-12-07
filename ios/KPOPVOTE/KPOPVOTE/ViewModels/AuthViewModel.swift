@@ -1,8 +1,8 @@
 //
 //  AuthViewModel.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Authentication ViewModel
+//  OSHI Pick - Authentication ViewModel
 //
 
 import Foundation

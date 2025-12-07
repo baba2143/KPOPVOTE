@@ -1,8 +1,8 @@
 //
 //  PremiumBadge.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Premium Badge Component
+//  OSHI Pick - Premium Badge Component
 //
 
 import SwiftUI

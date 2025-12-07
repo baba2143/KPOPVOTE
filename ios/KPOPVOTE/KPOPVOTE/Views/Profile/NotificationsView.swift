@@ -1,8 +1,8 @@
 //
 //  NotificationsView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Notification Settings View
+//  OSHI Pick - Notification Settings View
 //
 
 import SwiftUI

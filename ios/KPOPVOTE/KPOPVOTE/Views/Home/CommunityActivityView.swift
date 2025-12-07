@@ -1,8 +1,8 @@
 //
 //  CommunityActivityView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Community Activity Component
+//  OSHI Pick - Community Activity Component
 //
 
 import SwiftUI

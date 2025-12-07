@@ -1,8 +1,8 @@
 //
 //  Notification.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Notification Model
+//  OSHI Pick - Notification Model
 //
 
 import Foundation

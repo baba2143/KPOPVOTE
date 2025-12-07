@@ -1,8 +1,8 @@
 //
 //  PointTransaction.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Point Transaction Model
+//  OSHI Pick - Point Transaction Model
 //
 
 import Foundation

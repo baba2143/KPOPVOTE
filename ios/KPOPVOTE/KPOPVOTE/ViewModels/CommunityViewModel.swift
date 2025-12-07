@@ -1,8 +1,8 @@
 //
 //  CommunityViewModel.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Community Timeline ViewModel
+//  OSHI Pick - Community Timeline ViewModel
 //
 
 import Foundation

@@ -1,8 +1,8 @@
 //
 //  TagInputView.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Tag Input Component
+//  OSHI Pick - Tag Input Component
 //
 
 import SwiftUI

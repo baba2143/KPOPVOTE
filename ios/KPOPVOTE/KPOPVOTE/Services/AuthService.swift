@@ -1,8 +1,8 @@
 //
 //  AuthService.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Authentication Service
+//  OSHI Pick - Authentication Service
 //
 
 import Foundation

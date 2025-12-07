@@ -1,8 +1,8 @@
 //
 //  VoteListViewModel.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Vote List ViewModel
+//  OSHI Pick - Vote List ViewModel
 //
 
 import Foundation

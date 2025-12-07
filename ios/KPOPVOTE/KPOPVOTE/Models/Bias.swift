@@ -1,8 +1,8 @@
 //
 //  Bias.swift
-//  KPOPVOTE
+//  OSHI Pick
 //
-//  K-VOTE COLLECTOR - Bias (推し) Model
+//  OSHI Pick - Bias (推し) Model
 //
 
 import Foundation
