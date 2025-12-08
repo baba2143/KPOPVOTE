@@ -103,6 +103,8 @@ struct ProfileEditView: View {
                         }
                         .padding()
                     }
+                    .dismissKeyboardOnTap()
+                    .keyboardDoneButton()
                 }
             }
             .navigationTitle("プロフィール編集")

@@ -50,6 +50,8 @@ struct DMReportView: View {
                     }
                     .padding()
                 }
+                .dismissKeyboardOnTap()
+                .keyboardDoneButton()
             }
             .navigationTitle("通報")
             .navigationBarTitleDisplayMode(.inline)

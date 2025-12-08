@@ -255,6 +255,8 @@ struct EditCollectionView: View {
             }
             .padding(.top, 16)
         }
+        .dismissKeyboardOnTap()
+        .keyboardDoneButton()
     }
 }
 

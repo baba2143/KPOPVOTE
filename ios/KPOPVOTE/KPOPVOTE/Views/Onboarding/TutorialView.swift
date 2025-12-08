@@ -319,6 +319,7 @@ struct TutorialBiasSelectionView: View {
                         .padding(.horizontal, 16)
                         .padding(.vertical, 16)
                     }
+                    .dismissKeyboardOnTap()
                 } else {
                     // Idol list
                     ScrollView {
@@ -357,6 +358,7 @@ struct TutorialBiasSelectionView: View {
                         }
                         .padding(.vertical, 16)
                     }
+                    .dismissKeyboardOnTap()
                 }
             }
 

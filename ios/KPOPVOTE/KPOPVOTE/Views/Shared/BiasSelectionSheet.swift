@@ -92,6 +92,8 @@ struct BiasSelectionSheet: View {
                             memberListView
                         }
                     }
+                    .dismissKeyboardOnTap()
+                    .keyboardDoneButton()
                 }
             }
             .navigationTitle("推しを選択")

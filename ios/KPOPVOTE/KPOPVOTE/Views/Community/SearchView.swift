@@ -55,6 +55,8 @@ struct SearchView: View {
                             }
                         }
                     }
+                    .dismissKeyboardOnTap()
+                    .keyboardDoneButton()
                 }
             }
             .navigationTitle("検索")

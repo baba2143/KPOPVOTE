@@ -132,6 +132,8 @@ struct RegisterView: View {
                     }
                     .padding(Constants.Spacing.medium)
                 }
+                .dismissKeyboardOnTap()
+                .keyboardDoneButton()
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

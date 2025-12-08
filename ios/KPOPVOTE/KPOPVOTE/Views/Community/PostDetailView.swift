@@ -28,6 +28,10 @@ struct PostDetailView: View {
     @State private var commentToDelete: String?
     @State private var showDeleteCommentSuccess = false
 
+    // Report states
+    @State private var showReportSheet = false
+    @State private var showReportSuccess = false
+
     init(postId: String) {
         self.postId = postId
         print("🔵 [PostDetailView] INIT with postId: \(postId)")
@@ -68,6 +72,8 @@ struct PostDetailView: View {
                     }
                     .padding()
                 }
+                .dismissKeyboardOnTap()
+                .keyboardDoneButton()
             }
         }
         .navigationTitle("投稿詳細")
@@ -83,20 +89,28 @@ struct PostDetailView: View {
                 }
             }
 
-            // Edit/Delete menu (owner only)
-            if let post = post, isPostOwner(post) {
+            // Edit/Delete menu (owner only) or Report menu (non-owner)
+            if let post = post {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
-                        Button(action: {
-                            showEditSheet = true
-                        }) {
-                            Label("編集", systemImage: "pencil")
-                        }
+                        if isPostOwner(post) {
+                            Button(action: {
+                                showEditSheet = true
+                            }) {
+                                Label("編集", systemImage: "pencil")
+                            }
 
-                        Button(role: .destructive, action: {
-                            showDeleteConfirm = true
-                        }) {
-                            Label("削除", systemImage: "trash")
+                            Button(role: .destructive, action: {
+                                showDeleteConfirm = true
+                            }) {
+                                Label("削除", systemImage: "trash")
+                            }
+                        } else {
+                            Button(role: .destructive, action: {
+                                showReportSheet = true
+                            }) {
+                                Label("通報", systemImage: "exclamationmark.triangle")
+                            }
                         }
                     } label: {
                         Image(systemName: "ellipsis.circle")
@@ -151,6 +165,16 @@ struct PostDetailView: View {
                     self.post = updatedPost
                 }
             }
+        }
+        .sheet(isPresented: $showReportSheet) {
+            ReportPostView(postId: postId) {
+                showReportSuccess = true
+            }
+        }
+        .alert("通報完了", isPresented: $showReportSuccess) {
+            Button("OK") {}
+        } message: {
+            Text("ご報告ありがとうございます。内容を確認いたします。")
         }
         .task {
             print("🟢 [PostDetailView] .task executed for postId: \(postId)")

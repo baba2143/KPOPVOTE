@@ -64,6 +64,8 @@ struct CreateEventView: View {
                     }
                     .padding(20)
                 }
+                .dismissKeyboardOnTap()
+                .keyboardDoneButton()
             }
             .navigationTitle("イベントを追加")
             .navigationBarTitleDisplayMode(.inline)

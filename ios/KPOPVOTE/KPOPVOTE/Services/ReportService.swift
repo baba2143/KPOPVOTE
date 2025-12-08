@@ -43,4 +43,40 @@ class ReportService {
 
         debugLog("✅ [ReportService] Report submitted successfully")
     }
+
+    // MARK: - Report Community Post
+    /// Submit a report for a community post
+    /// - Parameters:
+    ///   - postId: Post ID to report
+    ///   - reason: Report reason
+    func reportCommunityPost(postId: String, reason: String) async throws {
+        guard let user = Auth.auth().currentUser else {
+            throw CommunityError.notAuthenticated
+        }
+
+        let db = Firestore.firestore()
+        let batch = db.batch()
+
+        // 1. Add report to communityReports collection
+        let reportRef = db.collection("communityReports").document()
+        batch.setData([
+            "postId": postId,
+            "reporterId": user.uid,
+            "reason": reason,
+            "reportedAt": FieldValue.serverTimestamp()
+        ], forDocument: reportRef)
+
+        // 2. Update isReported and reportCount on the post
+        let postRef = db.collection("communityPosts").document(postId)
+        batch.updateData([
+            "isReported": true,
+            "reportCount": FieldValue.increment(Int64(1))
+        ], forDocument: postRef)
+
+        debugLog("📝 [ReportService] Submitting community post report for: \(postId)")
+
+        try await batch.commit()
+
+        debugLog("✅ [ReportService] Community post report submitted successfully")
+    }
 }

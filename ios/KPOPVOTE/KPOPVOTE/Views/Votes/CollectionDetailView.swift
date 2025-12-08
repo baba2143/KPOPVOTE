@@ -827,6 +827,8 @@ struct ReportCollectionView: View {
                     }
                     .padding(.horizontal)
                 }
+                .dismissKeyboardOnTap()
+                .keyboardDoneButton()
             }
             .navigationTitle("コンテンツを報告")
             .navigationBarTitleDisplayMode(.inline)

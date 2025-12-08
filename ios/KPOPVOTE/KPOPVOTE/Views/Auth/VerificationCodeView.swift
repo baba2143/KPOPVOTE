@@ -141,6 +141,8 @@ struct VerificationCodeView: View {
                 }
                 .padding(Constants.Spacing.medium)
             }
+            .dismissKeyboardOnTap()
+            .keyboardDoneButton()
         }
         .navigationBarBackButtonHidden(true)
         .alert("エラー", isPresented: $viewModel.showError) {

@@ -88,7 +88,7 @@ struct CreatePostView: View {
                     .ignoresSafeArea()
 
                 ScrollView {
-                VStack(alignment: .leading, spacing: Constants.Spacing.large) {
+                    VStack(alignment: .leading, spacing: Constants.Spacing.large) {
                     // Post Type Selector
                     postTypeSelector
 
@@ -109,11 +109,13 @@ struct CreatePostView: View {
 
                     // Submit Button
                     submitButton
+                    }
+                    .padding()
                 }
-                .padding()
+                .dismissKeyboardOnTap()
+                .keyboardDoneButton()
             }
-        }
-        .navigationTitle("新規投稿")
+            .navigationTitle("新規投稿")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {

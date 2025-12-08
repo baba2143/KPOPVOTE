@@ -110,6 +110,7 @@ struct DiscoverView: View {
                         .refreshable {
                             await viewModel.refresh()
                         }
+                        .dismissKeyboardOnTap()
                     }
                 }
             }
@@ -157,6 +158,14 @@ struct SearchBarView: View {
 
             TextField("コレクションを検索", text: $searchQuery)
                 .autocapitalization(.none)
+                .toolbar {
+                    ToolbarItemGroup(placement: .keyboard) {
+                        Spacer()
+                        Button("完了") {
+                            hideKeyboard()
+                        }
+                    }
+                }
 
             if !searchQuery.isEmpty {
                 Button(action: {

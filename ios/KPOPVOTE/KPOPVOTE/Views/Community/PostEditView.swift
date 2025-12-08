@@ -31,34 +31,38 @@ struct PostEditView: View {
                 Constants.Colors.backgroundDark
                     .ignoresSafeArea()
 
-                VStack(spacing: Constants.Spacing.large) {
-                    // Text Editor
-                    VStack(alignment: .leading, spacing: Constants.Spacing.small) {
-                        Text("投稿内容")
-                            .font(.system(size: Constants.Typography.captionSize, weight: .semibold))
-                            .foregroundColor(Constants.Colors.textGray)
+                ScrollView {
+                    VStack(spacing: Constants.Spacing.large) {
+                        // Text Editor
+                        VStack(alignment: .leading, spacing: Constants.Spacing.small) {
+                            Text("投稿内容")
+                                .font(.system(size: Constants.Typography.captionSize, weight: .semibold))
+                                .foregroundColor(Constants.Colors.textGray)
 
-                        TextEditor(text: $editedText)
-                            .frame(minHeight: 150)
-                            .scrollContentBackground(.hidden)
-                            .padding(Constants.Spacing.medium)
-                            .background(Constants.Colors.cardDark)
-                            .cornerRadius(12)
-                            .tint(Constants.Colors.accentPink)
-                            .foregroundStyle(.white)
+                            TextEditor(text: $editedText)
+                                .frame(minHeight: 150)
+                                .scrollContentBackground(.hidden)
+                                .padding(Constants.Spacing.medium)
+                                .background(Constants.Colors.cardDark)
+                                .cornerRadius(12)
+                                .tint(Constants.Colors.accentPink)
+                                .foregroundStyle(.white)
+                        }
+
+                        // Error Message
+                        if let errorMessage = errorMessage {
+                            Text(errorMessage)
+                                .font(.system(size: Constants.Typography.captionSize))
+                                .foregroundColor(.red)
+                                .padding(.horizontal)
+                        }
+
+                        Spacer()
                     }
-
-                    // Error Message
-                    if let errorMessage = errorMessage {
-                        Text(errorMessage)
-                            .font(.system(size: Constants.Typography.captionSize))
-                            .foregroundColor(.red)
-                            .padding(.horizontal)
-                    }
-
-                    Spacer()
+                    .padding(Constants.Spacing.large)
                 }
-                .padding(Constants.Spacing.large)
+                .dismissKeyboardOnTap()
+                .keyboardDoneButton()
 
                 // Loading Overlay
                 if isSaving {

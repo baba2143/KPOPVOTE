@@ -131,6 +131,8 @@ struct DMConversationView: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
             }
+            .dismissKeyboardOnTap()
+            .keyboardDoneButton()
             .onChange(of: viewModel.messages.count) { _ in
                 // Scroll to bottom when new messages are added
                 if let lastMessage = viewModel.messages.last {

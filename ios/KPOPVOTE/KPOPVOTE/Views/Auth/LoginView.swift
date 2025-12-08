@@ -130,6 +130,8 @@ struct LoginView: View {
                     }
                     .padding(Constants.Spacing.medium)
                 }
+                .dismissKeyboardOnTap()
+                .keyboardDoneButton()
             }
             .alert("エラー", isPresented: $viewModel.showError) {
                 Button("OK") {

@@ -428,6 +428,8 @@ struct TaskRegistrationView: View {
                 }
                 .padding()
             }
+            .dismissKeyboardOnTap()
+            .keyboardDoneButton()
             .background(Constants.Colors.cardDark)
             .navigationTitle(viewModel.isEditMode ? "VOTE編集" : "VOTE登録")
             .navigationBarTitleDisplayMode(.inline)

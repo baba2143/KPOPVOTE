@@ -227,6 +227,8 @@ struct BiasSettingsView: View {
                             .listStyle(.insetGrouped)
                         }
                     }
+                    .dismissKeyboardOnTap()
+                    .keyboardDoneButton()
                 }
             }
             .navigationTitle("推し設定")
