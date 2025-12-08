@@ -48,6 +48,11 @@ service cloud.firestore {
       allow update, delete: if isAuthenticated() &&
                                request.auth.uid == resource.data.authorId;
 
+      // Allow authenticated users to update report fields only
+      allow update: if isAuthenticated() &&
+                       request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['isReported', 'reportCount']);
+
       // Admins can delete any post
       allow delete: if isAdmin();
 
