@@ -5,7 +5,7 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { ApiResponse } from "../types";
-import { verifyToken, verifyAdmin, AuthenticatedRequest } from "../middleware/auth";
+import { verifyTokenAsync, verifyAdminAsync, AuthenticatedRequest } from "../middleware/auth";
 
 export const deleteCommunityPost = functions.https.onRequest(async (req, res) => {
   res.set("Access-Control-Allow-Origin", "*");
@@ -22,13 +22,11 @@ export const deleteCommunityPost = functions.https.onRequest(async (req, res) =>
     return;
   }
 
-  await new Promise<void>((resolve, reject) => {
-    verifyToken(req as AuthenticatedRequest, res, (error?: unknown) => error ? reject(error) : resolve());
-  });
+  const tokenValid = await verifyTokenAsync(req as AuthenticatedRequest, res);
+  if (!tokenValid) return;
 
-  await new Promise<void>((resolve, reject) => {
-    verifyAdmin(req as AuthenticatedRequest, res, (error?: unknown) => error ? reject(error) : resolve());
-  });
+  const isAdmin = await verifyAdminAsync(req as AuthenticatedRequest, res);
+  if (!isAdmin) return;
 
   try {
     const postId = req.query.postId as string;
@@ -39,7 +37,7 @@ export const deleteCommunityPost = functions.https.onRequest(async (req, res) =>
       return;
     }
 
-    const postRef = admin.firestore().collection("communityPosts").doc(postId);
+    const postRef = admin.firestore().collection("posts").doc(postId);
     const postDoc = await postRef.get();
 
     if (!postDoc.exists) {

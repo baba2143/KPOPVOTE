@@ -15,8 +15,8 @@ import {
   ApiResponse,
 } from '../types/vote';
 
-const FUNCTIONS_BASE_URL =
-  'https://us-central1-kpopvote-9de2b.cloudfunctions.net';
+// Use relative URL to proxy through Firebase Hosting (avoids CORS preflight issues)
+const FUNCTIONS_BASE_URL = '/api';
 
 /**
  * Get authentication token
@@ -104,7 +104,7 @@ export const listVotes = async (
   status?: 'upcoming' | 'active' | 'ended'
 ): Promise<InAppVote[]> => {
   const token = await getAuthToken();
-  const url = new URL(`${FUNCTIONS_BASE_URL}/listInAppVotes`);
+  const url = new URL(`${FUNCTIONS_BASE_URL}/listInAppVotes`, window.location.origin);
 
   if (status) {
     url.searchParams.append('status', status);
@@ -136,7 +136,7 @@ export const listVotes = async (
  */
 export const getVoteDetail = async (voteId: string): Promise<InAppVote> => {
   const token = await getAuthToken();
-  const url = new URL(`${FUNCTIONS_BASE_URL}/getInAppVoteDetail`);
+  const url = new URL(`${FUNCTIONS_BASE_URL}/getInAppVoteDetail`, window.location.origin);
   url.searchParams.append('voteId', voteId);
 
   const response = await fetch(url.toString(), {
@@ -225,7 +225,7 @@ export const updateVote = async (
  */
 export const deleteVote = async (voteId: string): Promise<void> => {
   const token = await getAuthToken();
-  const url = new URL(`${FUNCTIONS_BASE_URL}/deleteInAppVote`);
+  const url = new URL(`${FUNCTIONS_BASE_URL}/deleteInAppVote`, window.location.origin);
   url.searchParams.append('voteId', voteId);
 
   const response = await fetch(url.toString(), {
@@ -252,7 +252,7 @@ export const deleteVote = async (voteId: string): Promise<void> => {
  */
 export const getRanking = async (voteId: string): Promise<RankingResponse> => {
   const token = await getAuthToken();
-  const url = new URL(`${FUNCTIONS_BASE_URL}/getRanking`);
+  const url = new URL(`${FUNCTIONS_BASE_URL}/getRanking`, window.location.origin);
   url.searchParams.append('voteId', voteId);
 
   const response = await fetch(url.toString(), {

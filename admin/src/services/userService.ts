@@ -12,7 +12,8 @@ import {
   SuspendUserResponse,
 } from '../types/user';
 
-const FUNCTIONS_BASE_URL = 'https://us-central1-kpopvote-9de2b.cloudfunctions.net';
+// Use relative URL to proxy through Firebase Hosting (avoids CORS preflight issues)
+const FUNCTIONS_BASE_URL = '/api';
 
 /**
  * Get auth token
@@ -34,7 +35,7 @@ const getAuthToken = async (): Promise<string> => {
 export const searchUsers = async (query?: string, limit: number = 50): Promise<UserListItem[]> => {
   try {
     const token = await getAuthToken();
-    const url = new URL(`${FUNCTIONS_BASE_URL}/searchUsers`);
+    const url = new URL(`${FUNCTIONS_BASE_URL}/searchUsers`, window.location.origin);
 
     if (query) {
       url.searchParams.append('query', query);
@@ -73,7 +74,7 @@ export const searchUsers = async (query?: string, limit: number = 50): Promise<U
 export const getUserDetail = async (uid: string): Promise<UserDetail> => {
   try {
     const token = await getAuthToken();
-    const url = new URL(`${FUNCTIONS_BASE_URL}/getUserDetail`);
+    const url = new URL(`${FUNCTIONS_BASE_URL}/getUserDetail`, window.location.origin);
     url.searchParams.append('uid', uid);
 
     const response = await fetch(url.toString(), {

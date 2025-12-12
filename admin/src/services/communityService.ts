@@ -5,7 +5,8 @@
 import { auth } from '../config/firebase';
 import { ReportedPost, CommunityStats } from '../types/community';
 
-const FUNCTIONS_BASE_URL = 'https://us-central1-kpopvote-9de2b.cloudfunctions.net';
+// Use relative URL to proxy through Firebase Hosting (avoids CORS preflight issues)
+const FUNCTIONS_BASE_URL = '/api';
 
 /**
  * Get auth token
@@ -26,10 +27,9 @@ const getAuthToken = async (): Promise<string> => {
 export const getReportedPosts = async (limit: number = 50): Promise<ReportedPost[]> => {
   try {
     const token = await getAuthToken();
-    const url = new URL(`${FUNCTIONS_BASE_URL}/getReportedPosts`);
-    url.searchParams.append('limit', limit.toString());
+    const url = `${FUNCTIONS_BASE_URL}/getReportedPosts?limit=${limit}`;
 
-    const response = await fetch(url.toString(), {
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -64,13 +64,14 @@ export const deleteCommunityPost = async (
 ): Promise<void> => {
   try {
     const token = await getAuthToken();
-    const url = new URL(`${FUNCTIONS_BASE_URL}/deleteCommunityPost`);
-    url.searchParams.append('postId', postId);
+    const params = new URLSearchParams();
+    params.append('postId', postId);
     if (reason) {
-      url.searchParams.append('reason', reason);
+      params.append('reason', reason);
     }
+    const url = `${FUNCTIONS_BASE_URL}/deleteCommunityPost?${params.toString()}`;
 
-    const response = await fetch(url.toString(), {
+    const response = await fetch(url, {
       method: 'DELETE',
       headers: {
         Authorization: `Bearer ${token}`,

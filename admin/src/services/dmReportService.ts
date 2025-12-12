@@ -5,7 +5,8 @@
 import { auth } from '../config/firebase';
 import { DMReport, DMReportStats } from '../types/dmReport';
 
-const FUNCTIONS_BASE_URL = 'https://us-central1-kpopvote-9de2b.cloudfunctions.net';
+// Use relative URL to proxy through Firebase Hosting (avoids CORS preflight issues)
+const FUNCTIONS_BASE_URL = '/api';
 
 /**
  * Get auth token
@@ -36,7 +37,7 @@ export const getDMReports = async (
 ): Promise<GetDMReportsResponse> => {
   try {
     const token = await getAuthToken();
-    const url = new URL(`${FUNCTIONS_BASE_URL}/getDMReports`);
+    const url = new URL(`${FUNCTIONS_BASE_URL}/getDMReports`, window.location.origin);
     url.searchParams.append('limit', limit.toString());
     if (status) {
       url.searchParams.append('status', status);

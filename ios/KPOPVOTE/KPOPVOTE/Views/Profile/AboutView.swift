@@ -16,6 +16,7 @@ struct AboutView: View {
     @State private var showTerms = false
     @State private var showPrivacy = false
     @State private var showLicenses = false
+    @State private var showCompanyInfo = false
     @State private var showEmailCopiedAlert = false
 
     // App version info
@@ -67,6 +68,9 @@ struct AboutView: View {
             }
             .sheet(isPresented: $showLicenses) {
                 LicensesView()
+            }
+            .sheet(isPresented: $showCompanyInfo) {
+                CompanyInfoView()
             }
             .alert("メールアドレスをコピーしました", isPresented: $showEmailCopiedAlert) {
                 Button("OK", role: .cancel) {}
@@ -154,6 +158,19 @@ struct AboutView: View {
                 color: .yellow
             ) {
                 requestReview()
+            }
+
+            Divider()
+                .padding(.leading, 60)
+                .background(Constants.Colors.textGray.opacity(0.3))
+
+            // Company Info
+            AboutMenuRow(
+                icon: "building.2.fill",
+                title: "運営会社について",
+                color: .purple
+            ) {
+                showCompanyInfo = true
             }
 
             Divider()

@@ -7,7 +7,8 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { IdolMaster, IdolCreateRequest, IdolUpdateRequest } from '../types/idol';
 import { parseCSV, arrayToCSV, downloadBlob, getTimestampedFilename, ParseError } from '../utils/csvUtils';
 
-const FUNCTIONS_BASE_URL = 'https://us-central1-kpopvote-9de2b.cloudfunctions.net';
+// Use relative URL to proxy through Firebase Hosting (avoids CORS preflight issues)
+const FUNCTIONS_BASE_URL = '/api';
 
 export interface ImportResult {
   success: boolean;
@@ -79,7 +80,7 @@ export const uploadIdolImage = async (file: File): Promise<string> => {
 export const listIdols = async (groupName?: string): Promise<IdolMaster[]> => {
   try {
     const token = await getAuthToken();
-    const url = new URL(`${FUNCTIONS_BASE_URL}/listIdols`);
+    const url = new URL(`${FUNCTIONS_BASE_URL}/listIdols`, window.location.origin);
 
     if (groupName) {
       url.searchParams.append('groupName', groupName);

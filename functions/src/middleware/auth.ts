@@ -110,3 +110,80 @@ export const verifyAdmin = async (
  * Simple auth middleware alias for collections API
  */
 export const authMiddleware = verifyToken;
+
+/**
+ * Async version of verifyToken that returns boolean
+ * Use this instead of Promise wrapper pattern to avoid hanging promises
+ */
+export const verifyTokenAsync = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<boolean> => {
+  try {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      res.status(401).json({
+        success: false,
+        error: "Unauthorized: No token provided",
+      });
+      return false;
+    }
+
+    const token = authHeader.split("Bearer ")[1];
+    const decodedToken = await admin.auth().verifyIdToken(token);
+
+    req.user = {
+      uid: decodedToken.uid,
+      email: decodedToken.email,
+    };
+
+    return true;
+  } catch (error) {
+    console.error("Token verification error:", error);
+    res.status(401).json({
+      success: false,
+      error: "Unauthorized: Invalid token",
+    });
+    return false;
+  }
+};
+
+/**
+ * Async version of verifyAdmin that returns boolean
+ * Use this instead of Promise wrapper pattern to avoid hanging promises
+ */
+export const verifyAdminAsync = async (
+  req: AuthenticatedRequest,
+  res: Response
+): Promise<boolean> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({
+        success: false,
+        error: "Unauthorized: User not authenticated",
+      });
+      return false;
+    }
+
+    const userRecord = await admin.auth().getUser(req.user.uid);
+    const isAdmin = userRecord.customClaims?.admin === true;
+
+    if (!isAdmin) {
+      res.status(403).json({
+        success: false,
+        error: "Forbidden: Admin access required",
+      });
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Admin verification error:", error);
+    res.status(403).json({
+      success: false,
+      error: "Forbidden: Admin verification failed",
+    });
+    return false;
+  }
+};

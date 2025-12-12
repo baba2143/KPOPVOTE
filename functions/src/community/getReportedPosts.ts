@@ -5,7 +5,7 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { ApiResponse } from "../types";
-import { verifyToken, verifyAdmin, AuthenticatedRequest } from "../middleware/auth";
+import { verifyTokenAsync, verifyAdminAsync, AuthenticatedRequest } from "../middleware/auth";
 
 export const getReportedPosts = functions.https.onRequest(async (req, res) => {
   res.set("Access-Control-Allow-Origin", "*");
@@ -22,59 +22,64 @@ export const getReportedPosts = functions.https.onRequest(async (req, res) => {
     return;
   }
 
-  await new Promise<void>((resolve, reject) => {
-    verifyToken(req as AuthenticatedRequest, res, (error?: unknown) => error ? reject(error) : resolve());
-  });
+  // Use async pattern to avoid Promise hanging when auth fails
+  const tokenValid = await verifyTokenAsync(req as AuthenticatedRequest, res);
+  if (!tokenValid) return;
 
-  await new Promise<void>((resolve, reject) => {
-    verifyAdmin(req as AuthenticatedRequest, res, (error?: unknown) => error ? reject(error) : resolve());
-  });
+  const isAdmin = await verifyAdminAsync(req as AuthenticatedRequest, res);
+  if (!isAdmin) return;
 
   try {
     const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
 
-    // Get reported posts
-    const postsSnapshot = await admin
+    // Get reports from communityReports collection (same pattern as DM reports)
+    const reportsSnapshot = await admin
       .firestore()
-      .collection("communityPosts")
-      .where("isReported", "==", true)
-      .orderBy("reportCount", "desc")
+      .collection("communityReports")
+      .orderBy("reportedAt", "desc")
       .limit(limit)
       .get();
 
+    // Group reports by postId
+    const reportsByPostId: Record<string, { reports: unknown[]; count: number }> = {};
+
+    reportsSnapshot.docs.forEach((reportDoc) => {
+      const reportData = reportDoc.data();
+      const postId = reportData.postId;
+
+      if (!reportsByPostId[postId]) {
+        reportsByPostId[postId] = { reports: [], count: 0 };
+      }
+
+      reportsByPostId[postId].reports.push({
+        reportId: reportDoc.id,
+        reporterId: reportData.reporterId,
+        reason: reportData.reason,
+        status: reportData.status || "pending",
+        reportedAt: reportData.reportedAt?.toDate().toISOString() || null,
+      });
+      reportsByPostId[postId].count++;
+    });
+
+    // Get post data for each reported post
     const reportedPosts = await Promise.all(
-      postsSnapshot.docs.map(async (postDoc) => {
+      Object.keys(reportsByPostId).map(async (postId) => {
+        const postDoc = await admin.firestore().collection("posts").doc(postId).get();
         const postData = postDoc.data();
 
-        // Get reports for this post
-        const reportsSnapshot = await admin
-          .firestore()
-          .collection("communityReports")
-          .where("postId", "==", postDoc.id)
-          .orderBy("reportedAt", "desc")
-          .limit(10)
-          .get();
-
-        const reports = reportsSnapshot.docs.map((reportDoc) => {
-          const reportData = reportDoc.data();
-          return {
-            reportId: reportDoc.id,
-            reporterId: reportData.reporterId,
-            reason: reportData.reason,
-            reportedAt: reportData.reportedAt?.toDate().toISOString() || null,
-          };
-        });
-
         return {
-          postId: postDoc.id,
-          userId: postData.userId,
-          content: postData.content,
-          reportCount: postData.reportCount || 0,
-          createdAt: postData.createdAt?.toDate().toISOString() || null,
-          reports,
+          postId,
+          userId: postData?.userId || null,
+          content: postData?.content?.text || "[削除済み]",
+          reportCount: reportsByPostId[postId].count,
+          createdAt: postData?.createdAt?.toDate().toISOString() || null,
+          reports: reportsByPostId[postId].reports,
         };
       })
     );
+
+    // Sort by report count (descending)
+    reportedPosts.sort((a, b) => b.reportCount - a.reportCount);
 
     res.status(200).json({
       success: true,

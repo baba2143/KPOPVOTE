@@ -5,7 +5,7 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { ApiResponse, CommunityStats } from "../types";
-import { verifyToken, verifyAdmin, AuthenticatedRequest } from "../middleware/auth";
+import { verifyTokenAsync, verifyAdminAsync, AuthenticatedRequest } from "../middleware/auth";
 
 export const getCommunityStats = functions.https.onRequest(async (req, res) => {
   res.set("Access-Control-Allow-Origin", "*");
@@ -22,31 +22,26 @@ export const getCommunityStats = functions.https.onRequest(async (req, res) => {
     return;
   }
 
-  await new Promise<void>((resolve, reject) => {
-    verifyToken(req as AuthenticatedRequest, res, (error?: unknown) => error ? reject(error) : resolve());
-  });
+  // Use async pattern to avoid Promise hanging when auth fails
+  const tokenValid = await verifyTokenAsync(req as AuthenticatedRequest, res);
+  if (!tokenValid) return;
 
-  await new Promise<void>((resolve, reject) => {
-    verifyAdmin(req as AuthenticatedRequest, res, (error?: unknown) => error ? reject(error) : resolve());
-  });
+  const isAdmin = await verifyAdminAsync(req as AuthenticatedRequest, res);
+  if (!isAdmin) return;
 
   try {
     const db = admin.firestore();
 
     // Get total posts count
-    const postsSnapshot = await db.collection("communityPosts").count().get();
+    const postsSnapshot = await db.collection("posts").count().get();
     const totalPosts = postsSnapshot.data().count;
 
     // Get deleted posts count
     const deletedSnapshot = await db.collection("deletedPosts").count().get();
     const deletedPosts = deletedSnapshot.data().count;
 
-    // Get reported posts count
-    const reportedSnapshot = await db
-      .collection("communityPosts")
-      .where("isReported", "==", true)
-      .count()
-      .get();
+    // Get reported posts count from communityReports collection
+    const reportedSnapshot = await db.collection("communityReports").count().get();
     const reportedPosts = reportedSnapshot.data().count;
 
     // Get active users (users who posted in last 30 days)
@@ -54,7 +49,7 @@ export const getCommunityStats = functions.https.onRequest(async (req, res) => {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     const recentPostsSnapshot = await db
-      .collection("communityPosts")
+      .collection("posts")
       .where("createdAt", ">=", admin.firestore.Timestamp.fromDate(thirtyDaysAgo))
       .get();
 

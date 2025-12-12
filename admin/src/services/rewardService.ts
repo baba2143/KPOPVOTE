@@ -11,7 +11,8 @@ import {
   PointGrantResponse,
 } from '../types/reward';
 
-const FUNCTIONS_BASE_URL = 'https://us-central1-kpopvote-9de2b.cloudfunctions.net';
+// Use relative URL to proxy through Firebase Hosting (avoids CORS preflight issues)
+const FUNCTIONS_BASE_URL = '/api';
 
 /**
  * Get auth token

@@ -46,6 +46,7 @@ struct HomeView: View {
     @State private var showVoteDetail = false
     @State private var selectedPostId: IdentifiableString?
     @State private var showPointsHistory = false
+    @State private var showNotifications = false
 
     var body: some View {
         NavigationView {
@@ -242,7 +243,7 @@ struct HomeView: View {
 
                         // Notification Button
                         Button(action: {
-                            // Navigate to notifications
+                            showNotifications = true
                         }) {
                             ZStack(alignment: .topTrailing) {
                                 Image(systemName: "bell.fill")
@@ -286,6 +287,11 @@ struct HomeView: View {
             .sheet(isPresented: $showVoteDetail) {
                 if let voteId = selectedVoteId {
                     VoteDetailView(voteId: voteId)
+                }
+            }
+            .sheet(isPresented: $showNotifications) {
+                NavigationStack {
+                    NotificationsView()
                 }
             }
             .onChange(of: showVoteDetail) { newValue in

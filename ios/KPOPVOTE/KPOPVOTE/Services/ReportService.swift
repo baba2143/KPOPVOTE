@@ -55,27 +55,19 @@ class ReportService {
         }
 
         let db = Firestore.firestore()
-        let batch = db.batch()
 
-        // 1. Add report to communityReports collection
-        let reportRef = db.collection("communityReports").document()
-        batch.setData([
+        // communityReportsコレクションにのみ書き込み（DMReportServiceと同じパターン）
+        let reportData: [String: Any] = [
             "postId": postId,
             "reporterId": user.uid,
             "reason": reason,
+            "status": "pending",
             "reportedAt": FieldValue.serverTimestamp()
-        ], forDocument: reportRef)
-
-        // 2. Update isReported and reportCount on the post
-        let postRef = db.collection("communityPosts").document(postId)
-        batch.updateData([
-            "isReported": true,
-            "reportCount": FieldValue.increment(Int64(1))
-        ], forDocument: postRef)
+        ]
 
         debugLog("📝 [ReportService] Submitting community post report for: \(postId)")
 
-        try await batch.commit()
+        try await db.collection("communityReports").addDocument(data: reportData)
 
         debugLog("✅ [ReportService] Community post report submitted successfully")
     }

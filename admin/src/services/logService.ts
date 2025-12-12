@@ -5,7 +5,8 @@
 import { auth } from '../config/firebase';
 import { AdminLog } from '../types/log';
 
-const FUNCTIONS_BASE_URL = 'https://us-central1-kpopvote-9de2b.cloudfunctions.net';
+// Use relative URL to proxy through Firebase Hosting (avoids CORS preflight issues)
+const FUNCTIONS_BASE_URL = '/api';
 
 /**
  * Get auth token
@@ -26,7 +27,7 @@ const getAuthToken = async (): Promise<string> => {
 export const getAdminLogs = async (limit: number = 50): Promise<AdminLog[]> => {
   try {
     const token = await getAuthToken();
-    const url = new URL(`${FUNCTIONS_BASE_URL}/getAdminLogs`);
+    const url = new URL(`${FUNCTIONS_BASE_URL}/getAdminLogs`, window.location.origin);
     url.searchParams.append('limit', limit.toString());
 
     const response = await fetch(url.toString(), {
