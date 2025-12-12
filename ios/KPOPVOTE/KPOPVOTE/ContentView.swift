@@ -30,7 +30,6 @@ struct ContentView: View {
                 LoginView(authService: authService)
             }
         }
-        .id(authService.isAuthenticated)  // 認証状態変更時にビュー階層を再構築
     }
 }
 

@@ -37,6 +37,12 @@ class HomeViewModel: ObservableObject {
             debugLog("📡 [HomeViewModel] Loading active tasks...")
             activeTasks = try await taskService.getActiveTasks()
             debugLog("✅ [HomeViewModel] Loaded \(activeTasks.count) active tasks")
+        } catch is CancellationError {
+            // Swift concurrency cancellation
+            debugLog("⏸️ [HomeViewModel] Task loading cancelled (view transition)")
+        } catch let urlError as URLError where urlError.code == .cancelled {
+            // URLSession cancellation
+            debugLog("⏸️ [HomeViewModel] URLSession cancelled (view transition)")
         } catch {
             debugLog("❌ [HomeViewModel] Failed to load active tasks: \(error.localizedDescription)")
             errorMessage = "アクティブタスクの取得に失敗しました"
@@ -55,6 +61,10 @@ class HomeViewModel: ObservableObject {
             // Remove from active tasks
             activeTasks.removeAll { $0.id == task.id }
             debugLog("✅ [HomeViewModel] Task completed: \(task.id)")
+        } catch is CancellationError {
+            debugLog("⏸️ [HomeViewModel] Task completion cancelled (view transition)")
+        } catch let urlError as URLError where urlError.code == .cancelled {
+            debugLog("⏸️ [HomeViewModel] URLSession cancelled (view transition)")
         } catch {
             debugLog("❌ [HomeViewModel] Failed to complete task: \(error.localizedDescription)")
             errorMessage = "タスクの完了に失敗しました"
@@ -70,6 +80,10 @@ class HomeViewModel: ObservableObject {
             debugLog("📡 [HomeViewModel] Loading featured votes...")
             featuredVotes = try await voteService.fetchFeaturedVotes()
             debugLog("✅ [HomeViewModel] Loaded \(featuredVotes.count) featured votes")
+        } catch is CancellationError {
+            debugLog("⏸️ [HomeViewModel] Featured votes loading cancelled (view transition)")
+        } catch let urlError as URLError where urlError.code == .cancelled {
+            debugLog("⏸️ [HomeViewModel] URLSession cancelled (view transition)")
         } catch {
             debugLog("❌ [HomeViewModel] Failed to load featured votes: \(error.localizedDescription)")
             // Don't show error for featured votes failure
