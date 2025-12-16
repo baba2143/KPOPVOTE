@@ -12,6 +12,11 @@ struct LoginView: View {
     @StateObject private var viewModel: PhoneAuthLoginViewModel
     @ObservedObject var authService: AuthService
 
+    // EULA Agreement
+    @State private var agreedToTerms = false
+    @State private var showTermsOfService = false
+    @State private var showPrivacyPolicy = false
+
     init(authService: AuthService) {
         self.authService = authService
         _viewModel = StateObject(wrappedValue: PhoneAuthLoginViewModel(authService: authService))
@@ -107,15 +112,57 @@ struct LoginView: View {
                                 }
                                 .frame(maxWidth: .infinity)
                                 .padding()
-                                .background(viewModel.isValidPhoneNumber ? Constants.Colors.primaryBlue : Color.gray)
+                                .background(viewModel.isValidPhoneNumber && agreedToTerms ? Constants.Colors.primaryBlue : Color.gray)
                                 .foregroundColor(.white)
                                 .cornerRadius(10)
                             }
-                            .disabled(!viewModel.isValidPhoneNumber || viewModel.isLoading)
+                            .disabled(!viewModel.isValidPhoneNumber || viewModel.isLoading || !agreedToTerms)
                         }
                         .padding()
                         .background(Constants.Colors.cardDark)
                         .cornerRadius(16)
+
+                        // Terms Agreement Checkbox
+                        VStack(spacing: 8) {
+                            HStack(alignment: .top, spacing: 12) {
+                                Button(action: {
+                                    agreedToTerms.toggle()
+                                }) {
+                                    Image(systemName: agreedToTerms ? "checkmark.square.fill" : "square")
+                                        .font(.system(size: 22))
+                                        .foregroundColor(agreedToTerms ? Constants.Colors.primaryBlue : Constants.Colors.textGray)
+                                }
+
+                                VStack(alignment: .leading, spacing: 4) {
+                                    HStack(spacing: 0) {
+                                        Button(action: { showTermsOfService = true }) {
+                                            Text("利用規約")
+                                                .font(.system(size: 14))
+                                                .foregroundColor(Constants.Colors.primaryBlue)
+                                                .underline()
+                                        }
+                                        Text(" と ")
+                                            .font(.system(size: 14))
+                                            .foregroundColor(Constants.Colors.textGray)
+                                        Button(action: { showPrivacyPolicy = true }) {
+                                            Text("プライバシーポリシー")
+                                                .font(.system(size: 14))
+                                                .foregroundColor(Constants.Colors.primaryBlue)
+                                                .underline()
+                                        }
+                                    }
+                                    Text("に同意します")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(Constants.Colors.textGray)
+                                }
+                            }
+
+                            if !agreedToTerms {
+                                Text("利用規約とプライバシーポリシーへの同意が必要です")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(Constants.Colors.textGray)
+                            }
+                        }
 
                         // Guest Mode Button
                         Button(action: {
@@ -154,6 +201,12 @@ struct LoginView: View {
                     print("✅ [LoginView] isAuthenticated changed to true, resetting navigation")
                     viewModel.showVerificationView = false
                 }
+            }
+            .fullScreenCover(isPresented: $showTermsOfService) {
+                TermsOfServiceView()
+            }
+            .fullScreenCover(isPresented: $showPrivacyPolicy) {
+                PrivacyPolicyView()
             }
         }
     }

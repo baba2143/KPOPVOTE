@@ -420,6 +420,8 @@ struct ProfileView: View {
     @State private var showDeleteError = false
     // Blocked Users (App Store Guideline 1.2)
     @State private var showBlockedUsers = false
+    // Login Sheet for Guest users
+    @State private var showLoginSheet = false
 
     var body: some View {
         NavigationView {
@@ -695,50 +697,69 @@ struct ProfileView: View {
                         .shadow(color: Color.black.opacity(0.3), radius: 4, x: 0, y: 2)
                     }
 
-                    // Logout Button
-                    Button(action: {
-                        showLogoutConfirm = true
-                    }) {
-                        HStack {
-                            Image(systemName: "rectangle.portrait.and.arrow.right")
-                            Text("ログアウト")
-                        }
-                        .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.red.opacity(0.1))
-                        .foregroundColor(.red)
-                        .cornerRadius(10)
-                    }
-
-                    // Delete Account Button (App Store Guideline 5.1.1(v) compliance)
-                    Button(action: {
-                        showDeleteAccountConfirm = true
-                    }) {
-                        HStack {
-                            if isDeleting {
-                                ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle(tint: .red))
-                            } else {
-                                Image(systemName: "trash.fill")
+                    // Authentication-dependent buttons
+                    if authService.isAuthenticated {
+                        // Logout Button
+                        Button(action: {
+                            showLogoutConfirm = true
+                        }) {
+                            HStack {
+                                Image(systemName: "rectangle.portrait.and.arrow.right")
+                                Text("ログアウト")
                             }
-                            Text("アカウントを削除")
+                            .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.red.opacity(0.1))
+                            .foregroundColor(.red)
+                            .cornerRadius(10)
                         }
-                        .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.red.opacity(0.2))
-                        .foregroundColor(.red)
-                        .cornerRadius(10)
-                    }
-                    .disabled(isDeleting)
 
-                    // Deletion warning text
-                    Text("アカウントを削除すると、すべてのデータが完全に削除され、復元できません。")
-                        .font(.system(size: 11))
-                        .foregroundColor(Constants.Colors.textGray)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
+                        // Delete Account Button (App Store Guideline 5.1.1(v) compliance)
+                        Button(action: {
+                            showDeleteAccountConfirm = true
+                        }) {
+                            HStack {
+                                if isDeleting {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .red))
+                                } else {
+                                    Image(systemName: "trash.fill")
+                                }
+                                Text("アカウントを削除")
+                            }
+                            .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.red.opacity(0.2))
+                            .foregroundColor(.red)
+                            .cornerRadius(10)
+                        }
+                        .disabled(isDeleting)
+
+                        // Deletion warning text
+                        Text("アカウントを削除すると、すべてのデータが完全に削除され、復元できません。")
+                            .font(.system(size: 11))
+                            .foregroundColor(Constants.Colors.textGray)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                    } else {
+                        // Login Button for Guest users
+                        Button(action: {
+                            showLoginSheet = true
+                        }) {
+                            HStack {
+                                Image(systemName: "person.crop.circle.badge.plus")
+                                Text("ログイン")
+                            }
+                            .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Constants.Colors.accentPink)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
+                        }
+                    }
                 }
                 .padding()
             }
@@ -818,6 +839,9 @@ struct ProfileView: View {
             }
             .fullScreenCover(isPresented: $showFollowersList) {
                 FollowListView(listType: .followers)
+            }
+            .fullScreenCover(isPresented: $showLoginSheet) {
+                LoginView(authService: authService)
             }
             .task {
                 await loadFollowCounts()
