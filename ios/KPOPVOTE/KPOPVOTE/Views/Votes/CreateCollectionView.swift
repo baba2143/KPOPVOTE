@@ -106,10 +106,10 @@ struct CreateCollectionView: View {
             } message: {
                 Text(viewModel.errorMessage ?? "コレクションの作成に失敗しました")
             }
-            .sheet(isPresented: $viewModel.showImagePicker) {
+            .fullScreenCover(isPresented: $viewModel.showImagePicker) {
                 ImagePicker(selectedImage: $viewModel.coverImage)
             }
-            .sheet(isPresented: $viewModel.showBiasSelectionSheet) {
+            .fullScreenCover(isPresented: $viewModel.showBiasSelectionSheet) {
                 BiasSelectionSheet { selectedBiasIds in
                     Task {
                         await viewModel.shareToCommunity(biasIds: selectedBiasIds)

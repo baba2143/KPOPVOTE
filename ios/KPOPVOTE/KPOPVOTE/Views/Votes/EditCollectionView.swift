@@ -46,7 +46,7 @@ struct EditCollectionView: View {
             } message: {
                 Text(viewModel.errorMessage ?? "コレクションの更新に失敗しました")
             }
-            .sheet(isPresented: $viewModel.showImagePicker) {
+            .fullScreenCover(isPresented: $viewModel.showImagePicker) {
                 ImagePicker(selectedImage: $viewModel.coverImage)
             }
             .onAppear {

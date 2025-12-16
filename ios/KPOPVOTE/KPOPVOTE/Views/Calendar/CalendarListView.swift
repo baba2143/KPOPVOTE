@@ -24,7 +24,7 @@ struct CalendarListView: View {
                 eventsList
             }
         }
-        .sheet(item: $selectedEvent) { event in
+        .fullScreenCover(item: $selectedEvent) { event in
             EventDetailView(event: event, viewModel: viewModel)
         }
     }

@@ -289,15 +289,17 @@ struct CollectionDetailView: View {
                 }
             }
         }
-        .sheet(isPresented: $showEditSheet) {
-            if let collection = viewModel.currentCollection {
-                EditCollectionView(collectionId: collection.id)
-                    .onDisappear {
-                        // Reload collection data after edit
-                        Task {
-                            await viewModel.loadCollectionDetail(collectionId: collectionId)
+        .fullScreenCover(isPresented: $showEditSheet) {
+            Group {
+                if let collection = viewModel.currentCollection {
+                    EditCollectionView(collectionId: collection.id)
+                        .onDisappear {
+                            // Reload collection data after edit
+                            Task {
+                                await viewModel.loadCollectionDetail(collectionId: collectionId)
+                            }
                         }
-                    }
+                }
             }
         }
         .alert("コレクションを削除", isPresented: $showDeleteConfirmation) {
@@ -313,17 +315,21 @@ struct CollectionDetailView: View {
         } message: {
             Text("このコレクションを削除してもよろしいですか？この操作は取り消せません。")
         }
-        .sheet(isPresented: $showShareSheet) {
-            if let collection = viewModel.currentCollection {
-                ShareSheet(activityItems: [
-                    "「\(collection.title)」をチェック！\n\(collection.description)\n\n#KPOPVOTE",
-                    URL(string: "https://kpopvote.app/collections/\(collection.id)")!
-                ])
+        .fullScreenCover(isPresented: $showShareSheet) {
+            Group {
+                if let collection = viewModel.currentCollection {
+                    ShareSheet(activityItems: [
+                        "「\(collection.title)」をチェック！\n\(collection.description)\n\n#KPOPVOTE",
+                        URL(string: "https://kpopvote.app/collections/\(collection.id)")!
+                    ])
+                }
             }
         }
-        .sheet(isPresented: $showReportSheet) {
-            if let collection = viewModel.currentCollection {
-                ReportCollectionView(collectionId: collection.id, collectionTitle: collection.title)
+        .fullScreenCover(isPresented: $showReportSheet) {
+            Group {
+                if let collection = viewModel.currentCollection {
+                    ReportCollectionView(collectionId: collection.id, collectionTitle: collection.title)
+                }
             }
         }
         .onAppear {

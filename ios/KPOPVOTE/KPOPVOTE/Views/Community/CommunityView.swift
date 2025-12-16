@@ -86,7 +86,7 @@ struct CommunityView: View {
                     }
                 }
             }
-            .sheet(item: $selectedPost) { identifiablePost in
+            .fullScreenCover(item: $selectedPost) { identifiablePost in
                 NavigationStack {
                     PostDetailView(postId: identifiablePost.id)
                         .onAppear {
@@ -94,7 +94,7 @@ struct CommunityView: View {
                         }
                 }
             }
-            .sheet(isPresented: $showCreatePost) {
+            .fullScreenCover(isPresented: $showCreatePost) {
                 NavigationView {
                     CreatePostView {
                         // Reload timeline when post is created
@@ -104,10 +104,10 @@ struct CommunityView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showSearch) {
+            .fullScreenCover(isPresented: $showSearch) {
                 SearchView()
             }
-            .sheet(item: $selectedUser) { identifiable in
+            .fullScreenCover(item: $selectedUser) { identifiable in
                 NavigationView {
                     UserProfileView(userId: identifiable.id)
                 }
@@ -145,6 +145,7 @@ struct CommunityView: View {
                 }
             )
         }
+        .navigationViewStyle(.stack) // iPad対応: 2カラムレイアウトを無効化
     }
 
     // MARK: - Content Type Selector (Posts | Calendar)

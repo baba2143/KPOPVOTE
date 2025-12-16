@@ -42,7 +42,7 @@ struct DMListView: View {
             .refreshable {
                 await viewModel.refresh()
             }
-            .sheet(item: $selectedConversation) { conversation in
+            .fullScreenCover(item: $selectedConversation) { conversation in
                 NavigationStack {
                     DMConversationView(conversation: conversation)
                         .onDisappear {

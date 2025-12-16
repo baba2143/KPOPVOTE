@@ -10,6 +10,8 @@ import SwiftUI
 struct RegisterView: View {
     @Environment(\.dismiss) var dismiss
     @StateObject private var viewModel: AuthViewModel
+    @State private var showTermsOfService = false
+    @State private var showPrivacyPolicy = false
 
     init(authService: AuthService) {
         _viewModel = StateObject(wrappedValue: AuthViewModel(authService: authService))
@@ -121,12 +123,55 @@ struct RegisterView: View {
                         .cornerRadius(16)
                         .shadow(radius: 4)
 
-                        // Privacy Policy Note
-                        Text("登録することで、利用規約とプライバシーポリシーに同意したものとみなします")
-                            .font(.system(size: 12))
-                            .foregroundColor(Constants.Colors.textSecondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
+                        // Terms Agreement Checkbox
+                        VStack(spacing: 8) {
+                            HStack(alignment: .top, spacing: 12) {
+                                Button(action: {
+                                    viewModel.agreedToTerms.toggle()
+                                }) {
+                                    Image(systemName: viewModel.agreedToTerms ? "checkmark.square.fill" : "square")
+                                        .font(.system(size: 22))
+                                        .foregroundColor(viewModel.agreedToTerms ? Constants.Colors.primaryPink : Constants.Colors.textSecondary)
+                                }
+
+                                VStack(alignment: .leading, spacing: 4) {
+                                    HStack(spacing: 0) {
+                                        Button(action: {
+                                            showTermsOfService = true
+                                        }) {
+                                            Text("利用規約")
+                                                .font(.system(size: 14))
+                                                .foregroundColor(Constants.Colors.primaryBlue)
+                                                .underline()
+                                        }
+
+                                        Text(" と ")
+                                            .font(.system(size: 14))
+                                            .foregroundColor(Constants.Colors.textSecondary)
+
+                                        Button(action: {
+                                            showPrivacyPolicy = true
+                                        }) {
+                                            Text("プライバシーポリシー")
+                                                .font(.system(size: 14))
+                                                .foregroundColor(Constants.Colors.primaryBlue)
+                                                .underline()
+                                        }
+                                    }
+
+                                    Text("に同意します")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(Constants.Colors.textSecondary)
+                                }
+                            }
+
+                            if !viewModel.agreedToTerms {
+                                Text("登録するには利用規約とプライバシーポリシーへの同意が必要です")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(Constants.Colors.textSecondary)
+                            }
+                        }
+                        .padding(.horizontal)
 
                         Spacer()
                     }
@@ -149,6 +194,12 @@ struct RegisterView: View {
                 }
             } message: {
                 Text(viewModel.errorMessage ?? "エラーが発生しました")
+            }
+            .fullScreenCover(isPresented: $showTermsOfService) {
+                TermsOfServiceView()
+            }
+            .fullScreenCover(isPresented: $showPrivacyPolicy) {
+                PrivacyPolicyView()
             }
         }
     }

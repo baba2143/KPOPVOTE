@@ -162,13 +162,16 @@ struct MyVoteCard: View {
                         }
                         .foregroundColor(Constants.Colors.textGray)
 
-                        HStack(spacing: 4) {
-                            Image(systemName: "star.fill")
-                                .font(.system(size: 11))
-                            Text("\(voteItem.pointsUsed)pt")
-                                .font(.system(size: 11, weight: .semibold))
+                        // Phase 1: ポイント機能無効化
+                        if FeatureFlags.pointsEnabled {
+                            HStack(spacing: 4) {
+                                Image(systemName: "star.fill")
+                                    .font(.system(size: 11))
+                                Text("\(voteItem.pointsUsed)pt")
+                                    .font(.system(size: 11, weight: .semibold))
+                            }
+                            .foregroundColor(.yellow)
                         }
-                        .foregroundColor(.yellow)
                     }
                 }
 

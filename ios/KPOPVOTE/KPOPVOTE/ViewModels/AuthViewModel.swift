@@ -13,6 +13,7 @@ class AuthViewModel: ObservableObject {
     @Published var email = ""
     @Published var password = ""
     @Published var confirmPassword = ""
+    @Published var agreedToTerms = false
 
     @Published var isLoading = false
     @Published var errorMessage: String?
@@ -36,7 +37,7 @@ class AuthViewModel: ObservableObject {
     }
 
     var isValidRegistration: Bool {
-        return isValidEmail && isValidPassword && password == confirmPassword
+        return isValidEmail && isValidPassword && password == confirmPassword && agreedToTerms
     }
 
     var isValidLogin: Bool {

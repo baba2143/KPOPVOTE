@@ -261,7 +261,7 @@ struct HomeView: View {
             }
             .toolbarBackground(Constants.Colors.backgroundDark, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
-            .sheet(item: $selectedPostId) { identifiablePost in
+            .fullScreenCover(item: $selectedPostId) { identifiablePost in
                 NavigationStack {
                     PostDetailView(postId: identifiablePost.id)
                 }
@@ -280,15 +280,17 @@ struct HomeView: View {
                 }
             }
             // Phase 1: ポイント履歴画面無効化
-            .sheet(isPresented: FeatureFlags.pointsEnabled ? $showPointsHistory : .constant(false)) {
+            .fullScreenCover(isPresented: FeatureFlags.pointsEnabled ? $showPointsHistory : .constant(false)) {
                 PointsHistoryView()
             }
-            .sheet(isPresented: $showVoteDetail) {
-                if let voteId = selectedVoteId {
-                    VoteDetailView(voteId: voteId)
+            .fullScreenCover(isPresented: $showVoteDetail) {
+                Group {
+                    if let voteId = selectedVoteId {
+                        VoteDetailView(voteId: voteId)
+                    }
                 }
             }
-            .sheet(isPresented: $showNotifications) {
+            .fullScreenCover(isPresented: $showNotifications) {
                 NavigationStack {
                     NotificationsView()
                 }
@@ -331,6 +333,7 @@ struct HomeView: View {
                 Text(viewModel.errorMessage ?? "エラーが発生しました")
             }
         }
+        .navigationViewStyle(.stack) // iPad対応: 2カラムレイアウトを無効化
     }
 }
 
@@ -399,7 +402,7 @@ struct AppExclusiveVoteBanner: View {
         .onTapGesture {
             showVoteList = true
         }
-        .sheet(isPresented: $showVoteList) {
+        .fullScreenCover(isPresented: $showVoteList) {
             VoteListView()
         }
     }

@@ -68,6 +68,7 @@ enum Constants {
         // Auth
         static let register = "\(apiBaseURL)/register"
         static let login = "\(apiBaseURL)/login"
+        static let deleteAccount = "\(apiBaseURL)/deleteAccount"
 
         // Bias
         static let setBias = "\(apiBaseURL)/setBias"

@@ -77,7 +77,7 @@ struct DMConversationView: View {
         } message: {
             Text(viewModel.errorMessage ?? "")
         }
-        .sheet(isPresented: $showReportUserSheet) {
+        .fullScreenCover(isPresented: $showReportUserSheet) {
             DMReportView(
                 reportType: .user,
                 conversationId: viewModel.conversationId,
@@ -86,15 +86,17 @@ struct DMConversationView: View {
                 message: nil
             )
         }
-        .sheet(isPresented: $showReportMessageSheet) {
-            if let message = messageToReport {
-                DMReportView(
-                    reportType: .message,
-                    conversationId: viewModel.conversationId,
-                    reporteeId: message.senderId,
-                    reporteeName: viewModel.participantName,
-                    message: message
-                )
+        .fullScreenCover(isPresented: $showReportMessageSheet) {
+            Group {
+                if let message = messageToReport {
+                    DMReportView(
+                        reportType: .message,
+                        conversationId: viewModel.conversationId,
+                        reporteeId: message.senderId,
+                        reporteeName: viewModel.participantName,
+                        message: message
+                    )
+                }
             }
         }
     }

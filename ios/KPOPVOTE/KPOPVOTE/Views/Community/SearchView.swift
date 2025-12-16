@@ -74,7 +74,7 @@ struct SearchView: View {
             .task {
                 await viewModel.loadCommunityRecommendedUsers()
             }
-            .sheet(item: $selectedPost) { identifiablePost in
+            .fullScreenCover(item: $selectedPost) { identifiablePost in
                 NavigationStack {
                     PostDetailView(postId: identifiablePost.id)
                 }

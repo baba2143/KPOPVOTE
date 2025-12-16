@@ -265,6 +265,60 @@ class AuthService: ObservableObject {
         AppStorageManager.shared.isGuestMode = false
     }
 
+    // MARK: - Delete Account (App Store Guideline 5.1.1(v) compliance)
+    /// Permanently deletes user account and all associated data
+    func deleteAccount() async throws {
+        guard let user = Auth.auth().currentUser else {
+            throw AuthError.loginFailed
+        }
+
+        debugLog("🗑️ [DeleteAccount] Starting account deletion for: \(user.uid)")
+
+        // 1. Get ID Token for API authentication
+        let token = try await user.getIDToken()
+
+        // 2. Call Cloud Function to delete all user data from Firestore
+        let url = URL(string: Constants.API.deleteAccount)!
+        debugLog("📡 [DeleteAccount] Calling API: \(url.absoluteString)")
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        if let httpResponse = response as? HTTPURLResponse {
+            debugLog("📥 [DeleteAccount] HTTP Status: \(httpResponse.statusCode)")
+            if let responseString = String(data: data, encoding: .utf8) {
+                debugLog("📥 [DeleteAccount] Response body: \(responseString)")
+            }
+
+            guard httpResponse.statusCode == 200 else {
+                debugLog("❌ [DeleteAccount] API returned non-200 status: \(httpResponse.statusCode)")
+                if let errorResponse = try? JSONDecoder().decode(ApiErrorResponse.self, from: data) {
+                    throw AuthError.apiError(errorResponse.error)
+                }
+                throw AuthError.apiError("アカウント削除に失敗しました")
+            }
+        }
+
+        // 3. Unregister FCM token
+        PushNotificationManager.shared.onUserLogout()
+
+        // 4. Clear local state
+        await MainActor.run {
+            self.currentUser = nil
+            self.isAuthenticated = false
+            self.isGuest = false
+            AppStorageManager.shared.isGuestMode = false
+        }
+
+        // 5. Clear any cached data
+        AppStorageManager.shared.clearPendingBias()
+
+        debugLog("✅ [DeleteAccount] Account deletion completed successfully")
+    }
+
     // MARK: - Update Current User
     func updateCurrentUser(_ user: User) async {
         await MainActor.run {

@@ -10,8 +10,12 @@ import SwiftUI
 struct UserProfileView: View {
     let userId: String
     @StateObject private var viewModel = UserProfileViewModel()
+    @ObservedObject private var blockService = BlockService.shared
     @Environment(\.dismiss) private var dismiss
     @State private var showDMConversation = false
+    @State private var showBlockConfirmation = false
+    @State private var showUnblockConfirmation = false
+    @State private var showReportSheet = false
 
     var body: some View {
         ZStack {
@@ -56,18 +60,67 @@ struct UserProfileView: View {
                         .foregroundColor(Constants.Colors.textWhite)
                 }
             }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Menu {
+                    if blockService.isUserBlocked(userId) {
+                        Button(action: {
+                            showUnblockConfirmation = true
+                        }) {
+                            Label("ブロック解除", systemImage: "person.badge.plus")
+                        }
+                    } else {
+                        Button(role: .destructive, action: {
+                            showBlockConfirmation = true
+                        }) {
+                            Label("ブロック", systemImage: "person.slash")
+                        }
+                    }
+
+                    Button(action: {
+                        showReportSheet = true
+                    }) {
+                        Label("通報", systemImage: "exclamationmark.triangle")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .foregroundColor(Constants.Colors.textWhite)
+                }
+            }
         }
         .task {
             await viewModel.loadProfile(userId: userId)
         }
-        .sheet(isPresented: $showDMConversation) {
-            if let profile = viewModel.profile {
-                NavigationStack {
-                    DMConversationView(
-                        recipientId: userId,
-                        recipientName: profile.displayName,
-                        recipientPhotoURL: profile.photoURL
-                    )
+        .alert("ブロック", isPresented: $showBlockConfirmation) {
+            Button("キャンセル", role: .cancel) {}
+            Button("ブロック", role: .destructive) {
+                Task {
+                    try? await blockService.blockUser(userId: userId)
+                    dismiss()
+                }
+            }
+        } message: {
+            Text("このユーザーをブロックしますか？\n\nブロックすると:\n・このユーザーの投稿が表示されなくなります\n・このユーザーからのDMが届かなくなります\n・フォローが解除されます")
+        }
+        .alert("ブロック解除", isPresented: $showUnblockConfirmation) {
+            Button("キャンセル", role: .cancel) {}
+            Button("解除する") {
+                Task {
+                    try? await blockService.unblockUser(userId: userId)
+                }
+            }
+        } message: {
+            Text("このユーザーのブロックを解除しますか？")
+        }
+        .fullScreenCover(isPresented: $showDMConversation) {
+            Group {
+                if let profile = viewModel.profile {
+                    NavigationStack {
+                        DMConversationView(
+                            recipientId: userId,
+                            recipientName: profile.displayName,
+                            recipientPhotoURL: profile.photoURL
+                        )
+                    }
                 }
             }
         }

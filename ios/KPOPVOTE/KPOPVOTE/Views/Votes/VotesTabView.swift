@@ -51,6 +51,7 @@ struct VotesTabView: View {
             .toolbarBackground(Constants.Colors.backgroundDark, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
         }
+        .navigationViewStyle(.stack) // iPad対応: 2カラムレイアウトを無効化
     }
 }
 
@@ -144,7 +145,7 @@ struct DiscoverContentView: View {
                 }
             }
         }
-        .sheet(item: $sheetContent) { content in
+        .fullScreenCover(item: $sheetContent) { content in
             if case .collectionDetail(let collectionId) = content {
                 NavigationView {
                     CollectionDetailView(collectionId: collectionId)
@@ -230,7 +231,7 @@ struct SavedCollectionsContentView: View {
                 }
             }
         }
-        .sheet(item: $sheetContent) { content in
+        .fullScreenCover(item: $sheetContent) { content in
             if case .collectionDetail(let collectionId) = content {
                 NavigationView {
                     CollectionDetailView(collectionId: collectionId)
@@ -315,7 +316,7 @@ struct MyCollectionsContentView: View {
                 }
             }
         }
-        .sheet(item: $sheetContent) { content in
+        .fullScreenCover(item: $sheetContent) { content in
             if case .collectionDetail(let collectionId) = content {
                 NavigationView {
                     CollectionDetailView(collectionId: collectionId)

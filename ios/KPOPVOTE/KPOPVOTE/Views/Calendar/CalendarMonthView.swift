@@ -32,7 +32,7 @@ struct CalendarMonthView: View {
             // Selected date events
             selectedDateEventsView
         }
-        .sheet(item: $selectedEvent) { event in
+        .fullScreenCover(item: $selectedEvent) { event in
             EventDetailView(event: event, viewModel: viewModel)
         }
     }

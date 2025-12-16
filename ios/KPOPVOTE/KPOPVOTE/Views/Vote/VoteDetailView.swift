@@ -285,12 +285,15 @@ struct VoteHeaderView: View {
 
                     Spacer()
 
-                    InfoItem(
-                        icon: "star.fill",
-                        label: "必要ポイント",
-                        value: "\(vote.requiredPoints)pt",
-                        color: .yellow
-                    )
+                    // Phase 1: ポイント機能無効化 - 必要ポイント非表示
+                    if FeatureFlags.pointsEnabled {
+                        InfoItem(
+                            icon: "star.fill",
+                            label: "必要ポイント",
+                            value: "\(vote.requiredPoints)pt",
+                            color: .yellow
+                        )
+                    }
                 }
 
                 HStack(spacing: 16) {

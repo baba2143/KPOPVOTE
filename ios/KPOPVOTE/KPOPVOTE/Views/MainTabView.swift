@@ -90,13 +90,13 @@ struct MainTabView: View {
             )
             .background(BackgroundClearView())
         }
-        .sheet(isPresented: $showingTaskSheet) {
+        .fullScreenCover(isPresented: $showingTaskSheet) {
             TaskRegistrationView()
         }
-        .sheet(isPresented: $showCreateCollection) {
+        .fullScreenCover(isPresented: $showCreateCollection) {
             CreateCollectionView()
         }
-        .sheet(isPresented: $showCreatePost) {
+        .fullScreenCover(isPresented: $showCreatePost) {
             NavigationView {
                 CreatePostView()
             }
@@ -226,6 +226,7 @@ struct TasksListView: View {
                 Text(viewModel.successMessageText)
             }
         }
+        .navigationViewStyle(.stack) // iPad対応: 2カラムレイアウトを無効化
     }
 }
 
@@ -412,6 +413,13 @@ struct ProfileView: View {
     @State private var showMessages = false
     @State private var followingCount = 0
     @State private var followersCount = 0
+    // Delete Account state (App Store Guideline 5.1.1(v))
+    @State private var showDeleteAccountConfirm = false
+    @State private var isDeleting = false
+    @State private var deleteError: String?
+    @State private var showDeleteError = false
+    // Blocked Users (App Store Guideline 1.2)
+    @State private var showBlockedUsers = false
 
     var body: some View {
         NavigationView {
@@ -669,6 +677,13 @@ struct ProfileView: View {
                             .buttonStyle(.plain)
                             Divider().padding(.leading, 60).background(Constants.Colors.textGray.opacity(0.3))
                             Button {
+                                showBlockedUsers = true
+                            } label: {
+                                SettingsRow(icon: "person.slash.fill", title: "ブロックリスト", color: .red)
+                            }
+                            .buttonStyle(.plain)
+                            Divider().padding(.leading, 60).background(Constants.Colors.textGray.opacity(0.3))
+                            Button {
                                 showAbout = true
                             } label: {
                                 SettingsRow(icon: "info.circle.fill", title: "アプリについて", color: Constants.Colors.textGray)
@@ -695,6 +710,35 @@ struct ProfileView: View {
                         .foregroundColor(.red)
                         .cornerRadius(10)
                     }
+
+                    // Delete Account Button (App Store Guideline 5.1.1(v) compliance)
+                    Button(action: {
+                        showDeleteAccountConfirm = true
+                    }) {
+                        HStack {
+                            if isDeleting {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .red))
+                            } else {
+                                Image(systemName: "trash.fill")
+                            }
+                            Text("アカウントを削除")
+                        }
+                        .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.red.opacity(0.2))
+                        .foregroundColor(.red)
+                        .cornerRadius(10)
+                    }
+                    .disabled(isDeleting)
+
+                    // Deletion warning text
+                    Text("アカウントを削除すると、すべてのデータが完全に削除され、復元できません。")
+                        .font(.system(size: 11))
+                        .foregroundColor(Constants.Colors.textGray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
                 }
                 .padding()
             }
@@ -716,42 +760,70 @@ struct ProfileView: View {
             } message: {
                 Text("ログアウトしますか？")
             }
-            .sheet(isPresented: $showBiasSettings) {
+            // Delete Account Confirmation Alert (App Store Guideline 5.1.1(v))
+            .alert("アカウント削除", isPresented: $showDeleteAccountConfirm) {
+                Button("キャンセル", role: .cancel) {}
+                Button("削除する", role: .destructive) {
+                    Task {
+                        isDeleting = true
+                        do {
+                            try await authService.deleteAccount()
+                        } catch {
+                            deleteError = error.localizedDescription
+                            showDeleteError = true
+                        }
+                        isDeleting = false
+                    }
+                }
+            } message: {
+                Text("アカウントを削除すると、すべてのデータ（投稿、いいね、フォロー関係、メッセージなど）が完全に削除され、復元できません。\n\n本当に削除しますか？")
+            }
+            // Delete Error Alert
+            .alert("エラー", isPresented: $showDeleteError) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(deleteError ?? "アカウント削除中にエラーが発生しました。")
+            }
+            .fullScreenCover(isPresented: $showBiasSettings) {
                 BiasSettingsView()
             }
-            .sheet(isPresented: $showProfileEdit) {
+            .fullScreenCover(isPresented: $showProfileEdit) {
                 ProfileEditView()
                     .environmentObject(authService)
             }
-            .sheet(isPresented: $showPointsHistory) {
+            .fullScreenCover(isPresented: $showPointsHistory) {
                 PointsHistoryView()
             }
-            .sheet(isPresented: $showPremium) {
+            .fullScreenCover(isPresented: $showPremium) {
                 PremiumView()
             }
-            .sheet(isPresented: $showNotifications) {
+            .fullScreenCover(isPresented: $showNotifications) {
                 NotificationsView()
             }
-            .sheet(isPresented: $showFavorites) {
+            .fullScreenCover(isPresented: $showFavorites) {
                 FavoritesView()
             }
-            .sheet(isPresented: $showMessages) {
+            .fullScreenCover(isPresented: $showMessages) {
                 DMListView()
                     .environmentObject(authService)
             }
-            .sheet(isPresented: $showAbout) {
+            .fullScreenCover(isPresented: $showAbout) {
                 AboutView()
             }
-            .sheet(isPresented: $showFollowingList) {
+            .fullScreenCover(isPresented: $showBlockedUsers) {
+                BlockedUsersView()
+            }
+            .fullScreenCover(isPresented: $showFollowingList) {
                 FollowListView(listType: .following)
             }
-            .sheet(isPresented: $showFollowersList) {
+            .fullScreenCover(isPresented: $showFollowersList) {
                 FollowListView(listType: .followers)
             }
             .task {
                 await loadFollowCounts()
             }
         }
+        .navigationViewStyle(.stack) // iPad対応: 2カラムレイアウトを無効化
     }
 
     // MARK: - Load Follow Counts

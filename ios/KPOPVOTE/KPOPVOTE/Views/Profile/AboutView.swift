@@ -60,16 +60,16 @@ struct AboutView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showTerms) {
+            .fullScreenCover(isPresented: $showTerms) {
                 TermsOfServiceView()
             }
-            .sheet(isPresented: $showPrivacy) {
+            .fullScreenCover(isPresented: $showPrivacy) {
                 PrivacyPolicyView()
             }
-            .sheet(isPresented: $showLicenses) {
+            .fullScreenCover(isPresented: $showLicenses) {
                 LicensesView()
             }
-            .sheet(isPresented: $showCompanyInfo) {
+            .fullScreenCover(isPresented: $showCompanyInfo) {
                 CompanyInfoView()
             }
             .alert("メールアドレスをコピーしました", isPresented: $showEmailCopiedAlert) {

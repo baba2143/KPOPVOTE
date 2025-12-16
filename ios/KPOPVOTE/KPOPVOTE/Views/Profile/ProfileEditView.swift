@@ -137,7 +137,7 @@ struct ProfileEditView: View {
                     viewModel.loadCurrentProfile(user: user)
                 }
             }
-            .sheet(isPresented: $showImagePicker) {
+            .fullScreenCover(isPresented: $showImagePicker) {
                 ImagePicker(selectedImage: $viewModel.selectedImage)
             }
             .alert("エラー", isPresented: Binding(

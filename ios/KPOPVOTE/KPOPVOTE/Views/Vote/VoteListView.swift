@@ -36,14 +36,16 @@ struct VoteListView: View {
         }
         .navigationTitle("投票")
         .navigationBarTitleDisplayMode(.large)
-        .sheet(isPresented: $showVoteDetail) {
-            if let voteId = selectedVoteId {
-                VoteDetailView(voteId: voteId)
-            } else {
-                Text("エラー")
-                    .onAppear {
-                        print("⚠️ [VoteListView] Sheet triggered but selectedVoteId is nil!")
-                    }
+        .fullScreenCover(isPresented: $showVoteDetail) {
+            Group {
+                if let voteId = selectedVoteId {
+                    VoteDetailView(voteId: voteId)
+                } else {
+                    Text("エラー")
+                        .onAppear {
+                            print("⚠️ [VoteListView] Sheet triggered but selectedVoteId is nil!")
+                        }
+                }
             }
         }
         .onChange(of: showVoteDetail) { newValue in

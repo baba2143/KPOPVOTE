@@ -79,10 +79,12 @@ struct SavedCollectionsView: View {
             }
             .navigationTitle("保存済み")
             .navigationBarTitleDisplayMode(.large)
-            .sheet(isPresented: $showCollectionDetail) {
-                if let collectionId = selectedCollectionId {
-                    NavigationView {
-                        CollectionDetailView(collectionId: collectionId)
+            .fullScreenCover(isPresented: $showCollectionDetail) {
+                Group {
+                    if let collectionId = selectedCollectionId {
+                        NavigationView {
+                            CollectionDetailView(collectionId: collectionId)
+                        }
                     }
                 }
             }

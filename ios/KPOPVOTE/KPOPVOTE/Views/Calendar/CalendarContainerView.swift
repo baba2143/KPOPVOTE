@@ -33,7 +33,7 @@ struct CalendarContainerView: View {
                 }
             }
         }
-        .sheet(isPresented: $showCreateEvent) {
+        .fullScreenCover(isPresented: $showCreateEvent) {
             CreateEventView(viewModel: viewModel, initialDate: viewModel.selectedDate)
         }
         .task {

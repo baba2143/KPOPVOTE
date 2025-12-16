@@ -147,7 +147,7 @@ struct CreatePostView: View {
                 showSuccessAlert = true
             }
         }
-        .sheet(isPresented: $showMyVotesSelection) {
+        .fullScreenCover(isPresented: $showMyVotesSelection) {
             MyVotesSelectionSheet { selectedVotes in
                 viewModel.selectMyVotes(myVotes: selectedVotes)
             }
@@ -258,7 +258,7 @@ struct CreatePostView: View {
                 }
             }
         }
-        .sheet(isPresented: $showImagePicker) {
+        .fullScreenCover(isPresented: $showImagePicker) {
             ImagePicker(selectedImage: $viewModel.selectedImageForPost)
         }
     }
@@ -305,9 +305,12 @@ struct CreatePostView: View {
                                 }
                             }
                             Spacer()
-                            Text("\(voteItem.pointsUsed)P")
-                                .font(.system(size: Constants.Typography.captionSize, weight: .bold))
-                                .foregroundColor(Constants.Colors.accentBlue)
+                            // Phase 1: ポイント機能無効化
+                            if FeatureFlags.pointsEnabled {
+                                Text("\(voteItem.pointsUsed)P")
+                                    .font(.system(size: Constants.Typography.captionSize, weight: .bold))
+                                    .foregroundColor(Constants.Colors.accentBlue)
+                            }
                         }
                         .padding()
                         .background(Color.white.opacity(0.05))
@@ -493,7 +496,7 @@ struct CreatePostView: View {
                     )
             }
         }
-        .sheet(isPresented: $showImagePicker) {
+        .fullScreenCover(isPresented: $showImagePicker) {
             ImagePicker(selectedImage: $viewModel.selectedGoodsImage)
         }
     }

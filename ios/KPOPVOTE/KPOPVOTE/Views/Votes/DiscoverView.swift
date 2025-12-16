@@ -127,14 +127,16 @@ struct DiscoverView: View {
                     }
                 }
             }
-            .sheet(item: $sheetContent) { content in
-                switch content {
-                case .collectionDetail(let collectionId):
-                    NavigationView {
-                        CollectionDetailView(collectionId: collectionId)
+            .fullScreenCover(item: $sheetContent) { content in
+                Group {
+                    switch content {
+                    case .collectionDetail(let collectionId):
+                        NavigationView {
+                            CollectionDetailView(collectionId: collectionId)
+                        }
+                    case .createCollection:
+                        CreateCollectionView()
                     }
-                case .createCollection:
-                    CreateCollectionView()
                 }
             }
             .onAppear {

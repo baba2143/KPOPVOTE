@@ -162,7 +162,7 @@ struct TaskRegistrationView: View {
                             .foregroundColor(Constants.Colors.accentBlue)
                         }
                     }
-                    .sheet(isPresented: $showVoteURLHelp) {
+                    .fullScreenCover(isPresented: $showVoteURLHelp) {
                         VoteURLHelpView()
                     }
 
@@ -287,7 +287,7 @@ struct TaskRegistrationView: View {
                                     .stroke(Constants.Colors.accentBlue.opacity(0.3), lineWidth: 1)
                             )
                         }
-                        .sheet(isPresented: $viewModel.showBiasSelection) {
+                        .fullScreenCover(isPresented: $viewModel.showBiasSelection) {
                             BiasSelectionSheet { selectedIds in
                                 // Get idol names from IDs
                                 Task {
@@ -369,7 +369,7 @@ struct TaskRegistrationView: View {
                                 .background(Color.white.opacity(0.05))
                                 .cornerRadius(12)
                             }
-                            .sheet(isPresented: $viewModel.showImagePicker) {
+                            .fullScreenCover(isPresented: $viewModel.showImagePicker) {
                                 ImagePicker(selectedImage: $viewModel.selectedCoverImage)
                                     .onDisappear {
                                         if viewModel.selectedCoverImage != nil {

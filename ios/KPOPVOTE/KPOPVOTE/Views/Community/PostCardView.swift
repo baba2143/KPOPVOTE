@@ -255,9 +255,12 @@ struct PostCardView: View {
 
                         Spacer()
 
-                        Text("\(voteItem.pointsUsed)P")
-                            .font(.system(size: Constants.Typography.captionSize, weight: .bold))
-                            .foregroundColor(Constants.Colors.accentBlue)
+                        // Phase 1: ポイント機能無効化
+                        if FeatureFlags.pointsEnabled {
+                            Text("\(voteItem.pointsUsed)P")
+                                .font(.system(size: Constants.Typography.captionSize, weight: .bold))
+                                .foregroundColor(Constants.Colors.accentBlue)
+                        }
                     }
                     .padding(Constants.Spacing.small)
                     .background(Color.white.opacity(0.05))

@@ -91,14 +91,16 @@ struct MyCollectionsView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showCollectionDetail) {
-                if let collectionId = selectedCollectionId {
-                    NavigationView {
-                        CollectionDetailView(collectionId: collectionId)
+            .fullScreenCover(isPresented: $showCollectionDetail) {
+                Group {
+                    if let collectionId = selectedCollectionId {
+                        NavigationView {
+                            CollectionDetailView(collectionId: collectionId)
+                        }
                     }
                 }
             }
-            .sheet(isPresented: $showCreateCollection) {
+            .fullScreenCover(isPresented: $showCreateCollection) {
                 CreateCollectionView()
             }
             .onAppear {
