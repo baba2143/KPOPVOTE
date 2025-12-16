@@ -32,6 +32,12 @@ service cloud.firestore {
         // Users can read and write their own tasks
         allow read, write: if isAuthenticated() && isOwner(userId);
       }
+
+      // Blocked Users Subcollection
+      match /blockedUsers/{blockedUserId} {
+        // Users can read and write their own blocked users list
+        allow read, write: if isAuthenticated() && isOwner(userId);
+      }
     }
 
     // ========================================

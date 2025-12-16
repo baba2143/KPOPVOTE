@@ -13,6 +13,7 @@ export { login } from "./auth/login";
 export { setBias } from "./user/setBias";
 export { getBias } from "./user/getBias";
 export { updateUserProfile } from "./user/updateUserProfile";
+export { deleteAccount } from "./user/deleteAccount";
 
 // Task functions
 export { registerTask } from "./task/registerTask";
