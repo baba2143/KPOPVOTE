@@ -146,6 +146,16 @@ struct CommunityView: View {
             )
         }
         .navigationViewStyle(.stack) // iPad対応: 2カラムレイアウトを無効化
+        // Listen for user blocked notification (Apple requirement: instant removal from feed)
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserBlocked"))) { notification in
+            if let userId = notification.userInfo?["userId"] as? String {
+                viewModel.onUserBlocked(blockedUserId: userId)
+            }
+        }
+        // Filter blocked users when posts are loaded
+        .onChange(of: viewModel.posts.count) { _ in
+            viewModel.filterBlockedUsers()
+        }
     }
 
     // MARK: - Content Type Selector (Posts | Calendar)

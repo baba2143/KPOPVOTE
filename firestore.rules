@@ -168,6 +168,22 @@ service cloud.firestore {
     }
 
     // ========================================
+    // Block Reports Collection (Apple Requirement)
+    // Automatically created when users block other users
+    // ========================================
+    match /blockReports/{reportId} {
+      // Anyone authenticated can read (for checking own reports)
+      allow read: if isAuthenticated();
+
+      // Anyone authenticated can create block reports
+      allow create: if isAuthenticated() &&
+                       request.auth.uid == request.resource.data.reporterId;
+
+      // Only admins can update/delete reports
+      allow update, delete: if isAdmin();
+    }
+
+    // ========================================
     // Point Transactions Collection
     // ========================================
     match /pointTransactions/{transactionId} {

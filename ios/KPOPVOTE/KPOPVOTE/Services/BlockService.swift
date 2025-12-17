@@ -71,8 +71,17 @@ class BlockService: ObservableObject {
         // Also unfollow the user if following
         try? await FollowService.shared.unfollowUser(userId: userId)
 
+        // Auto-report to developers (Apple App Store requirement)
+        try await reportBlockedUser(userId: userId, reporterId: currentUserId)
+
         await MainActor.run {
             self.blockedUserIds.insert(userId)
+            // Post notification for instant feed update
+            NotificationCenter.default.post(
+                name: NSNotification.Name("UserBlocked"),
+                object: nil,
+                userInfo: ["userId": userId]
+            )
         }
 
         debugLog("✅ [BlockService] User blocked successfully")
@@ -153,6 +162,25 @@ class BlockService: ObservableObject {
         debugLog("✅ [BlockService] Fetched \(blockedUsers.count) blocked users")
 
         return blockedUsers
+    }
+
+    // MARK: - Auto-Report Blocked User (Apple Requirement)
+    /// Automatically report blocked user to developers
+    /// This satisfies Apple's requirement: "Blocking should also notify the developer of the inappropriate content"
+    private func reportBlockedUser(userId: String, reporterId: String) async throws {
+        debugLog("📝 [BlockService] Auto-reporting blocked user to developers")
+
+        let reportData: [String: Any] = [
+            "type": "user_block",
+            "reporterId": reporterId,
+            "reportedUserId": userId,
+            "reason": "User blocked by another user (auto-report)",
+            "status": "pending",
+            "createdAt": FieldValue.serverTimestamp()
+        ]
+
+        try await db.collection("blockReports").addDocument(data: reportData)
+        debugLog("✅ [BlockService] Block report sent to developers")
     }
 
     // MARK: - Clear Cache

@@ -142,4 +142,28 @@ class CommunityViewModel: ObservableObject {
     func clearError() {
         errorMessage = nil
     }
+
+    // MARK: - Handle User Blocked (Apple Requirement)
+    /// Instantly remove blocked user's posts from feed
+    /// This satisfies Apple's requirement: "should remove it from the user's feed instantly"
+    func onUserBlocked(blockedUserId: String) {
+        debugLog("🚫 [CommunityViewModel] Removing posts from blocked user: \(blockedUserId)")
+        let beforeCount = posts.count
+        posts.removeAll { $0.userId == blockedUserId }
+        let removedCount = beforeCount - posts.count
+        debugLog("✅ [CommunityViewModel] Removed \(removedCount) posts from blocked user")
+    }
+
+    // MARK: - Filter Blocked Users
+    /// Filter out posts from blocked users
+    func filterBlockedUsers() {
+        let blockedIds = BlockService.shared.blockedUserIds
+        guard !blockedIds.isEmpty else { return }
+
+        debugLog("🔍 [CommunityViewModel] Filtering posts from \(blockedIds.count) blocked users")
+        let beforeCount = posts.count
+        posts = posts.filter { !blockedIds.contains($0.userId) }
+        let removedCount = beforeCount - posts.count
+        debugLog("✅ [CommunityViewModel] Filtered \(removedCount) posts from blocked users")
+    }
 }
