@@ -10,6 +10,8 @@ import { IdolListPage } from './pages/IdolListPage';
 import { ExternalAppListPage } from './pages/ExternalAppListPage';
 import { CommunityMonitorPage } from './pages/CommunityMonitorPage';
 import { DMReportPage } from './pages/DMReportPage';
+import { CollectionReportPage } from './pages/CollectionReportPage';
+import { BlockReportPage } from './pages/BlockReportPage';
 import { UserListPage } from './pages/UserListPage';
 import { AdminLogPage } from './pages/AdminLogPage';
 import { RewardSettingsPage } from './pages/RewardSettingsPage';
@@ -108,6 +110,26 @@ function AppRoutes() {
           <PrivateRoute>
             <AppLayout>
               <DMReportPage />
+            </AppLayout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/collection-reports"
+        element={
+          <PrivateRoute>
+            <AppLayout>
+              <CollectionReportPage />
+            </AppLayout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/block-reports"
+        element={
+          <PrivateRoute>
+            <AppLayout>
+              <BlockReportPage />
             </AppLayout>
           </PrivateRoute>
         }

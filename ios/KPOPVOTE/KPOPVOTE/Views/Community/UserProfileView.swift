@@ -79,7 +79,7 @@ struct UserProfileView: View {
                     Button(action: {
                         showReportSheet = true
                     }) {
-                        Label("通報", systemImage: "exclamationmark.triangle")
+                        Label("報告", systemImage: "exclamationmark.triangle")
                     }
                 } label: {
                     Image(systemName: "ellipsis")

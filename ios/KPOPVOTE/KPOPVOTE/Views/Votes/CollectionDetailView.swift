@@ -815,18 +815,23 @@ struct ReportCollectionView: View {
                             HStack {
                                 if isSubmitting {
                                     ProgressView()
-                                        .tint(.white)
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                        .scaleEffect(0.8)
                                 } else {
-                                    Text("報告を送信")
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                    Text("報告する")
+                                        .font(.system(size: 16, weight: .semibold))
                                 }
                             }
-                            .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
-                            .background(selectedReason != nil ? Color.red : Constants.Colors.textGray)
-                            .cornerRadius(12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(selectedReason != nil ? Color.red : Constants.Colors.textGray)
+                            )
                         }
+                        .buttonStyle(PlainButtonStyle())
                         .disabled(selectedReason == nil || isSubmitting)
 
                         Spacer()
@@ -836,7 +841,7 @@ struct ReportCollectionView: View {
                 .dismissKeyboardOnTap()
                 .keyboardDoneButton()
             }
-            .navigationTitle("コンテンツを報告")
+            .navigationTitle("報告")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {

@@ -59,7 +59,7 @@ struct DMConversationView: View {
                     Button(role: .destructive) {
                         showReportUserSheet = true
                     } label: {
-                        Label("ユーザーを通報", systemImage: "exclamationmark.triangle")
+                        Label("ユーザーを報告", systemImage: "exclamationmark.triangle")
                     }
                 } label: {
                     Image(systemName: "ellipsis")
@@ -269,7 +269,7 @@ struct MessageBubbleView: View {
                     Button(role: .destructive) {
                         onReport()
                     } label: {
-                        Label("メッセージを通報", systemImage: "exclamationmark.triangle")
+                        Label("メッセージを報告", systemImage: "exclamationmark.triangle")
                     }
                 }
             }

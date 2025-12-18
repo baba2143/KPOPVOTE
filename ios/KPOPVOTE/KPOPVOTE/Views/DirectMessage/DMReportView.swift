@@ -53,7 +53,7 @@ struct DMReportView: View {
                 .dismissKeyboardOnTap()
                 .keyboardDoneButton()
             }
-            .navigationTitle("通報")
+            .navigationTitle("報告")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -63,7 +63,7 @@ struct DMReportView: View {
                     .foregroundColor(Constants.Colors.textGray)
                 }
             }
-            .alert("通報が完了しました", isPresented: $showSuccessAlert) {
+            .alert("報告が完了しました", isPresented: $showSuccessAlert) {
                 Button("OK") {
                     dismiss()
                 }
@@ -88,7 +88,7 @@ struct DMReportView: View {
                     .foregroundColor(.orange)
                     .font(.system(size: 24))
 
-                Text(reportType == .message ? "メッセージを通報" : "ユーザーを通報")
+                Text(reportType == .message ? "メッセージを報告" : "ユーザーを報告")
                     .font(.system(size: 20, weight: .bold))
                     .foregroundColor(Constants.Colors.textWhite)
             }
@@ -105,7 +105,7 @@ struct DMReportView: View {
     @ViewBuilder
     private func messagePreviewSection(message: DirectMessage) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("通報対象のメッセージ")
+            Text("報告対象のメッセージ")
                 .font(.system(size: 14, weight: .medium))
                 .foregroundColor(Constants.Colors.textGray)
 
@@ -133,7 +133,7 @@ struct DMReportView: View {
     @ViewBuilder
     private var reasonInputSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("通報理由")
+            Text("報告理由")
                 .font(.system(size: 14, weight: .medium))
                 .foregroundColor(Constants.Colors.textGray)
 
@@ -178,7 +178,7 @@ struct DMReportView: View {
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                         .scaleEffect(0.8)
                 } else {
-                    Text("通報を送信")
+                    Text("報告する")
                         .font(.system(size: 16, weight: .semibold))
                 }
             }

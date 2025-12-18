@@ -109,7 +109,7 @@ struct PostDetailView: View {
                             Button(role: .destructive, action: {
                                 showReportSheet = true
                             }) {
-                                Label("通報", systemImage: "exclamationmark.triangle")
+                                Label("報告", systemImage: "exclamationmark.triangle")
                             }
                         }
                     } label: {
@@ -173,7 +173,7 @@ struct PostDetailView: View {
                 showReportSuccess = true
             }
         }
-        .alert("通報完了", isPresented: $showReportSuccess) {
+        .alert("報告完了", isPresented: $showReportSuccess) {
             Button("OK") {}
         } message: {
             Text("ご報告ありがとうございます。内容を確認いたします。")

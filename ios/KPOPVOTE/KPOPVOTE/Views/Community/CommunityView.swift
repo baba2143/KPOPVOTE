@@ -238,7 +238,7 @@ struct CommunityView: View {
                         .font(.system(size: Constants.Typography.headlineSize, weight: .bold))
                         .foregroundColor(Constants.Colors.textWhite)
 
-                    Text(viewModel.timelineType == "following" ? "フォローしているユーザーの投稿がここに表示されます" : "この推しの投稿がありません")
+                    Text(viewModel.timelineType == "following" ? "フォローしているユーザーの投稿がここに表示されます" : viewModel.timelineType == "discover" ? "まだ投稿がありません" : "この推しの投稿がありません")
                         .font(.system(size: Constants.Typography.bodySize))
                         .foregroundColor(Constants.Colors.textGray)
                         .multilineTextAlignment(.center)
@@ -376,6 +376,17 @@ struct CommunityView: View {
     private var timelineSelector: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 12) {
+                // Discover Timeline Button
+                TimelineTypeButton(
+                    title: "発見",
+                    isSelected: viewModel.timelineType == "discover",
+                    action: {
+                        Task {
+                            await viewModel.changeTimelineType("discover")
+                        }
+                    }
+                )
+
                 // Following Timeline Button
                 TimelineTypeButton(
                     title: "フォロー中",

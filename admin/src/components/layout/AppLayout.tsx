@@ -22,6 +22,7 @@ import StarIcon from '@mui/icons-material/Star';
 import AppsIcon from '@mui/icons-material/Apps';
 import ForumIcon from '@mui/icons-material/Forum';
 import ReportIcon from '@mui/icons-material/Report';
+import BlockIcon from '@mui/icons-material/Block';
 import HistoryIcon from '@mui/icons-material/History';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { useNavigate } from 'react-router-dom';
@@ -57,7 +58,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     { text: 'アイドル管理', icon: <StarIcon />, path: '/idols' },
     { text: '外部アプリ管理', icon: <AppsIcon />, path: '/apps' },
     { text: 'コミュニティ監視', icon: <ForumIcon />, path: '/community' },
-    { text: 'DM通報管理', icon: <ReportIcon />, path: '/dm-reports' },
+    { text: 'DM報告管理', icon: <ReportIcon />, path: '/dm-reports' },
+    { text: 'コレクション報告', icon: <HowToVoteIcon />, path: '/collection-reports' },
+    { text: 'ブロックレポート', icon: <BlockIcon />, path: '/block-reports' },
     { text: 'ユーザー管理', icon: <PeopleIcon />, path: '/users' },
     { text: '報酬設定管理', icon: <SettingsIcon />, path: '/reward-settings' },
     { text: 'システムログ', icon: <HistoryIcon />, path: '/logs' },

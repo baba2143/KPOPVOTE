@@ -38,8 +38,9 @@ export const getPosts = functions.https.onRequest(async (req, res) => {
     const limit = parseInt(req.query.limit as string) || 20;
     const lastPostId = req.query.lastPostId as string | undefined;
 
-    if (!type || !["bias", "following"].includes(type)) {
-      res.status(400).json({ success: false, error: "type must be 'bias' or 'following'" } as ApiResponse<null>);
+    if (!type || !["bias", "following", "discover"].includes(type)) {
+      const errMsg = "type must be 'bias', 'following', or 'discover'";
+      res.status(400).json({ success: false, error: errMsg } as ApiResponse<null>);
       return;
     }
 
@@ -54,6 +55,9 @@ export const getPosts = functions.https.onRequest(async (req, res) => {
     if (type === "bias") {
       // Bias timeline: posts with matching biasId
       query = query.where("biasIds", "array-contains", biasId);
+    } else if (type === "discover") {
+      // Discover timeline: all posts (no filter) - just order by createdAt
+      // No additional filtering needed
     } else {
       // Following timeline: posts from followed users
       const followingSnapshot = await db.collection("follows")

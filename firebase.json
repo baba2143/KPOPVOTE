@@ -61,6 +61,10 @@
           "function": "getDMReports"
         },
         {
+          "source": "/api/getBlockReports",
+          "function": "getBlockReports"
+        },
+        {
           "source": "/api/searchUsers",
           "function": "searchUsers"
         },
@@ -155,6 +159,10 @@
         {
           "source": "/api/deleteGroup",
           "function": "deleteGroup"
+        },
+        {
+          "source": "/api/getCollectionReports",
+          "function": "getCollectionReports"
         },
         {
           "source": "**",

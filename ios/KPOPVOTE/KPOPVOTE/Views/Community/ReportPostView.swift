@@ -35,7 +35,7 @@ struct ReportPostView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: Constants.Spacing.large) {
                         // Header
-                        Text("この投稿を通報する理由を選択してください")
+                        Text("この投稿を報告する理由を選択してください")
                             .font(.system(size: Constants.Typography.bodySize))
                             .foregroundColor(Constants.Colors.textGray)
                             .padding(.top, Constants.Spacing.medium)
@@ -122,7 +122,7 @@ struct ReportPostView: View {
                                         .scaleEffect(0.8)
                                 } else {
                                     Image(systemName: "exclamationmark.triangle.fill")
-                                    Text("通報する")
+                                    Text("報告する")
                                         .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
                                 }
                             }
@@ -144,7 +144,7 @@ struct ReportPostView: View {
                 .dismissKeyboardOnTap()
                 .keyboardDoneButton()
             }
-            .navigationTitle("投稿を通報")
+            .navigationTitle("報告")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -180,7 +180,7 @@ struct ReportPostView: View {
             onComplete()
         } catch {
             debugLog("❌ [ReportPostView] Failed to submit report: \(error)")
-            errorMessage = "通報の送信に失敗しました。もう一度お試しください。"
+            errorMessage = "報告の送信に失敗しました。もう一度お試しください。"
         }
 
         isSubmitting = false

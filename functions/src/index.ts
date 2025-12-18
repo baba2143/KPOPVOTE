@@ -101,6 +101,12 @@ export { getMessages } from "./directMessage/getMessages";
 export { markAsRead } from "./directMessage/markAsRead";
 export { getDMReports } from "./directMessage/getDMReports";
 
+// Block Reports (Apple App Store Guideline 1.2 compliance)
+export { getBlockReports } from "./community/getBlockReports";
+
+// Collection Reports (VOTE reports)
+export { getCollectionReports } from "./admin/getCollectionReports";
+
 // Points functions - Phase 1除外（ポイント機能）
 // export { getPoints } from "./points/getPoints";
 // export { getPointHistory } from "./points/getPointHistory";

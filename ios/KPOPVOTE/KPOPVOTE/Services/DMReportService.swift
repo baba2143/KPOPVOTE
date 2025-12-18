@@ -105,7 +105,7 @@ enum DMReportError: LocalizedError {
         case .notAuthenticated:
             return "ログインが必要です"
         case .reportFailed:
-            return "通報の送信に失敗しました"
+            return "報告の送信に失敗しました"
         }
     }
 }
