@@ -9,11 +9,13 @@ import SwiftUI
 
 struct ReportPostView: View {
     let postId: String
+    let authorId: String
     let onComplete: () -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var selectedReason: String = ""
     @State private var additionalComment: String = ""
+    @State private var blockUser = false
     @State private var isSubmitting = false
     @State private var errorMessage: String?
 
@@ -33,6 +35,7 @@ struct ReportPostView: View {
                     .ignoresSafeArea()
 
                 ScrollView {
+                    let _ = print("🟣 [ReportPostView] authorId = '\(authorId)', isEmpty = \(authorId.isEmpty)")
                     VStack(alignment: .leading, spacing: Constants.Spacing.large) {
                         // Header
                         Text("この投稿を報告する理由を選択してください")
@@ -98,6 +101,25 @@ struct ReportPostView: View {
                                     .cornerRadius(12)
                                     .tint(Constants.Colors.accentPink)
                                     .foregroundStyle(.white)
+                            }
+                        }
+
+                        // Block User Option
+                        if !authorId.isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Toggle(isOn: $blockUser) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "hand.raised.fill")
+                                            .foregroundColor(.red)
+                                        Text("このユーザーをブロック")
+                                            .foregroundColor(Constants.Colors.textWhite)
+                                    }
+                                }
+                                .tint(.red)
+
+                                Text("ブロックすると、このユーザーのコンテンツが表示されなくなります")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(Constants.Colors.textGray)
                             }
                         }
 
@@ -176,6 +198,18 @@ struct ReportPostView: View {
 
         do {
             try await ReportService.shared.reportCommunityPost(postId: postId, reason: reason)
+
+            // Block user if requested
+            if blockUser && !authorId.isEmpty {
+                try await BlockService.shared.blockUser(userId: authorId)
+                // Post notification to refresh feeds
+                NotificationCenter.default.post(
+                    name: NSNotification.Name("UserBlocked"),
+                    object: nil,
+                    userInfo: ["userId": authorId]
+                )
+            }
+
             dismiss()
             onComplete()
         } catch {
@@ -188,7 +222,7 @@ struct ReportPostView: View {
 }
 
 #Preview {
-    ReportPostView(postId: "test-post-id") {
+    ReportPostView(postId: "test-post-id", authorId: "test-author-id") {
         print("Report completed")
     }
 }

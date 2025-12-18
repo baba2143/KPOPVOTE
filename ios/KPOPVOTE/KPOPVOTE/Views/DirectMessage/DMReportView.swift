@@ -17,6 +17,7 @@ struct DMReportView: View {
     let message: DirectMessage?  // Only for message reports
 
     @State private var reason: String = ""
+    @State private var blockUser = false
     @State private var isSubmitting = false
     @State private var showSuccessAlert = false
     @State private var showErrorAlert = false
@@ -44,6 +45,25 @@ struct DMReportView: View {
 
                         // Reason input
                         reasonInputSection
+
+                        // Block User Option
+                        if !reporteeId.isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Toggle(isOn: $blockUser) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "hand.raised.fill")
+                                            .foregroundColor(.red)
+                                        Text("このユーザーをブロック")
+                                            .foregroundColor(Constants.Colors.textWhite)
+                                    }
+                                }
+                                .tint(.red)
+
+                                Text("ブロックすると、このユーザーのコンテンツが表示されなくなります")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(Constants.Colors.textGray)
+                            }
+                        }
 
                         // Submit button
                         submitButton
@@ -214,6 +234,19 @@ struct DMReportView: View {
                         reporteeId: reporteeId,
                         reason: reason.trimmingCharacters(in: .whitespacesAndNewlines)
                     )
+                }
+
+                // Block user if requested
+                if blockUser && !reporteeId.isEmpty {
+                    try await BlockService.shared.blockUser(userId: reporteeId)
+                    // Post notification to refresh feeds
+                    await MainActor.run {
+                        NotificationCenter.default.post(
+                            name: NSNotification.Name("UserBlocked"),
+                            object: nil,
+                            userInfo: ["userId": reporteeId]
+                        )
+                    }
                 }
 
                 await MainActor.run {

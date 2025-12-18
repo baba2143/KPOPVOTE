@@ -159,6 +159,11 @@ struct DiscoverContentView: View {
                 await viewModel.loadLatestCollections()
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserBlocked"))) { notification in
+            if let userId = notification.userInfo?["userId"] as? String {
+                viewModel.onUserBlocked(blockedUserId: userId)
+            }
+        }
     }
 }
 
@@ -244,6 +249,11 @@ struct SavedCollectionsContentView: View {
                 await viewModel.loadSavedCollections()
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserBlocked"))) { notification in
+            if let userId = notification.userInfo?["userId"] as? String {
+                viewModel.onUserBlocked(blockedUserId: userId)
+            }
+        }
     }
 }
 
@@ -327,6 +337,11 @@ struct MyCollectionsContentView: View {
         .onAppear {
             Task {
                 await viewModel.loadMyCollections()
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("UserBlocked"))) { notification in
+            if let userId = notification.userInfo?["userId"] as? String {
+                viewModel.onUserBlocked(blockedUserId: userId)
             }
         }
     }

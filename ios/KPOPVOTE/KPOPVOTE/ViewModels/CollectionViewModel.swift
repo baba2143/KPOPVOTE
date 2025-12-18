@@ -97,6 +97,7 @@ class CollectionViewModel: ObservableObject {
 
         do {
             trendingCollections = try await collectionService.getTrendingCollections(period: period, limit: limit)
+            filterBlockedUsers()
             debugLog("✅ [CollectionViewModel] Loaded \(trendingCollections.count) trending collections")
         } catch {
             errorMessage = NetworkErrorHandler.getUserMessage(for: error)
@@ -124,6 +125,7 @@ class CollectionViewModel: ObservableObject {
             } else {
                 latestCollections.append(contentsOf: response.data.collections)
             }
+            filterBlockedUsers()
 
             currentPage = response.data.pagination.currentPage
             totalPages = response.data.pagination.totalPages
@@ -168,6 +170,7 @@ class CollectionViewModel: ObservableObject {
             } else {
                 searchResults.append(contentsOf: response.data.collections)
             }
+            filterBlockedUsers()
 
             currentPage = response.data.pagination.currentPage
             totalPages = response.data.pagination.totalPages
@@ -203,6 +206,7 @@ class CollectionViewModel: ObservableObject {
             } else {
                 savedCollections.append(contentsOf: response.data.collections)
             }
+            filterBlockedUsers()
 
             currentPage = response.data.pagination.currentPage
             totalPages = response.data.pagination.totalPages
@@ -440,5 +444,50 @@ class CollectionViewModel: ObservableObject {
     func refresh() async {
         await loadTrendingCollections()
         await loadLatestCollections(page: 1)
+    }
+
+    // MARK: - Block User Handling
+
+    /// Remove collections from blocked user (Apple Guideline 1.2 compliance)
+    func onUserBlocked(blockedUserId: String) {
+        debugLog("🚫 [CollectionViewModel] Removing collections from blocked user: \(blockedUserId)")
+
+        let beforeTrending = trendingCollections.count
+        let beforeLatest = latestCollections.count
+        let beforeSearch = searchResults.count
+        let beforeSaved = savedCollections.count
+
+        trendingCollections.removeAll { $0.creatorId == blockedUserId }
+        latestCollections.removeAll { $0.creatorId == blockedUserId }
+        searchResults.removeAll { $0.creatorId == blockedUserId }
+        savedCollections.removeAll { $0.creatorId == blockedUserId }
+        // Note: myCollections は自分のコレクションなのでフィルタ不要
+
+        let removedCount = (beforeTrending - trendingCollections.count) +
+                          (beforeLatest - latestCollections.count) +
+                          (beforeSearch - searchResults.count) +
+                          (beforeSaved - savedCollections.count)
+
+        debugLog("✅ [CollectionViewModel] Removed \(removedCount) collections from blocked user")
+    }
+
+    /// Filter collections from all blocked users (call after data load)
+    func filterBlockedUsers() {
+        let blockedIds = BlockService.shared.blockedUserIds
+        guard !blockedIds.isEmpty else { return }
+
+        debugLog("🔍 [CollectionViewModel] Filtering collections from \(blockedIds.count) blocked users")
+        let beforeCount = trendingCollections.count + latestCollections.count +
+                          searchResults.count + savedCollections.count
+
+        trendingCollections = trendingCollections.filter { !blockedIds.contains($0.creatorId) }
+        latestCollections = latestCollections.filter { !blockedIds.contains($0.creatorId) }
+        searchResults = searchResults.filter { !blockedIds.contains($0.creatorId) }
+        savedCollections = savedCollections.filter { !blockedIds.contains($0.creatorId) }
+        // Note: myCollections は自分のコレクションなのでフィルタ不要
+
+        let afterCount = trendingCollections.count + latestCollections.count +
+                         searchResults.count + savedCollections.count
+        debugLog("✅ [CollectionViewModel] Filtered \(beforeCount - afterCount) collections from blocked users")
     }
 }

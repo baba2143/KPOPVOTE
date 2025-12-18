@@ -8,6 +8,13 @@
 import SwiftUI
 import FirebaseAuth
 
+// Report sheet info for fullScreenCover(item:)
+struct ReportSheetInfo: Identifiable {
+    let id = UUID()
+    let postId: String
+    let authorId: String
+}
+
 struct PostDetailView: View {
     let postId: String
     @Environment(\.dismiss) private var dismiss
@@ -29,7 +36,7 @@ struct PostDetailView: View {
     @State private var showDeleteCommentSuccess = false
 
     // Report states
-    @State private var showReportSheet = false
+    @State private var reportSheetInfo: ReportSheetInfo?
     @State private var showReportSuccess = false
 
     init(postId: String) {
@@ -107,7 +114,10 @@ struct PostDetailView: View {
                             }
                         } else {
                             Button(role: .destructive, action: {
-                                showReportSheet = true
+                                print("🔴 [PostDetailView] Report button tapped")
+                                print("🔴 [PostDetailView] post.userId = '\(post.userId)'")
+                                reportSheetInfo = ReportSheetInfo(postId: postId, authorId: post.userId)
+                                print("🔴 [PostDetailView] reportSheetInfo set with authorId = '\(post.userId)'")
                             }) {
                                 Label("報告", systemImage: "exclamationmark.triangle")
                             }
@@ -168,8 +178,8 @@ struct PostDetailView: View {
                 }
             }
         }
-        .fullScreenCover(isPresented: $showReportSheet) {
-            ReportPostView(postId: postId) {
+        .fullScreenCover(item: $reportSheetInfo) { info in
+            ReportPostView(postId: info.postId, authorId: info.authorId) {
                 showReportSuccess = true
             }
         }

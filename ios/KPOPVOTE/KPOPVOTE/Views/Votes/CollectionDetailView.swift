@@ -328,7 +328,7 @@ struct CollectionDetailView: View {
         .fullScreenCover(isPresented: $showReportSheet) {
             Group {
                 if let collection = viewModel.currentCollection {
-                    ReportCollectionView(collectionId: collection.id, collectionTitle: collection.title)
+                    ReportCollectionView(collectionId: collection.id, collectionTitle: collection.title, creatorId: collection.creatorId)
                 }
             }
         }
@@ -748,10 +748,12 @@ struct ShareSheet: UIViewControllerRepresentable {
 struct ReportCollectionView: View {
     let collectionId: String
     let collectionTitle: String
+    let creatorId: String
     @Environment(\.dismiss) var dismiss
 
     @State private var selectedReason: ReportReason?
     @State private var additionalComment: String = ""
+    @State private var blockUser = false
     @State private var isSubmitting = false
     @State private var showSuccessAlert = false
 
@@ -808,6 +810,25 @@ struct ReportCollectionView: View {
                                 .background(Constants.Colors.cardDark)
                                 .cornerRadius(8)
                                 .foregroundColor(Constants.Colors.textWhite)
+                        }
+
+                        // Block User Option
+                        if !creatorId.isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Toggle(isOn: $blockUser) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "hand.raised.fill")
+                                            .foregroundColor(.red)
+                                        Text("このユーザーをブロック")
+                                            .foregroundColor(Constants.Colors.textWhite)
+                                    }
+                                }
+                                .tint(.red)
+
+                                Text("ブロックすると、このユーザーのコンテンツが表示されなくなります")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(Constants.Colors.textGray)
+                            }
                         }
 
                         // Submit Button
@@ -874,6 +895,19 @@ struct ReportCollectionView: View {
                     reason: reason.rawValue,
                     comment: additionalComment
                 )
+
+                // Block user if requested
+                if blockUser && !creatorId.isEmpty {
+                    try await BlockService.shared.blockUser(userId: creatorId)
+                    // Post notification to refresh feeds
+                    await MainActor.run {
+                        NotificationCenter.default.post(
+                            name: NSNotification.Name("UserBlocked"),
+                            object: nil,
+                            userInfo: ["userId": creatorId]
+                        )
+                    }
+                }
 
                 await MainActor.run {
                     isSubmitting = false

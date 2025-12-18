@@ -50,6 +50,14 @@ export const getPosts = functions.https.onRequest(async (req, res) => {
     }
 
     const db = admin.firestore();
+
+    // Get blocked users for current user (Apple Guideline 1.2 compliance)
+    const blockedUsersSnapshot = await db.collection("users")
+      .doc(currentUser.uid)
+      .collection("blockedUsers")
+      .get();
+    const blockedUserIds = blockedUsersSnapshot.docs.map((doc) => doc.id);
+
     let query: admin.firestore.Query = db.collection("posts");
 
     if (type === "bias") {
@@ -137,10 +145,15 @@ export const getPosts = functions.https.onRequest(async (req, res) => {
       })
     );
 
+    // Filter out blocked users' posts (Apple Guideline 1.2 compliance)
+    const filteredPosts = blockedUserIds.length > 0 ?
+      postsData.filter((post) => !blockedUserIds.includes(post.user.uid)) :
+      postsData;
+
     res.status(200).json({
       success: true,
       data: {
-        posts: postsData,
+        posts: filteredPosts,
         hasMore,
       },
     } as ApiResponse<unknown>);
