@@ -563,6 +563,14 @@ class AuthService: ObservableObject {
             // Sync pending bias data from tutorial (if any)
             await syncPendingBiasData()
 
+            // Load blocked users for content filtering (Apple Guideline 1.2)
+            do {
+                try await BlockService.shared.loadBlockedUsers()
+                debugLog("✅ [Auth] Blocked users loaded for content filtering")
+            } catch {
+                debugLog("⚠️ [Auth] Failed to load blocked users: \(error.localizedDescription)")
+            }
+
         } catch {
             debugLog("❌ [Auth] Failed to load user data: \(error.localizedDescription)")
         }
