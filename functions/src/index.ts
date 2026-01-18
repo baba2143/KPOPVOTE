@@ -14,6 +14,8 @@ export { setBias } from "./user/setBias";
 export { getBias } from "./user/getBias";
 export { updateUserProfile } from "./user/updateUserProfile";
 export { deleteAccount } from "./user/deleteAccount";
+export { getNotificationSettings } from "./user/getNotificationSettings";
+export { setNotificationSettings } from "./user/setNotificationSettings";
 
 // Task functions
 export { registerTask } from "./task/registerTask";
@@ -137,6 +139,7 @@ export { unregisterFcmToken } from "./fcm/unregisterToken";
 export { updateVoteStatuses } from "./scheduled/updateVoteStatuses";
 export { checkVoteDeadlines } from "./scheduled/checkVoteDeadlines";
 export { checkCalendarReminders } from "./scheduled/checkCalendarReminders";
+export { checkTaskDeadlines } from "./scheduled/checkTaskDeadlines";
 
 // API Routes (Express)
 import * as functions from "firebase-functions";

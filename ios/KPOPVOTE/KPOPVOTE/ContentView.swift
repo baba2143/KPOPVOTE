@@ -291,9 +291,7 @@ struct HomeView: View {
                 }
             }
             .fullScreenCover(isPresented: $showNotifications) {
-                NavigationStack {
-                    NotificationsView()
-                }
+                NotificationListView()
             }
             .onChange(of: showVoteDetail) { newValue in
                 print("📱 [ContentView] showVoteDetail changed to: \(newValue), selectedVoteId: \(selectedVoteId ?? "nil")")

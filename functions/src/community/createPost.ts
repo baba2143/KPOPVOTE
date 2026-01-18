@@ -9,6 +9,7 @@ import * as admin from "firebase-admin";
 import { CreatePostRequest, ApiResponse } from "../types";
 import { verifyToken, AuthenticatedRequest } from "../middleware/auth";
 import { sendPushNotification } from "../utils/fcmHelper";
+import { shouldSendNotificationCached } from "../utils/notificationHelper";
 
 export const createPost = functions.https.onRequest(async (req, res) => {
   res.set("Access-Control-Allow-Origin", "*");
@@ -259,35 +260,42 @@ async function notifyFollowersAboutNewPost(
       // Don't notify the author themselves
       if (followerId === authorId) continue;
 
-      // Create notification
-      const notificationRef = db.collection("notifications").doc();
-      await notificationRef.set({
-        id: notificationRef.id,
-        userId: followerId,
-        type: "system",
-        title: `${authorName}さんが新しい${typeLabel}を投稿`,
-        body: `${authorName}さんの新しい投稿をチェックしましょう！`,
-        isRead: false,
-        actionUserId: authorId,
-        actionUserDisplayName: authorName,
-        relatedPostId: postId,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
+      // Check notification settings
+      const shouldNotify = await shouldSendNotificationCached(followerId, "newPosts");
 
-      // Send push notification
-      await sendPushNotification({
-        userId: followerId,
-        type: "system",
-        title: `${authorName}さんが新しい${typeLabel}を投稿`,
-        body: `${authorName}さんの新しい投稿をチェックしましょう！`,
-        data: {
-          postId,
-          userId: authorId,
-          notificationId: notificationRef.id,
-        },
-      });
+      if (shouldNotify) {
+        // Create notification
+        const notificationRef = db.collection("notifications").doc();
+        await notificationRef.set({
+          id: notificationRef.id,
+          userId: followerId,
+          type: "system",
+          title: `${authorName}さんが新しい${typeLabel}を投稿`,
+          body: `${authorName}さんの新しい投稿をチェックしましょう！`,
+          isRead: false,
+          actionUserId: authorId,
+          actionUserDisplayName: authorName,
+          relatedPostId: postId,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
 
-      notifiedCount++;
+        // Send push notification
+        await sendPushNotification({
+          userId: followerId,
+          type: "system",
+          title: `${authorName}さんが新しい${typeLabel}を投稿`,
+          body: `${authorName}さんの新しい投稿をチェックしましょう！`,
+          data: {
+            postId,
+            userId: authorId,
+            notificationId: notificationRef.id,
+          },
+        });
+
+        notifiedCount++;
+      } else {
+        console.log(`[createPost] Notification skipped: user ${followerId} has new post notifications disabled`);
+      }
     }
 
     console.log(

@@ -9,6 +9,7 @@ import * as admin from "firebase-admin";
 import { ApiResponse } from "../types";
 import { verifyToken, AuthenticatedRequest } from "../middleware/auth";
 import { sendPushNotification } from "../utils/fcmHelper";
+import { shouldSendNotificationCached } from "../utils/notificationHelper";
 
 interface CreateCommentRequest {
   postId: string;
@@ -123,44 +124,61 @@ export const createComment = functions.https.onRequest(async (req, res) => {
 
     // Create notification for post author (if not commenting on own post)
     if (currentUser.uid !== postAuthorId) {
-      const currentUserDoc = await db.collection("users").doc(currentUser.uid).get();
-      const currentUserData = currentUserDoc.data();
+      // Check notification settings
+      const shouldNotify = await shouldSendNotificationCached(postAuthorId, "comments");
 
-      const notificationRef = db.collection("notifications").doc();
-      const notificationTitle = "New Comment";
-      const notificationBody = `${currentUserData?.displayName || "Someone"} commented on your post`;
+      if (shouldNotify) {
+        const currentUserDoc = await db.collection("users").doc(currentUser.uid).get();
+        const currentUserData = currentUserDoc.data();
 
-      await notificationRef.set({
-        id: notificationRef.id,
-        userId: postAuthorId,
-        type: "comment",
-        title: notificationTitle,
-        body: notificationBody,
-        isRead: false,
-        actionUserId: currentUser.uid,
-        actionUserDisplayName: currentUserData?.displayName || null,
-        actionUserPhotoURL: currentUserData?.photoURL || null,
-        relatedPostId: postId,
-        relatedCommentId: commentRef.id,
-        createdAt: now,
-      });
+        const notificationRef = db.collection("notifications").doc();
+        const notificationTitle = "コメントされました";
+        const notificationBody = `${currentUserData?.displayName || "ユーザー"}さんがあなたの投稿にコメントしました`;
 
-      // Send push notification
-      await sendPushNotification({
-        userId: postAuthorId,
-        type: "comment",
-        title: notificationTitle,
-        body: notificationBody,
-        data: {
-          notificationId: notificationRef.id,
-          postId: postId,
-          commentId: commentRef.id,
-          userId: currentUser.uid,
-        },
-      });
+        await notificationRef.set({
+          id: notificationRef.id,
+          userId: postAuthorId,
+          type: "comment",
+          title: notificationTitle,
+          body: notificationBody,
+          isRead: false,
+          actionUserId: currentUser.uid,
+          actionUserDisplayName: currentUserData?.displayName || null,
+          actionUserPhotoURL: currentUserData?.photoURL || null,
+          relatedPostId: postId,
+          relatedCommentId: commentRef.id,
+          createdAt: now,
+        });
+
+        // Send push notification
+        await sendPushNotification({
+          userId: postAuthorId,
+          type: "comment",
+          title: notificationTitle,
+          body: notificationBody,
+          data: {
+            notificationId: notificationRef.id,
+            postId: postId,
+            commentId: commentRef.id,
+            userId: currentUser.uid,
+          },
+        });
+      } else {
+        console.log(`[createComment] Notification skipped: user ${postAuthorId} has comment notifications disabled`);
+      }
     }
 
     console.log(`✅ [createComment] Comment created: user=${currentUser.uid}, post=${postId}, comment=${commentRef.id}`);
+
+    // Handle @mentions in comment (async, don't block response)
+    handleMentionsInComment(
+      db,
+      text.trim(),
+      currentUser.uid,
+      postAuthorId,
+      postId,
+      commentRef.id
+    ).catch((err) => console.error("❌ [createComment] Error handling mentions:", err));
 
     // Get updated comments count
     const updatedPostDoc = await db.collection("posts").doc(postId).get();
@@ -181,3 +199,168 @@ export const createComment = functions.https.onRequest(async (req, res) => {
     } as ApiResponse<null>);
   }
 });
+
+/**
+ * Extract @username mentions from text
+ * @param text - Comment text to search for mentions
+ * @returns Array of mentioned usernames (without @ symbol)
+ */
+function extractMentions(text: string): string[] {
+  const mentionPattern = /@(\w+)/g;
+  const matches = text.matchAll(mentionPattern);
+  return Array.from(matches, (m) => m[1]);
+}
+
+/**
+ * Resolve usernames to user IDs
+ * @param db - Firestore database instance
+ * @param usernames - Array of usernames to resolve
+ * @returns Array of user IDs
+ */
+async function resolveUsernames(
+  db: admin.firestore.Firestore,
+  usernames: string[]
+): Promise<Map<string, { uid: string; displayName: string; photoURL: string | null }>> {
+  const userMap = new Map<string, { uid: string; displayName: string; photoURL: string | null }>();
+
+  if (usernames.length === 0) {
+    return userMap;
+  }
+
+  // Firestore 'in' query supports max 10 items, so batch if needed
+  const batchSize = 10;
+  for (let i = 0; i < usernames.length; i += batchSize) {
+    const batch = usernames.slice(i, i + batchSize);
+
+    try {
+      const userDocs = await db
+        .collection("users")
+        .where("displayName", "in", batch)
+        .get();
+
+      userDocs.forEach((doc) => {
+        const data = doc.data();
+        const displayName = data?.displayName;
+        if (displayName) {
+          userMap.set(displayName, {
+            uid: doc.id,
+            displayName: displayName,
+            photoURL: data?.photoURL || null,
+          });
+        }
+      });
+    } catch (error) {
+      console.error("[createComment] Error resolving usernames batch:", error);
+    }
+  }
+
+  return userMap;
+}
+
+/**
+ * Handle @mentions in comment and send notifications
+ */
+async function handleMentionsInComment(
+  db: admin.firestore.Firestore,
+  text: string,
+  commentAuthorId: string,
+  postAuthorId: string,
+  postId: string,
+  commentId: string
+): Promise<void> {
+  try {
+    // Extract mentions from comment text
+    const mentionedUsernames = extractMentions(text);
+
+    if (mentionedUsernames.length === 0) {
+      return;
+    }
+
+    console.log(`🔍 [createComment] Found ${mentionedUsernames.length} mentions: ${mentionedUsernames.join(", ")}`);
+
+    // Resolve usernames to user IDs
+    const userMap = await resolveUsernames(db, mentionedUsernames);
+
+    if (userMap.size === 0) {
+      console.log("ℹ️ [createComment] No valid users found for mentions");
+      return;
+    }
+
+    // Get comment author info
+    const authorDoc = await db.collection("users").doc(commentAuthorId).get();
+    const authorData = authorDoc.data();
+    const authorDisplayName = authorData?.displayName || "Someone";
+    const authorPhotoURL = authorData?.photoURL || null;
+
+    let notifiedCount = 0;
+
+    // Send notification to each mentioned user
+    for (const [username, userData] of userMap) {
+      const mentionedUserId = userData.uid;
+
+      // Skip if mentioning themselves
+      if (mentionedUserId === commentAuthorId) {
+        console.log(`[createComment] Skipping self-mention: ${username}`);
+        continue;
+      }
+
+      // Skip if mentioning the post author (they already got comment notification)
+      if (mentionedUserId === postAuthorId) {
+        console.log(`[createComment] Skipping post author mention (already notified): ${username}`);
+        continue;
+      }
+
+      // Check notification settings
+      const shouldNotify = await shouldSendNotificationCached(mentionedUserId, "mentions");
+
+      if (!shouldNotify) {
+        console.log(
+          "[createComment] Mention notification skipped: " +
+          `user ${mentionedUserId} (${username}) has mention notifications disabled`
+        );
+        continue;
+      }
+
+      // Create notification
+      const notificationRef = db.collection("notifications").doc();
+      const notificationTitle = "メンションされました";
+      const notificationBody = `${authorDisplayName}さんがコメントであなたをメンションしました`;
+
+      await notificationRef.set({
+        id: notificationRef.id,
+        userId: mentionedUserId,
+        type: "mention",
+        title: notificationTitle,
+        body: notificationBody,
+        isRead: false,
+        actionUserId: commentAuthorId,
+        actionUserDisplayName: authorDisplayName,
+        actionUserPhotoURL: authorPhotoURL,
+        relatedPostId: postId,
+        relatedCommentId: commentId,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      // Send push notification
+      await sendPushNotification({
+        userId: mentionedUserId,
+        type: "mention",
+        title: notificationTitle,
+        body: notificationBody,
+        data: {
+          notificationId: notificationRef.id,
+          postId: postId,
+          commentId: commentId,
+          userId: commentAuthorId,
+        },
+      });
+
+      notifiedCount++;
+      console.log(`✅ [createComment] Sent mention notification to ${username} (${mentionedUserId})`);
+    }
+
+    console.log(`📱 [createComment] Sent ${notifiedCount} mention notifications`);
+  } catch (error) {
+    console.error("❌ [createComment] Error in handleMentionsInComment:", error);
+  }
+}

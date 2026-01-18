@@ -8,6 +8,7 @@ import * as admin from "firebase-admin";
 import { ApiResponse } from "../types";
 import { verifyToken, AuthenticatedRequest } from "../middleware/auth";
 import { sendPushNotification } from "../utils/fcmHelper";
+import { shouldSendNotificationCached } from "../utils/notificationHelper";
 
 export const likePost = functions.https.onRequest(async (req, res) => {
   res.set("Access-Control-Allow-Origin", "*");
@@ -88,39 +89,46 @@ export const likePost = functions.https.onRequest(async (req, res) => {
 
       // Create notification for post owner (if not self-like)
       if (postData.userId !== currentUser.uid) {
-        const currentUserDoc = await db.collection("users").doc(currentUser.uid).get();
-        const currentUserData = currentUserDoc.data();
+        // Check notification settings
+        const shouldNotify = await shouldSendNotificationCached(postData.userId, "likes");
 
-        const notificationRef = db.collection("notifications").doc();
-        const notificationTitle = "New Like";
-        const notificationBody = `${currentUserData?.displayName || "Someone"} liked your post`;
+        if (shouldNotify) {
+          const currentUserDoc = await db.collection("users").doc(currentUser.uid).get();
+          const currentUserData = currentUserDoc.data();
 
-        await notificationRef.set({
-          id: notificationRef.id,
-          userId: postData.userId,
-          type: "like",
-          title: notificationTitle,
-          body: notificationBody,
-          isRead: false,
-          actionUserId: currentUser.uid,
-          actionUserDisplayName: currentUserData?.displayName || null,
-          actionUserPhotoURL: currentUserData?.photoURL || null,
-          relatedPostId: postId,
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
+          const notificationRef = db.collection("notifications").doc();
+          const notificationTitle = "いいねされました";
+          const notificationBody = `${currentUserData?.displayName || "ユーザー"}さんがあなたの投稿にいいねしました`;
 
-        // Send push notification
-        await sendPushNotification({
-          userId: postData.userId,
-          type: "like",
-          title: notificationTitle,
-          body: notificationBody,
-          data: {
-            notificationId: notificationRef.id,
-            postId: postId,
-            userId: currentUser.uid,
-          },
-        });
+          await notificationRef.set({
+            id: notificationRef.id,
+            userId: postData.userId,
+            type: "like",
+            title: notificationTitle,
+            body: notificationBody,
+            isRead: false,
+            actionUserId: currentUser.uid,
+            actionUserDisplayName: currentUserData?.displayName || null,
+            actionUserPhotoURL: currentUserData?.photoURL || null,
+            relatedPostId: postId,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+
+          // Send push notification
+          await sendPushNotification({
+            userId: postData.userId,
+            type: "like",
+            title: notificationTitle,
+            body: notificationBody,
+            data: {
+              notificationId: notificationRef.id,
+              postId: postId,
+              userId: currentUser.uid,
+            },
+          });
+        } else {
+          console.log(`[likePost] Notification skipped: user ${postData.userId} has likes notifications disabled`);
+        }
       }
 
       console.log(`✅ [likePost] Post liked: user=${currentUser.uid}, post=${postId}`);

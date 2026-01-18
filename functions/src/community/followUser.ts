@@ -7,6 +7,7 @@ import * as admin from "firebase-admin";
 import { FollowRequest, ApiResponse } from "../types";
 import { verifyToken, AuthenticatedRequest } from "../middleware/auth";
 import { sendPushNotification } from "../utils/fcmHelper";
+import { shouldSendNotificationCached } from "../utils/notificationHelper";
 
 export const followUser = functions.https.onRequest(async (req, res) => {
   res.set("Access-Control-Allow-Origin", "*");
@@ -94,37 +95,44 @@ export const followUser = functions.https.onRequest(async (req, res) => {
     await batch.commit();
 
     // Create notification for followed user
-    const notificationRef = db.collection("notifications").doc();
-    const currentUserDoc = await db.collection("users").doc(currentUser.uid).get();
-    const currentUserData = currentUserDoc.data();
+    // Check notification settings
+    const shouldNotify = await shouldSendNotificationCached(userId, "followers");
 
-    const notificationTitle = "New Follower";
-    const notificationBody = `${currentUserData?.displayName || "Someone"} started following you`;
+    if (shouldNotify) {
+      const notificationRef = db.collection("notifications").doc();
+      const currentUserDoc = await db.collection("users").doc(currentUser.uid).get();
+      const currentUserData = currentUserDoc.data();
 
-    await notificationRef.set({
-      id: notificationRef.id,
-      userId: userId,
-      type: "follow",
-      title: notificationTitle,
-      body: notificationBody,
-      isRead: false,
-      actionUserId: currentUser.uid,
-      actionUserDisplayName: currentUserData?.displayName || null,
-      actionUserPhotoURL: currentUserData?.photoURL || null,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+      const notificationTitle = "フォローされました";
+      const notificationBody = `${currentUserData?.displayName || "ユーザー"}さんがあなたをフォローしました`;
 
-    // Send push notification
-    await sendPushNotification({
-      userId: userId,
-      type: "follow",
-      title: notificationTitle,
-      body: notificationBody,
-      data: {
-        notificationId: notificationRef.id,
-        userId: currentUser.uid,
-      },
-    });
+      await notificationRef.set({
+        id: notificationRef.id,
+        userId: userId,
+        type: "follow",
+        title: notificationTitle,
+        body: notificationBody,
+        isRead: false,
+        actionUserId: currentUser.uid,
+        actionUserDisplayName: currentUserData?.displayName || null,
+        actionUserPhotoURL: currentUserData?.photoURL || null,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      // Send push notification
+      await sendPushNotification({
+        userId: userId,
+        type: "follow",
+        title: notificationTitle,
+        body: notificationBody,
+        data: {
+          notificationId: notificationRef.id,
+          userId: currentUser.uid,
+        },
+      });
+    } else {
+      console.log(`[followUser] Notification skipped: user ${userId} has follower notifications disabled`);
+    }
 
     res.status(201).json({
       success: true,

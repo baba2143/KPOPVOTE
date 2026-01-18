@@ -9,6 +9,7 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { sendPushNotification } from "../utils/fcmHelper";
+import { shouldSendNotificationCached } from "../utils/notificationHelper";
 
 const db = admin.firestore();
 
@@ -135,34 +136,44 @@ async function notifyVoteEnding(
       const alreadySent = await checkNotificationSent(sentKey);
 
       if (!alreadySent) {
-        // Create notification in Firestore
-        const notificationRef = db.collection("notifications").doc();
-        await notificationRef.set({
-          id: notificationRef.id,
-          userId,
-          type: "vote",
-          title,
-          body,
-          isRead: false,
-          relatedVoteId: voteId,
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
+        // Check notification settings
+        const shouldNotify = await shouldSendNotificationCached(userId, "voteReminders");
 
-        // Send push notification
-        await sendPushNotification({
-          userId,
-          type: "vote",
-          title,
-          body,
-          data: {
-            voteId,
-            notificationId: notificationRef.id,
-          },
-        });
+        if (shouldNotify) {
+          // Create notification in Firestore
+          const notificationRef = db.collection("notifications").doc();
+          await notificationRef.set({
+            id: notificationRef.id,
+            userId,
+            type: "vote",
+            title,
+            body,
+            isRead: false,
+            relatedVoteId: voteId,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
 
-        // Mark as sent
-        await markNotificationSent(sentKey);
-        notifiedCount++;
+          // Send push notification
+          await sendPushNotification({
+            userId,
+            type: "vote",
+            title,
+            body,
+            data: {
+              voteId,
+              notificationId: notificationRef.id,
+            },
+          });
+
+          // Mark as sent
+          await markNotificationSent(sentKey);
+          notifiedCount++;
+        } else {
+          console.log(
+            "[checkVoteDeadlines] Notification skipped: " +
+            `user ${userId} has vote reminder notifications disabled`
+          );
+        }
       }
     }
 

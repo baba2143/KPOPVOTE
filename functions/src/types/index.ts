@@ -561,3 +561,20 @@ export interface ConvertPointsResponse {
   conversionRate: number;
   message: string;
 }
+
+// Notification Settings related types
+export interface UserNotificationSettings {
+  userId: string;
+  pushEnabled: boolean; // Master switch
+  likes: boolean; // Like notifications
+  comments: boolean; // Comment notifications
+  mentions: boolean; // Mention notifications
+  followers: boolean; // Follow notifications
+  newPosts: boolean; // New post notifications
+  voteReminders: boolean; // Vote reminder notifications
+  calendarReminders: boolean; // Calendar reminder notifications
+  announcements: boolean; // System announcements
+  directMessages: boolean; // Direct message notifications
+  createdAt: Date;
+  updatedAt: Date;
+}

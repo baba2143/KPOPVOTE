@@ -7,6 +7,7 @@
 
 import Foundation
 import UIKit
+import FirebaseAuth
 
 /// Manages FCM token registration and unregistration with the server
 class PushNotificationManager {
@@ -38,12 +39,15 @@ class PushNotificationManager {
         currentToken = token
 
         // Only register if user is logged in
-        guard let authToken = UserDefaults.standard.string(forKey: Constants.UserDefaultsKeys.authToken) else {
+        guard let currentUser = Auth.auth().currentUser else {
             debugLog("📱 [PushNotificationManager] User not logged in, skipping token registration")
             return
         }
 
         do {
+            // Get fresh ID token from Firebase Auth
+            let authToken = try await currentUser.getIDToken()
+
             let url = URL(string: Constants.API.registerFcmToken)!
             var request = URLRequest(url: url)
             request.httpMethod = "POST"
@@ -78,12 +82,15 @@ class PushNotificationManager {
 
     /// Unregister FCM token from the server (call on logout)
     func unregisterToken() async {
-        guard let authToken = UserDefaults.standard.string(forKey: Constants.UserDefaultsKeys.authToken) else {
-            debugLog("📱 [PushNotificationManager] No auth token, skipping token unregistration")
+        guard let currentUser = Auth.auth().currentUser else {
+            debugLog("📱 [PushNotificationManager] No auth user, skipping token unregistration")
             return
         }
 
         do {
+            // Get fresh ID token from Firebase Auth
+            let authToken = try await currentUser.getIDToken()
+
             let url = URL(string: Constants.API.unregisterFcmToken)!
             var request = URLRequest(url: url)
             request.httpMethod = "POST"

@@ -8,6 +8,7 @@ import * as admin from "firebase-admin";
 import { ApiResponse } from "../types";
 import { verifyToken, AuthenticatedRequest } from "../middleware/auth";
 import { sendPushNotification } from "../utils/fcmHelper";
+import { shouldSendNotificationCached } from "../utils/notificationHelper";
 
 interface SendMessageRequest {
   recipientId: string;
@@ -188,37 +189,44 @@ export const sendDirectMessage = functions.https.onRequest(async (req, res) => {
     // メッセージを保存
     await messageRef.set(messageData);
 
-    // プッシュ通知を送信
-    const notificationTitle = senderData?.displayName || "新しいメッセージ";
-    const notificationBody = text || "画像を送信しました";
+    // Check notification settings
+    const shouldNotify = await shouldSendNotificationCached(recipientId, "directMessages");
 
-    await sendPushNotification({
-      userId: recipientId,
-      type: "dm",
-      title: notificationTitle,
-      body: notificationBody,
-      data: {
-        conversationId: conversationId,
-        messageId: messageRef.id,
-        senderId: currentUser.uid,
-      },
-    });
+    if (shouldNotify) {
+      // プッシュ通知を送信
+      const notificationTitle = senderData?.displayName || "新しいメッセージ";
+      const notificationBody = text || "画像を送信しました";
 
-    // 通知レコードを作成
-    const notificationRef = db.collection("notifications").doc();
-    await notificationRef.set({
-      id: notificationRef.id,
-      userId: recipientId,
-      type: "dm",
-      title: notificationTitle,
-      body: notificationBody,
-      isRead: false,
-      actionUserId: currentUser.uid,
-      actionUserDisplayName: senderData?.displayName || null,
-      actionUserPhotoURL: senderData?.photoURL || null,
-      conversationId: conversationId,
-      createdAt: now,
-    });
+      await sendPushNotification({
+        userId: recipientId,
+        type: "dm",
+        title: notificationTitle,
+        body: notificationBody,
+        data: {
+          conversationId: conversationId,
+          messageId: messageRef.id,
+          senderId: currentUser.uid,
+        },
+      });
+
+      // 通知レコードを作成
+      const notificationRef = db.collection("notifications").doc();
+      await notificationRef.set({
+        id: notificationRef.id,
+        userId: recipientId,
+        type: "dm",
+        title: notificationTitle,
+        body: notificationBody,
+        isRead: false,
+        actionUserId: currentUser.uid,
+        actionUserDisplayName: senderData?.displayName || null,
+        actionUserPhotoURL: senderData?.photoURL || null,
+        relatedConversationId: conversationId,
+        createdAt: now,
+      });
+    } else {
+      console.log(`[sendDirectMessage] Notification skipped: user ${recipientId} has DM notifications disabled`);
+    }
 
     res.status(201).json({
       success: true,

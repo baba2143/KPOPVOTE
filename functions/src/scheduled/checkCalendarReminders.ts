@@ -8,6 +8,7 @@ import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { sendPushNotification } from "../utils/fcmHelper";
 import { CalendarEventType, UserCalendarSettings } from "../types/calendar";
+import { shouldSendNotificationCached } from "../utils/notificationHelper";
 
 const db = admin.firestore();
 
@@ -167,33 +168,43 @@ async function notifyEventReminder(
       const alreadySent = await checkNotificationSent(sentKey);
 
       if (!alreadySent) {
-        // Create notification in Firestore
-        const notificationRef = db.collection("notifications").doc();
-        await notificationRef.set({
-          id: notificationRef.id,
-          userId,
-          type: "system",
-          title,
-          body,
-          isRead: false,
-          relatedCalendarEventId: eventId,
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
+        // Check master notification settings
+        const masterNotificationEnabled = await shouldSendNotificationCached(userId, "calendarReminders");
 
-        // Send push notification
-        await sendPushNotification({
-          userId,
-          type: "system",
-          title,
-          body,
-          data: {
-            notificationId: notificationRef.id,
-          },
-        });
+        if (masterNotificationEnabled) {
+          // Create notification in Firestore
+          const notificationRef = db.collection("notifications").doc();
+          await notificationRef.set({
+            id: notificationRef.id,
+            userId,
+            type: "system",
+            title,
+            body,
+            isRead: false,
+            relatedCalendarEventId: eventId,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
 
-        // Mark as sent
-        await markNotificationSent(sentKey);
-        notifiedCount++;
+          // Send push notification
+          await sendPushNotification({
+            userId,
+            type: "system",
+            title,
+            body,
+            data: {
+              notificationId: notificationRef.id,
+            },
+          });
+
+          // Mark as sent
+          await markNotificationSent(sentKey);
+          notifiedCount++;
+        } else {
+          console.log(
+            "[checkCalendarReminders] Notification skipped: " +
+            `user ${userId} has calendar reminder notifications disabled`
+          );
+        }
       }
     }
 

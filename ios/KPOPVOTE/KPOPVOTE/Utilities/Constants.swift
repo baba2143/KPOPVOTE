@@ -160,6 +160,10 @@ enum Constants {
         static let registerFcmToken = "\(apiBaseURL)/registerFcmToken"
         static let unregisterFcmToken = "\(apiBaseURL)/unregisterFcmToken"
 
+        // Notification Settings
+        static let getNotificationSettings = "\(apiBaseURL)/getNotificationSettings"
+        static let setNotificationSettings = "\(apiBaseURL)/setNotificationSettings"
+
         // Direct Message
         static let sendDirectMessage = "\(apiBaseURL)/sendDirectMessage"
         static let getConversations = "\(apiBaseURL)/getConversations"

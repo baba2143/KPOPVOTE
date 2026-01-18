@@ -203,6 +203,84 @@ class NotificationService {
 
         return (result.data.voteHistory, result.data.hasMore, result.data.summary)
     }
+
+    // MARK: - Notification Settings
+    /// Fetch notification settings
+    /// - Returns: User notification settings
+    func fetchNotificationSettings() async throws -> UserNotificationSettings {
+        guard let token = try await Auth.auth().currentUser?.getIDToken() else {
+            throw NotificationError.notAuthenticated
+        }
+
+        guard let url = URL(string: Constants.API.getNotificationSettings) else {
+            throw NotificationError.invalidResponse
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        debugLog("⚙️ [NotificationService] Fetching notification settings")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw NotificationError.invalidResponse
+        }
+
+        debugLog("📥 [NotificationService] HTTP Status: \(httpResponse.statusCode)")
+
+        guard httpResponse.statusCode == 200 else {
+            if let errorString = String(data: data, encoding: .utf8) {
+                debugLog("❌ [NotificationService] Error: \(errorString)")
+            }
+            throw NotificationError.fetchFailed
+        }
+
+        let decoder = JSONDecoder()
+        let result = try decoder.decode(NotificationSettingsResponse.self, from: data)
+        debugLog("✅ [NotificationService] Fetched notification settings")
+
+        return result.data
+    }
+
+    /// Update notification settings
+    /// - Parameter settings: Dictionary of settings to update
+    func updateNotificationSettings(settings: [String: Bool]) async throws {
+        guard let token = try await Auth.auth().currentUser?.getIDToken() else {
+            throw NotificationError.notAuthenticated
+        }
+
+        guard let url = URL(string: Constants.API.setNotificationSettings) else {
+            throw NotificationError.invalidResponse
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        request.httpBody = try JSONSerialization.data(withJSONObject: settings)
+
+        debugLog("⚙️ [NotificationService] Updating notification settings: \(settings)")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw NotificationError.invalidResponse
+        }
+
+        debugLog("📥 [NotificationService] HTTP Status: \(httpResponse.statusCode)")
+
+        guard httpResponse.statusCode == 200 else {
+            if let errorString = String(data: data, encoding: .utf8) {
+                debugLog("❌ [NotificationService] Error: \(errorString)")
+            }
+            throw NotificationError.updateFailed
+        }
+
+        debugLog("✅ [NotificationService] Notification settings updated")
+    }
 }
 
 // MARK: - Response Models
@@ -251,4 +329,35 @@ struct NotificationMyVotesData: Codable {
 struct NotificationVoteSummary: Codable {
     let totalVotes: Int
     let totalPointsUsed: Int
+}
+
+// MARK: - Notification Settings Models
+struct UserNotificationSettings: Codable {
+    let userId: String
+    let pushEnabled: Bool
+    let likes: Bool
+    let comments: Bool
+    let mentions: Bool
+    let followers: Bool
+    let newPosts: Bool
+    let voteReminders: Bool
+    let calendarReminders: Bool
+    let announcements: Bool
+    let directMessages: Bool
+    let createdAt: String?
+    let updatedAt: String?
+}
+
+struct NotificationSettingsResponse: Codable {
+    let success: Bool
+    let data: UserNotificationSettings
+}
+
+struct UpdateNotificationSettingsResponse: Codable {
+    let success: Bool
+    let data: UpdateNotificationSettingsData
+}
+
+struct UpdateNotificationSettingsData: Codable {
+    let updated: Bool
 }

@@ -185,36 +185,33 @@ export async function registerFCMToken(
   const db = admin.firestore();
 
   try {
-    // Check if this token already exists for any user (to avoid duplicate registrations)
-    const existingTokenQuery = await db
-      .collectionGroup("fcmTokens")
-      .where("token", "==", token)
-      .get();
-
-    // Delete existing token documents for this token (could be from a different user/device)
-    if (!existingTokenQuery.empty) {
-      const batch = db.batch();
-      existingTokenQuery.forEach((doc) => {
-        batch.delete(doc.ref);
-      });
-      await batch.commit();
-      console.log("🔄 [FCM] Removed existing token registration(s)");
-    }
-
     // Register token for the current user
+    // Note: Using set() with merge will create or update the token
     const tokenRef = db
       .collection("users")
       .doc(userId)
       .collection("fcmTokens")
       .doc(deviceId);
 
-    await tokenRef.set({
-      token,
-      deviceId,
-      platform,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+    const now = admin.firestore.FieldValue.serverTimestamp();
+
+    await tokenRef.set(
+      {
+        token,
+        deviceId,
+        platform,
+        updatedAt: now,
+      },
+      { merge: true }
+    );
+
+    // Set createdAt only if this is a new document
+    const doc = await tokenRef.get();
+    if (!doc.data()?.createdAt) {
+      await tokenRef.update({
+        createdAt: now,
+      });
+    }
 
     console.log(
       `✅ [FCM] Token registered for user: ${userId}, device: ${deviceId}, platform: ${platform}`

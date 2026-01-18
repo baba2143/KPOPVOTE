@@ -64,6 +64,7 @@ enum NotificationError: LocalizedError {
     case invalidResponse
     case fetchFailed
     case markAsReadFailed
+    case updateFailed
     case notificationNotFound
     case unauthorized
 
@@ -77,6 +78,8 @@ enum NotificationError: LocalizedError {
             return "通知の取得に失敗しました"
         case .markAsReadFailed:
             return "既読化に失敗しました"
+        case .updateFailed:
+            return "通知設定の更新に失敗しました"
         case .notificationNotFound:
             return "通知が見つかりません"
         case .unauthorized:

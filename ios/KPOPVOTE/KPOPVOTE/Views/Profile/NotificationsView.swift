@@ -120,11 +120,35 @@ struct NotificationsView: View {
                     .background(Constants.Colors.textGray.opacity(0.3))
 
                 NotificationToggleRow(
+                    icon: "at",
+                    title: "Mentions",
+                    subtitle: "When someone mentions you in a comment",
+                    color: .cyan,
+                    isOn: $viewModel.mentionsEnabled
+                )
+
+                Divider()
+                    .padding(.leading, 60)
+                    .background(Constants.Colors.textGray.opacity(0.3))
+
+                NotificationToggleRow(
                     icon: "person.fill.badge.plus",
                     title: "Followers",
                     subtitle: "When someone follows you",
                     color: .purple,
                     isOn: $viewModel.followersEnabled
+                )
+
+                Divider()
+                    .padding(.leading, 60)
+                    .background(Constants.Colors.textGray.opacity(0.3))
+
+                NotificationToggleRow(
+                    icon: "bell.badge.fill",
+                    title: "New Posts",
+                    subtitle: "When someone you follow posts",
+                    color: .indigo,
+                    isOn: $viewModel.newPostsEnabled
                 )
 
                 Divider()
@@ -161,6 +185,18 @@ struct NotificationsView: View {
                     subtitle: "Important app updates and news",
                     color: .green,
                     isOn: $viewModel.announcementsEnabled
+                )
+
+                Divider()
+                    .padding(.leading, 60)
+                    .background(Constants.Colors.textGray.opacity(0.3))
+
+                NotificationToggleRow(
+                    icon: "envelope.fill",
+                    title: "Direct Messages",
+                    subtitle: "When you receive a direct message",
+                    color: .pink,
+                    isOn: $viewModel.directMessagesEnabled
                 )
             }
             .background(Constants.Colors.cardDark)
@@ -242,45 +278,72 @@ struct NotificationToggleRow: View {
 // MARK: - Notifications ViewModel
 class NotificationsViewModel: ObservableObject {
     @Published var systemNotificationsEnabled = false
-    @Published var pushEnabled: Bool {
-        didSet { saveSettings() }
+    @Published var isLoading = false
+    @Published var pushEnabled = true {
+        didSet { if !isLoading { saveSettings(key: "pushEnabled", value: pushEnabled) } }
     }
-    @Published var likesEnabled: Bool {
-        didSet { saveSettings() }
+    @Published var likesEnabled = true {
+        didSet { if !isLoading { saveSettings(key: "likes", value: likesEnabled) } }
     }
-    @Published var commentsEnabled: Bool {
-        didSet { saveSettings() }
+    @Published var commentsEnabled = true {
+        didSet { if !isLoading { saveSettings(key: "comments", value: commentsEnabled) } }
     }
-    @Published var followersEnabled: Bool {
-        didSet { saveSettings() }
+    @Published var mentionsEnabled = true {
+        didSet { if !isLoading { saveSettings(key: "mentions", value: mentionsEnabled) } }
     }
-    @Published var voteRemindersEnabled: Bool {
-        didSet { saveSettings() }
+    @Published var followersEnabled = true {
+        didSet { if !isLoading { saveSettings(key: "followers", value: followersEnabled) } }
     }
-    @Published var calendarRemindersEnabled: Bool {
-        didSet { saveSettings() }
+    @Published var newPostsEnabled = true {
+        didSet { if !isLoading { saveSettings(key: "newPosts", value: newPostsEnabled) } }
     }
-    @Published var announcementsEnabled: Bool {
-        didSet { saveSettings() }
+    @Published var voteRemindersEnabled = true {
+        didSet { if !isLoading { saveSettings(key: "voteReminders", value: voteRemindersEnabled) } }
+    }
+    @Published var calendarRemindersEnabled = true {
+        didSet { if !isLoading { saveSettings(key: "calendarReminders", value: calendarRemindersEnabled) } }
+    }
+    @Published var announcementsEnabled = true {
+        didSet { if !isLoading { saveSettings(key: "announcements", value: announcementsEnabled) } }
+    }
+    @Published var directMessagesEnabled = true {
+        didSet { if !isLoading { saveSettings(key: "directMessages", value: directMessagesEnabled) } }
     }
 
-    private let defaults = UserDefaults.standard
+    private let notificationService = NotificationService.shared
 
-    init() {
-        // Load saved settings
-        pushEnabled = defaults.bool(forKey: "notifications_push_enabled")
-        likesEnabled = defaults.object(forKey: "notifications_likes") as? Bool ?? true
-        commentsEnabled = defaults.object(forKey: "notifications_comments") as? Bool ?? true
-        followersEnabled = defaults.object(forKey: "notifications_followers") as? Bool ?? true
-        voteRemindersEnabled = defaults.object(forKey: "notifications_vote_reminders") as? Bool ?? true
-        calendarRemindersEnabled = defaults.object(forKey: "notifications_calendar_reminders") as? Bool ?? true
-        announcementsEnabled = defaults.object(forKey: "notifications_announcements") as? Bool ?? true
+    @MainActor
+    func loadSettings() async {
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            let settings = try await notificationService.fetchNotificationSettings()
+            debugLog("✅ [NotificationsViewModel] Loaded settings from API")
+
+            // Update all settings without triggering didSet
+            pushEnabled = settings.pushEnabled
+            likesEnabled = settings.likes
+            commentsEnabled = settings.comments
+            mentionsEnabled = settings.mentions
+            followersEnabled = settings.followers
+            newPostsEnabled = settings.newPosts
+            voteRemindersEnabled = settings.voteReminders
+            calendarRemindersEnabled = settings.calendarReminders
+            announcementsEnabled = settings.announcements
+            directMessagesEnabled = settings.directMessages
+        } catch {
+            debugLog("❌ [NotificationsViewModel] Failed to load settings: \(error.localizedDescription)")
+        }
     }
 
     @MainActor
     func checkNotificationPermission() async {
         let settings = await UNUserNotificationCenter.current().notificationSettings()
         systemNotificationsEnabled = settings.authorizationStatus == .authorized
+
+        // Load settings from API on first load
+        await loadSettings()
     }
 
     func openSettings() {
@@ -289,14 +352,15 @@ class NotificationsViewModel: ObservableObject {
         }
     }
 
-    private func saveSettings() {
-        defaults.set(pushEnabled, forKey: "notifications_push_enabled")
-        defaults.set(likesEnabled, forKey: "notifications_likes")
-        defaults.set(commentsEnabled, forKey: "notifications_comments")
-        defaults.set(followersEnabled, forKey: "notifications_followers")
-        defaults.set(voteRemindersEnabled, forKey: "notifications_vote_reminders")
-        defaults.set(calendarRemindersEnabled, forKey: "notifications_calendar_reminders")
-        defaults.set(announcementsEnabled, forKey: "notifications_announcements")
+    private func saveSettings(key: String, value: Bool) {
+        Task {
+            do {
+                try await notificationService.updateNotificationSettings(settings: [key: value])
+                debugLog("✅ [NotificationsViewModel] Saved \(key) = \(value)")
+            } catch {
+                debugLog("❌ [NotificationsViewModel] Failed to save \(key): \(error.localizedDescription)")
+            }
+        }
     }
 }
 
