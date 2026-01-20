@@ -2,7 +2,7 @@
 //  TabCoordinator.swift
 //  OSHI Pick
 //
-//  OSHI Pick - Tab Navigation Coordinator (Phase 2 Week 4)
+//  OSHI Pick - Tab Navigation Coordinator (5 tabs)
 //
 
 import SwiftUI
@@ -17,11 +17,10 @@ class TabCoordinator: ObservableObject {
     /// Tab indices for easy reference
     enum Tab: Int {
         case home = 0      // TASKS tab (inside HomeView)
-        case votes = 1     // Collections/Votes
-        case center = 2    // Center button (not a real tab)
-        case store = 3     // Store
-        case community = 4 // Community
-        case profile = 5   // Profile
+        case ranking = 1   // Ranking
+        case votes = 2     // Collections/Votes
+        case community = 3 // Community
+        case profile = 4   // Profile
     }
 
     /// Navigate to specific tab
@@ -41,14 +40,14 @@ class TabCoordinator: ObservableObject {
         navigate(to: .home)
     }
 
+    /// Navigate to Ranking tab
+    func navigateToRanking() {
+        navigate(to: .ranking)
+    }
+
     /// Navigate to Votes/Collections tab
     func navigateToVotes() {
         navigate(to: .votes)
-    }
-
-    /// Navigate to Store tab
-    func navigateToStore() {
-        navigate(to: .store)
     }
 
     /// Navigate to Community tab

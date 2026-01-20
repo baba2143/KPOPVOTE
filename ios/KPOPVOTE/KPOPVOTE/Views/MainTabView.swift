@@ -10,10 +10,12 @@ import SwiftUI
 struct MainTabView: View {
     @EnvironmentObject var authService: AuthService
     @StateObject private var tabCoordinator = TabCoordinator()
+    @StateObject private var idolRankingViewModel = IdolRankingViewModel()
     @State private var showCreateMenu = false
     @State private var showingTaskSheet = false
     @State private var showCreateCollection = false
     @State private var showCreatePost = false
+    @State private var showIdolVote = false
 
     var body: some View {
         ZStack {
@@ -26,14 +28,14 @@ struct MainTabView: View {
                     .tag(0)
                     .toolbar(.hidden, for: .tabBar)
 
-                // Votes Tab (Phase 2 - Collections)
-                VotesTabView()
-                    .environmentObject(tabCoordinator)
+                // Ranking Tab
+                IdolRankingTabView()
                     .tag(1)
                     .toolbar(.hidden, for: .tabBar)
 
-                // Center Button Placeholder (Empty, handled by custom tab bar)
-                Color.clear
+                // Votes Tab (Phase 2 - Collections)
+                VotesTabView()
+                    .environmentObject(tabCoordinator)
                     .tag(2)
                     .toolbar(.hidden, for: .tabBar)
 
@@ -53,12 +55,36 @@ struct MainTabView: View {
             // Custom Tab Bar (Overlay)
             VStack {
                 Spacer()
-                CustomTabBar(selectedTab: $tabCoordinator.selectedTab) {
-                    showCreateMenu = true
-                }
-                .padding(.bottom, 0)
+                CustomTabBar(selectedTab: $tabCoordinator.selectedTab)
+                    .padding(.bottom, 0)
             }
             .edgesIgnoringSafeArea(.bottom)
+
+            // Floating + Button (右下)
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    Button(action: { showCreateMenu = true }) {
+                        ZStack {
+                            LinearGradient(
+                                colors: [Constants.Colors.accentPink, Constants.Colors.gradientPurple],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                            .frame(width: 60, height: 60)
+                            .cornerRadius(30)
+                            .shadow(color: Constants.Colors.accentPink.opacity(0.5), radius: 12, x: 0, y: 4)
+
+                            Image(systemName: "plus")
+                                .font(.system(size: 28, weight: .bold))
+                                .foregroundColor(.white)
+                        }
+                    }
+                    .padding(.trailing, 20)
+                    .padding(.bottom, 90) // タブバー(65) + safe area + margin
+                }
+            }
         }
         // MARK: - Rollback Point: Uncomment below to restore original confirmationDialog
         /*
@@ -86,6 +112,9 @@ struct MainTabView: View {
                 },
                 onPostCreate: {
                     showCreatePost = true
+                },
+                onIdolVote: {
+                    showIdolVote = true
                 }
             )
             .background(BackgroundClearView())
@@ -100,6 +129,9 @@ struct MainTabView: View {
             NavigationView {
                 CreatePostView()
             }
+        }
+        .fullScreenCover(isPresented: $showIdolVote) {
+            NewIdolVoteView(viewModel: idolRankingViewModel)
         }
     }
 }

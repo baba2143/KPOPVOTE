@@ -2,14 +2,13 @@
 //  CustomTabBar.swift
 //  OSHI Pick
 //
-//  OSHI Pick - Custom Tab Bar with Floating Center Button
+//  OSHI Pick - Custom Tab Bar (5 tabs)
 //
 
 import SwiftUI
 
 struct CustomTabBar: View {
     @Binding var selectedTab: Int
-    let onCenterTap: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
@@ -23,46 +22,22 @@ struct CustomTabBar: View {
                 selectedTab = 0
             }
 
-            // Votes Tab
+            // Ranking Tab
             TabBarItem(
-                iconName: selectedTab == 1 ? "chart.bar.fill" : "chart.bar",
-                title: "Votes",
+                iconName: selectedTab == 1 ? "crown.fill" : "crown",
+                title: "Ranking",
                 isSelected: selectedTab == 1
             ) {
                 selectedTab = 1
             }
 
-            // Center Button (Floating +)
-            ZStack {
-                // Spacer for tab bar
-                Color.clear
-                    .frame(width: 70, height: 65)
-
-                // Floating button
-                Button(action: onCenterTap) {
-                    ZStack {
-                        // Gradient background
-                        LinearGradient(
-                            colors: [Constants.Colors.accentPink, Constants.Colors.gradientPurple],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                        .frame(width: 60, height: 60)
-                        .cornerRadius(30)
-                        .shadow(
-                            color: Constants.Colors.accentPink.opacity(0.5),
-                            radius: 12,
-                            x: 0,
-                            y: 4
-                        )
-
-                        // Plus icon
-                        Image(systemName: "plus")
-                            .font(.system(size: 28, weight: .bold))
-                            .foregroundColor(.white)
-                    }
-                }
-                .offset(y: -20) // Float above tab bar
+            // Votes Tab
+            TabBarItem(
+                iconName: selectedTab == 2 ? "chart.bar.fill" : "chart.bar",
+                title: "Votes",
+                isSelected: selectedTab == 2
+            ) {
+                selectedTab = 2
             }
 
             // Community Tab
@@ -131,9 +106,7 @@ struct TabBarItem: View {
 #Preview {
     VStack {
         Spacer()
-        CustomTabBar(selectedTab: .constant(0)) {
-            print("Center button tapped")
-        }
+        CustomTabBar(selectedTab: .constant(0))
     }
     .background(Constants.Colors.backgroundDark)
 }
