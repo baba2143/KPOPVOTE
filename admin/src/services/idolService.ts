@@ -217,6 +217,26 @@ export const deleteIdol = async (idolId: string): Promise<void> => {
 };
 
 /**
+ * Delete all idols from Firestore
+ * @returns Number of deleted idols
+ */
+export const deleteAllIdols = async (): Promise<number> => {
+  const idols = await listIdols();
+
+  // バッチで削除（Firestoreの制限対応）
+  const BATCH_SIZE = 500;
+  let deletedCount = 0;
+
+  for (let i = 0; i < idols.length; i += BATCH_SIZE) {
+    const batch = idols.slice(i, i + BATCH_SIZE);
+    await Promise.all(batch.map(idol => deleteIdol(idol.idolId)));
+    deletedCount += batch.length;
+  }
+
+  return deletedCount;
+};
+
+/**
  * Export idols to CSV
  * Downloads CSV file with all idols
  */
@@ -419,6 +439,158 @@ export const importIdolsFromCSV = async (
     };
   } catch (error) {
     console.error('Error importing idols from CSV:', error);
+    throw error;
+  }
+};
+
+export interface ReplaceProgress extends ImportProgress {
+  phase: 'deleting' | 'importing';
+}
+
+export interface ReplaceResult extends ImportResult {
+  deleted: number;
+}
+
+/**
+ * Replace all idols with CSV data (delete all then import)
+ * @param file CSV file
+ * @param onProgress Optional progress callback
+ * @returns Replace result with deleted/created counts and errors
+ */
+export const replaceIdolsFromCSV = async (
+  file: File,
+  onProgress?: (progress: ReplaceProgress) => void
+): Promise<ReplaceResult> => {
+  try {
+    // Validate file type
+    if (!file.name.endsWith('.csv')) {
+      throw new Error('CSVファイルを選択してください');
+    }
+
+    // 1. 既存データ全削除
+    onProgress?.({ phase: 'deleting', current: 0, total: 0, created: 0, updated: 0 });
+    const deletedCount = await deleteAllIdols();
+
+    // 2. CSVパース
+    const parseResult = await parseCSV<IdolCreateRequest>(
+      file,
+      ['name', 'groupName', 'imageUrl'],
+      (row) => {
+        // Validate name
+        if (!row.name || row.name.trim().length === 0) {
+          return {
+            valid: false,
+            error: 'アイドル名は必須です',
+          };
+        }
+        if (row.name.length > 50) {
+          return {
+            valid: false,
+            error: 'アイドル名は50文字以内で入力してください',
+          };
+        }
+
+        // Validate groupName
+        if (!row.groupName || row.groupName.trim().length === 0) {
+          return {
+            valid: false,
+            error: 'グループ名は必須です',
+          };
+        }
+        if (row.groupName.length > 50) {
+          return {
+            valid: false,
+            error: 'グループ名は50文字以内で入力してください',
+          };
+        }
+
+        // imageUrl is optional
+        const imageUrl = row.imageUrl && row.imageUrl.trim().length > 0
+          ? row.imageUrl.trim()
+          : undefined;
+
+        return {
+          valid: true,
+          data: {
+            name: row.name.trim(),
+            groupName: row.groupName.trim(),
+            imageUrl,
+          },
+        };
+      }
+    );
+
+    // If there are errors, return immediately
+    if (parseResult.errors.length > 0) {
+      return {
+        success: false,
+        deleted: deletedCount,
+        created: 0,
+        updated: 0,
+        errors: parseResult.errors,
+      };
+    }
+
+    // 3. 新規インポート（全て新規作成）
+    let totalCreated = 0;
+    const allErrors: ParseError[] = [];
+
+    const BATCH_SIZE = 5;
+    const batches: IdolCreateRequest[][] = [];
+    for (let i = 0; i < parseResult.data.length; i += BATCH_SIZE) {
+      batches.push(parseResult.data.slice(i, i + BATCH_SIZE));
+    }
+
+    for (let i = 0; i < batches.length; i++) {
+      const batch = batches[i];
+      const results = await Promise.all(
+        batch.map(async (idolData, index) => {
+          try {
+            await createIdol(idolData);
+            return { type: 'created' as const };
+          } catch (error: any) {
+            return {
+              type: 'error' as const,
+              error: {
+                line: i * BATCH_SIZE + index + 2, // +2 for header and 1-based index
+                error: error.message || '不明なエラー',
+                data: {
+                  name: idolData.name,
+                  groupName: idolData.groupName,
+                  imageUrl: idolData.imageUrl || '',
+                },
+              },
+            };
+          }
+        })
+      );
+
+      results.forEach((result) => {
+        if (result.type === 'created') totalCreated++;
+        else if (result.type === 'error') allErrors.push(result.error);
+      });
+
+      // Report progress
+      if (onProgress) {
+        onProgress({
+          phase: 'importing',
+          current: Math.min((i + 1) * BATCH_SIZE, parseResult.data.length),
+          total: parseResult.data.length,
+          created: totalCreated,
+          updated: 0,
+        });
+      }
+    }
+
+    return {
+      success: allErrors.length === 0,
+      deleted: deletedCount,
+      created: totalCreated,
+      updated: 0,
+      errors: allErrors,
+    };
+  } catch (error) {
+    console.error('Error replacing idols from CSV:', error);
     throw error;
   }
 };
