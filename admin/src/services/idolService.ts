@@ -218,21 +218,49 @@ export const deleteIdol = async (idolId: string): Promise<void> => {
 
 /**
  * Delete all idols from Firestore
+ * @param onProgress Optional callback for deletion progress
  * @returns Number of deleted idols
  */
-export const deleteAllIdols = async (): Promise<number> => {
+export const deleteAllIdols = async (
+  onProgress?: (deleted: number, total: number) => void
+): Promise<number> => {
   const idols = await listIdols();
+  console.log(`[deleteAllIdols] 削除対象: ${idols.length}件`);
 
-  // バッチで削除（Firestoreの制限対応）
-  const BATCH_SIZE = 500;
+  if (idols.length === 0) {
+    console.warn('[deleteAllIdols] 削除対象のアイドルが0件です');
+    return 0;
+  }
+
+  // バッチで削除（503エラー対策: バッチサイズ縮小 + 遅延追加）
+  const BATCH_SIZE = 10;
   let deletedCount = 0;
 
   for (let i = 0; i < idols.length; i += BATCH_SIZE) {
     const batch = idols.slice(i, i + BATCH_SIZE);
-    await Promise.all(batch.map(idol => deleteIdol(idol.idolId)));
-    deletedCount += batch.length;
+
+    // Promise.allSettledで個別エラーを追跡
+    const results = await Promise.allSettled(
+      batch.map(idol => deleteIdol(idol.idolId))
+    );
+
+    const succeeded = results.filter(r => r.status === 'fulfilled').length;
+    const failed = results.filter(r => r.status === 'rejected');
+
+    if (failed.length > 0) {
+      console.warn(`[deleteAllIdols] バッチ内 ${failed.length}件の削除失敗`);
+    }
+
+    deletedCount += succeeded;
+    onProgress?.(deletedCount, idols.length);
+
+    // バッチ間に遅延を追加（Cloud Functions負荷軽減）
+    if (i + BATCH_SIZE < idols.length) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
   }
 
+  console.log(`[deleteAllIdols] 削除完了: ${deletedCount}件`);
   return deletedCount;
 };
 
@@ -469,7 +497,30 @@ export const replaceIdolsFromCSV = async (
 
     // 1. 既存データ全削除
     onProgress?.({ phase: 'deleting', current: 0, total: 0, created: 0, updated: 0 });
-    const deletedCount = await deleteAllIdols();
+    const deletedCount = await deleteAllIdols((deleted, total) => {
+      onProgress?.({ phase: 'deleting', current: deleted, total: total, created: 0, updated: 0 });
+    });
+
+    // Firestore整合性確保のため待機
+    console.log('[replaceIdolsFromCSV] Firestore整合性待機中...');
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    // 削除検証（リトライ付き）
+    let remainingIdols = await listIdols();
+    let retryCount = 0;
+    const MAX_RETRIES = 3;
+
+    while (remainingIdols.length > 0 && retryCount < MAX_RETRIES) {
+      console.warn(`[replaceIdolsFromCSV] 検証リトライ ${retryCount + 1}/${MAX_RETRIES}: ${remainingIdols.length}件残存`);
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      remainingIdols = await listIdols();
+      retryCount++;
+    }
+
+    if (remainingIdols.length > 0) {
+      throw new Error(`削除が完了しませんでした。${remainingIdols.length}件が残っています。再度お試しください。`);
+    }
+    console.log('[replaceIdolsFromCSV] 削除検証OK: 全アイドル削除完了');
 
     // 2. CSVパース
     const parseResult = await parseCSV<IdolCreateRequest>(
