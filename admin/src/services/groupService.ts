@@ -21,6 +21,20 @@ export interface ImportResult {
   errors: ParseError[];
 }
 
+export interface ReplaceProgress {
+  phase: 'deleting' | 'importing';
+  current: number;
+  total: number;
+  created: number;
+}
+
+export interface ReplaceResult {
+  success: boolean;
+  deleted: number;
+  created: number;
+  errors: ParseError[];
+}
+
 /**
  * Get auth token
  */
@@ -332,6 +346,203 @@ export const importGroupsFromCSV = async (file: File): Promise<ImportResult> => 
     };
   } catch (error) {
     console.error('Error importing groups from CSV:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete all groups from Firestore
+ * @param onProgress Optional callback for deletion progress
+ * @returns Number of deleted groups
+ */
+const deleteAllGroups = async (
+  onProgress?: (deleted: number, total: number) => void
+): Promise<number> => {
+  const groups = await listGroups();
+  console.log(`[deleteAllGroups] 削除対象: ${groups.length}件`);
+
+  if (groups.length === 0) {
+    console.warn('[deleteAllGroups] 削除対象のグループが0件です');
+    return 0;
+  }
+
+  // バッチで削除（503エラー対策: バッチサイズ縮小 + 遅延追加）
+  const BATCH_SIZE = 10;
+  let deletedCount = 0;
+
+  for (let i = 0; i < groups.length; i += BATCH_SIZE) {
+    const batch = groups.slice(i, i + BATCH_SIZE);
+
+    // Promise.allSettledで個別エラーを追跡
+    const results = await Promise.allSettled(
+      batch.map(group => deleteGroup(group.groupId))
+    );
+
+    const succeeded = results.filter(r => r.status === 'fulfilled').length;
+    const failed = results.filter(r => r.status === 'rejected');
+
+    if (failed.length > 0) {
+      console.warn(`[deleteAllGroups] バッチ内 ${failed.length}件の削除失敗`);
+    }
+
+    deletedCount += succeeded;
+    onProgress?.(deletedCount, groups.length);
+
+    // バッチ間に遅延を追加（Cloud Functions負荷軽減）
+    if (i + BATCH_SIZE < groups.length) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+  }
+
+  console.log(`[deleteAllGroups] 削除完了: ${deletedCount}件`);
+  return deletedCount;
+};
+
+/**
+ * Replace all groups with CSV data (delete all then import)
+ * @param file CSV file
+ * @param onProgress Optional progress callback
+ * @returns Replace result with deleted/created counts and errors
+ */
+export const replaceGroupsFromCSV = async (
+  file: File,
+  onProgress?: (progress: ReplaceProgress) => void
+): Promise<ReplaceResult> => {
+  try {
+    // Validate file type
+    if (!file.name.endsWith('.csv')) {
+      throw new Error('CSVファイルを選択してください');
+    }
+
+    // 1. 既存データ全削除
+    onProgress?.({ phase: 'deleting', current: 0, total: 0, created: 0 });
+    const deletedCount = await deleteAllGroups((deleted, total) => {
+      onProgress?.({ phase: 'deleting', current: deleted, total: total, created: 0 });
+    });
+
+    // Firestore整合性確保のため待機
+    console.log('[replaceGroupsFromCSV] Firestore整合性待機中...');
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    // 削除検証（リトライ付き）
+    let remainingGroups = await listGroups();
+    let retryCount = 0;
+    const MAX_RETRIES = 3;
+
+    while (remainingGroups.length > 0 && retryCount < MAX_RETRIES) {
+      console.warn(`[replaceGroupsFromCSV] 検証リトライ ${retryCount + 1}/${MAX_RETRIES}: ${remainingGroups.length}件残存`);
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      remainingGroups = await listGroups();
+      retryCount++;
+    }
+
+    if (remainingGroups.length > 0) {
+      throw new Error(`削除が完了しませんでした。${remainingGroups.length}件が残っています。再度お試しください。`);
+    }
+    console.log('[replaceGroupsFromCSV] 削除検証OK: 全グループ削除完了');
+
+    // 2. CSVパース
+    const parseResult = await parseCSV<GroupCreateRequest>(
+      file,
+      ['name'],
+      (row) => {
+        // Validate name
+        if (!row.name || row.name.trim().length === 0) {
+          return {
+            valid: false,
+            error: 'グループ名は必須です',
+          };
+        }
+        if (row.name.length > 100) {
+          return {
+            valid: false,
+            error: 'グループ名は100文字以内で入力してください',
+          };
+        }
+
+        // imageUrl is optional, validate if provided
+        const imageUrl = row.imageUrl?.trim();
+        if (imageUrl && imageUrl.length > 0) {
+          try {
+            new URL(imageUrl);
+          } catch {
+            return {
+              valid: false,
+              error: '有効なURL形式で入力してください（imageUrl）',
+            };
+          }
+        }
+
+        return {
+          valid: true,
+          data: {
+            name: row.name.trim(),
+            imageUrl: imageUrl && imageUrl.length > 0 ? imageUrl : undefined,
+          },
+        };
+      }
+    );
+
+    // If there are errors, return immediately
+    if (parseResult.errors.length > 0) {
+      return {
+        success: false,
+        deleted: deletedCount,
+        created: 0,
+        errors: parseResult.errors,
+      };
+    }
+
+    // 3. 新規インポート（全て新規作成）
+    let totalCreated = 0;
+    const allErrors: ParseError[] = [];
+
+    const BATCH_SIZE = 5;
+    for (let i = 0; i < parseResult.data.length; i += BATCH_SIZE) {
+      const batch = parseResult.data.slice(i, i + BATCH_SIZE);
+      const results = await Promise.all(
+        batch.map(async (groupData, index) => {
+          try {
+            await createGroup(groupData);
+            return { type: 'created' as const };
+          } catch (error: any) {
+            return {
+              type: 'error' as const,
+              error: {
+                line: i + index + 2, // +2 for header and 1-based index
+                error: error.message || '不明なエラー',
+                data: {
+                  name: groupData.name,
+                  imageUrl: groupData.imageUrl || '',
+                },
+              },
+            };
+          }
+        })
+      );
+
+      results.forEach((result) => {
+        if (result.type === 'created') totalCreated++;
+        else if (result.type === 'error') allErrors.push(result.error);
+      });
+
+      // Report progress
+      onProgress?.({
+        phase: 'importing',
+        current: Math.min(i + BATCH_SIZE, parseResult.data.length),
+        total: parseResult.data.length,
+        created: totalCreated,
+      });
+    }
+
+    return {
+      success: allErrors.length === 0,
+      deleted: deletedCount,
+      created: totalCreated,
+      errors: allErrors,
+    };
+  } catch (error) {
+    console.error('Error replacing groups from CSV:', error);
     throw error;
   }
 };
