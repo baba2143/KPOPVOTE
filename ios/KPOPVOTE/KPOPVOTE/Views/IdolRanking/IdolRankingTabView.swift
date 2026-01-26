@@ -20,6 +20,7 @@ struct IdolRankingTabView: View {
                 // Ranking list
                 IdolRankingListView(viewModel: viewModel)
             }
+            .background(Constants.Colors.backgroundDark)
             .navigationTitle("アイドルランキング")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -28,7 +29,7 @@ struct IdolRankingTabView: View {
                         showVoteSheet = true
                     }) {
                         Image(systemName: "plus.circle.fill")
-                            .foregroundColor(viewModel.canVote ? .blue : .gray)
+                            .foregroundColor(viewModel.canVote ? Constants.Colors.accentBlue : Constants.Colors.textGray)
                     }
                     .disabled(!viewModel.canVote)
                 }
@@ -53,6 +54,7 @@ struct IdolRankingTabView: View {
                 NewIdolVoteView(viewModel: viewModel)
             }
         }
+        .background(Constants.Colors.backgroundDark)
     }
 
     private var headerSection: some View {
@@ -89,7 +91,7 @@ struct IdolRankingTabView: View {
             .padding(.horizontal)
         }
         .padding(.vertical, 12)
-        .background(Color(.systemGroupedBackground))
+        .background(Constants.Colors.backgroundDark)
     }
 }
 

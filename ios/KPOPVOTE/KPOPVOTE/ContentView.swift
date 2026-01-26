@@ -267,10 +267,16 @@ struct HomeView: View {
                 }
             }
             .task {
-                await viewModel.loadActiveTasks()
-                await viewModel.loadFeaturedVotes()
-                await biasViewModel.loadIdols()
+                // 独立したAPI呼び出しを並列実行
+                async let tasks: () = viewModel.loadActiveTasks()
+                async let votes: () = viewModel.loadFeaturedVotes()
+                async let biasData: () = biasViewModel.loadIdols()
+
+                _ = await (tasks, votes, biasData)
+
+                // loadIdolsの後に依存するため、ここは直列
                 await biasViewModel.loadCurrentBias()
+
                 // Phase 1: ポイント機能無効化
                 if FeatureFlags.pointsEnabled {
                     await pointsViewModel.loadPoints()

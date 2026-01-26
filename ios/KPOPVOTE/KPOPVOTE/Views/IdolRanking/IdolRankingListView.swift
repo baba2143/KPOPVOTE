@@ -27,12 +27,15 @@ struct IdolRankingListView: View {
             Spacer()
             ProgressView()
                 .progressViewStyle(.circular)
+                .tint(Constants.Colors.textWhite)
             Text("読み込み中...")
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundColor(Constants.Colors.textGray)
                 .padding(.top, 8)
             Spacer()
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Constants.Colors.backgroundDark)
     }
 
     private var emptyView: some View {
@@ -40,17 +43,19 @@ struct IdolRankingListView: View {
             Spacer()
             Image(systemName: "chart.bar.xaxis")
                 .font(.system(size: 60))
-                .foregroundColor(.secondary)
+                .foregroundColor(Constants.Colors.textGray)
             Text("ランキングデータがありません")
                 .font(.headline)
-                .foregroundColor(.secondary)
+                .foregroundColor(Constants.Colors.textGray)
             Text("最初の投票をしてランキングを開始しましょう！")
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundColor(Constants.Colors.textGray)
                 .multilineTextAlignment(.center)
             Spacer()
         }
         .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Constants.Colors.backgroundDark)
     }
 
     private var rankingList: some View {
@@ -66,6 +71,7 @@ struct IdolRankingListView: View {
                     }
                 }
                 .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                .listRowBackground(Constants.Colors.backgroundDark)
             }
 
             // Load more indicator
@@ -79,6 +85,7 @@ struct IdolRankingListView: View {
                     Spacer()
                 }
                 .listRowSeparator(.hidden)
+                .listRowBackground(Constants.Colors.backgroundDark)
                 .onAppear {
                     Task {
                         await viewModel.loadMoreRankings()
@@ -87,6 +94,8 @@ struct IdolRankingListView: View {
             }
         }
         .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .background(Constants.Colors.backgroundDark)
     }
 }
 
