@@ -66,9 +66,25 @@ export const executeVote = functions.https.onRequest(async (req, res) => {
 
     const voteData = voteDoc.data()!;
 
+    // 動的にステータスを計算
+    const now = new Date();
+    const startDate = voteData.startDate.toDate();
+    const endDate = voteData.endDate.toDate();
+
+    let calculatedStatus: "upcoming" | "active" | "ended" = "upcoming";
+    if (now >= startDate) {
+      calculatedStatus = "active";
+    }
+    if (now >= endDate) {
+      calculatedStatus = "ended";
+    }
+
     // 投票がアクティブかチェック
-    if (voteData.status !== "active") {
-      res.status(400).json({ success: false, error: "Vote is not active" } as ApiResponse<null>);
+    if (calculatedStatus !== "active") {
+      const errorMsg = calculatedStatus === "upcoming" ?
+        "投票はまだ開始されていません" :
+        "投票は終了しました";
+      res.status(400).json({ success: false, error: errorMsg } as ApiResponse<null>);
       return;
     }
 
@@ -174,8 +190,14 @@ export const executeVote = functions.https.onRequest(async (req, res) => {
       }, { merge: true });
     });
 
+    // Calculate remaining votes after this vote
+    const newDailyVoteCount = currentDailyVoteCount + voteCount;
+    const userDailyRemaining = restrictions.dailyVoteLimitPerUser
+      ? Math.max(0, restrictions.dailyVoteLimitPerUser - newDailyVoteCount)
+      : null;
+
     console.log(
-      `✅ [executeVote] Vote completed: user=${uid}, vote=${voteId}, count=${voteCount}`,
+      `✅ [executeVote] Vote completed: user=${uid}, vote=${voteId}, count=${voteCount}, remaining=${userDailyRemaining}`,
     );
 
     res.status(200).json({
@@ -187,6 +209,9 @@ export const executeVote = functions.https.onRequest(async (req, res) => {
         totalPointsDeducted: 0,
         premiumPointsDeducted: 0,
         regularPointsDeducted: 0,
+        // User's daily vote info after this vote
+        userDailyVotes: newDailyVoteCount,
+        userDailyRemaining,
       },
     } as ApiResponse<unknown>);
   } catch (error: unknown) {

@@ -19,6 +19,7 @@ class VoteDetailViewModel: ObservableObject {
     @Published var hasVoted = false
     @Published var errorMessage: String?
     @Published var successMessage: String?
+    @Published var showVoteSuccess = false
 
     // Multiple vote support
     @Published var voteCount: Int = 1
@@ -35,6 +36,7 @@ class VoteDetailViewModel: ObservableObject {
 
     // MARK: - Properties
     let voteId: String
+    let lookupService = IdolGroupLookupService.shared
 
     // MARK: - Initializer
     init(voteId: String) {
@@ -43,8 +45,28 @@ class VoteDetailViewModel: ObservableObject {
     }
 
     // MARK: - Computed Properties
+
+    /// 残り投票数（日次上限がある場合のみ）
+    var remainingVotes: Int? {
+        vote?.userDailyRemaining
+    }
+
+    /// 日次投票上限があるか
+    var hasDailyLimit: Bool {
+        vote?.restrictions?.dailyVoteLimitPerUser != nil
+    }
+
+    /// 日次投票上限
+    var dailyVoteLimit: Int? {
+        vote?.restrictions?.dailyVoteLimitPerUser
+    }
+
     var canVote: Bool {
         guard let vote = vote else { return false }
+        // 日次上限がある場合、残り投票数が0なら投票不可
+        if let remaining = vote.userDailyRemaining, remaining <= 0 {
+            return false
+        }
         return vote.isActive && !hasVoted && selectedChoiceId != nil && minVoteCountError == nil
     }
 
@@ -73,12 +95,17 @@ class VoteDetailViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
 
+        // Lookupサービスを並列ロード
+        async let lookupLoad: () = lookupService.loadIfNeeded()
+
         do {
             debugLog("📱 [VoteDetailViewModel] Loading vote detail: \(voteId)")
 
             // Load vote detail
             vote = try await VoteService.shared.fetchVoteDetail(voteId: voteId)
             debugLog("✅ [VoteDetailViewModel] Loaded vote detail")
+
+            await lookupLoad  // 完了を待つ
 
             // Load ranking
             await loadRanking()
@@ -156,8 +183,10 @@ class VoteDetailViewModel: ObservableObject {
 
             debugLog("✅ [VoteDetailViewModel] Vote executed successfully")
 
-            // Reload ranking to show updated results
-            await loadRanking()
+            // ローカル更新（即座にUI反映）- IdolRankingViewModelと同様のパターン
+            updateLocalVoteCount(choiceId: choiceId, addedVotes: result.voteCount, result: result)
+
+            showVoteSuccess = true
 
         } catch let error as VoteError {
             debugLog("❌ [VoteDetailViewModel] Vote execution failed: \(error)")
@@ -178,6 +207,49 @@ class VoteDetailViewModel: ObservableObject {
     /// Clear success message
     func clearSuccess() {
         successMessage = nil
+    }
+
+    /// 投票成功後にローカルの票数を即座に更新（IdolRankingViewModelと同様のパターン）
+    private func updateLocalVoteCount(choiceId: String, addedVotes: Int, result: VoteExecuteResult) {
+        guard let currentVote = vote else { return }
+
+        // choicesを更新
+        let updatedChoices = currentVote.choices.map { choice -> VoteChoice in
+            if choice.id == choiceId {
+                return VoteChoice(
+                    id: choice.id,
+                    label: choice.label,
+                    voteCount: choice.voteCount + addedVotes,
+                    idolId: choice.idolId,
+                    imageUrl: choice.imageUrl,
+                    groupName: choice.groupName,
+                    groupId: choice.groupId
+                )
+            }
+            return choice
+        }
+
+        // voteを更新（totalVotes、userDailyVotes、userDailyRemainingも更新）
+        vote = InAppVote(
+            id: currentVote.id,
+            title: currentVote.title,
+            description: currentVote.description,
+            choices: updatedChoices,
+            startDate: currentVote.startDate,
+            endDate: currentVote.endDate,
+            requiredPoints: currentVote.requiredPoints,
+            status: currentVote.status,
+            totalVotes: currentVote.totalVotes + addedVotes,
+            coverImageUrl: currentVote.coverImageUrl,
+            isFeatured: currentVote.isFeatured,
+            restrictions: currentVote.restrictions,
+            createdAt: currentVote.createdAt,
+            updatedAt: currentVote.updatedAt,
+            userDailyVotes: result.userDailyVotes ?? currentVote.userDailyVotes,
+            userDailyRemaining: result.userDailyRemaining ?? currentVote.userDailyRemaining
+        )
+
+        debugLog("📊 [VoteDetailViewModel] Local vote count updated: choice \(choiceId) +\(addedVotes), remaining=\(result.userDailyRemaining ?? -1)")
     }
 
     /// Refresh all data

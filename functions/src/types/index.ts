@@ -175,6 +175,18 @@ export interface InAppVoteChoice {
   choiceId: string;
   label: string;
   voteCount: number;
+  idolId?: string;
+  imageUrl?: string;
+  groupName?: string;
+  groupId?: string;
+}
+
+export interface VoteChoiceInput {
+  label: string;
+  idolId?: string;
+  imageUrl?: string;
+  groupName?: string;
+  groupId?: string;
 }
 
 export interface VoteRestrictions {
@@ -188,7 +200,7 @@ export interface VoteRestrictions {
 export interface InAppVoteCreateRequest {
   title: string;
   description: string;
-  choices: string[]; // Array of choice labels
+  choices: (string | VoteChoiceInput)[]; // Array of choice labels or choice objects (backward compatible)
   startDate: string; // ISO 8601
   endDate: string; // ISO 8601
   requiredPoints: number;

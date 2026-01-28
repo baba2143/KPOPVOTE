@@ -8,6 +8,7 @@ import {
   InAppVoteCreateRequest,
   ApiResponse,
   InAppVoteChoice,
+  VoteChoiceInput,
 } from "../types";
 import { verifyToken, verifyAdmin, AuthenticatedRequest } from "../middleware/auth";
 
@@ -82,6 +83,14 @@ export const createInAppVote = functions.https.onRequest(async (req, res) => {
       return;
     }
 
+    if (description.length > 200) {
+      res.status(400).json({
+        success: false,
+        error: "説明文は200文字以内で入力してください",
+      } as ApiResponse<null>);
+      return;
+    }
+
     if (!Array.isArray(choices) || choices.length < 2) {
       res.status(400).json({
         success: false,
@@ -110,10 +119,17 @@ export const createInAppVote = functions.https.onRequest(async (req, res) => {
     }
 
     // Validate dates
+    // タイムゾーン情報がない場合はJSTとして解釈
+    const parseAsJST = (dateStr: string) => {
+      if (!dateStr.includes("+") && !dateStr.includes("Z")) {
+        return new Date(dateStr + "+09:00");
+      }
+      return new Date(dateStr);
+    };
     const startTimestamp = admin.firestore.Timestamp.fromDate(
-      new Date(startDate)
+      parseAsJST(startDate)
     );
-    const endTimestamp = admin.firestore.Timestamp.fromDate(new Date(endDate));
+    const endTimestamp = admin.firestore.Timestamp.fromDate(parseAsJST(endDate));
 
     if (endTimestamp.toMillis() <= startTimestamp.toMillis()) {
       res.status(400).json({
@@ -123,12 +139,20 @@ export const createInAppVote = functions.https.onRequest(async (req, res) => {
       return;
     }
 
-    // Create vote choices
-    const voteChoices: InAppVoteChoice[] = choices.map((choice, index) => ({
-      choiceId: `choice_${index + 1}`,
-      label: choice,
-      voteCount: 0,
-    }));
+    // Create vote choices (support both string and VoteChoiceInput)
+    const voteChoices: InAppVoteChoice[] = choices.map((choice, index) => {
+      const isString = typeof choice === "string";
+      const choiceInput = choice as VoteChoiceInput;
+      return {
+        choiceId: `choice_${index + 1}`,
+        label: isString ? (choice as string) : choiceInput.label,
+        voteCount: 0,
+        ...(!isString && choiceInput.idolId && { idolId: choiceInput.idolId }),
+        ...(!isString && choiceInput.imageUrl && { imageUrl: choiceInput.imageUrl }),
+        ...(!isString && choiceInput.groupName && { groupName: choiceInput.groupName }),
+        ...(!isString && choiceInput.groupId && { groupId: choiceInput.groupId }),
+      };
+    });
 
     // Determine vote status
     const now = admin.firestore.Timestamp.now();

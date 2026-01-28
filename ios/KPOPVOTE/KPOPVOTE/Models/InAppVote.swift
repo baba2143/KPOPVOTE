@@ -31,6 +31,9 @@ struct InAppVote: Codable, Identifiable {
     let restrictions: VoteRestrictions?
     let createdAt: Date?
     let updatedAt: Date?
+    // User-specific daily vote info
+    let userDailyVotes: Int?
+    let userDailyRemaining: Int?
 
     enum CodingKeys: String, CodingKey {
         case id = "voteId"
@@ -47,6 +50,8 @@ struct InAppVote: Codable, Identifiable {
         case restrictions
         case createdAt
         case updatedAt
+        case userDailyVotes
+        case userDailyRemaining
     }
 
     // Custom decoding for ISO8601 dates
@@ -63,8 +68,9 @@ struct InAppVote: Codable, Identifiable {
         isFeatured = try container.decodeIfPresent(Bool.self, forKey: .isFeatured)
         restrictions = try container.decodeIfPresent(VoteRestrictions.self, forKey: .restrictions)
 
-        // Parse ISO8601 dates
+        // Parse ISO8601 dates (with fractional seconds support for milliseconds like .000Z)
         let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
 
         if let startDateString = try container.decodeIfPresent(String.self, forKey: .startDate) {
             startDate = formatter.date(from: startDateString) ?? Date()
@@ -89,6 +95,10 @@ struct InAppVote: Codable, Identifiable {
         } else {
             updatedAt = nil
         }
+
+        // User-specific daily vote info
+        userDailyVotes = try container.decodeIfPresent(Int.self, forKey: .userDailyVotes)
+        userDailyRemaining = try container.decodeIfPresent(Int.self, forKey: .userDailyRemaining)
     }
 
     // Manual initializer for testing
@@ -106,7 +116,9 @@ struct InAppVote: Codable, Identifiable {
         isFeatured: Bool? = nil,
         restrictions: VoteRestrictions? = nil,
         createdAt: Date? = nil,
-        updatedAt: Date? = nil
+        updatedAt: Date? = nil,
+        userDailyVotes: Int? = nil,
+        userDailyRemaining: Int? = nil
     ) {
         self.id = id
         self.title = title
@@ -122,6 +134,8 @@ struct InAppVote: Codable, Identifiable {
         self.restrictions = restrictions
         self.createdAt = createdAt
         self.updatedAt = updatedAt
+        self.userDailyVotes = userDailyVotes
+        self.userDailyRemaining = userDailyRemaining
     }
 }
 
@@ -167,17 +181,29 @@ struct VoteChoice: Codable, Identifiable, Hashable {
     let id: String
     let label: String
     let voteCount: Int
+    let idolId: String?
+    let imageUrl: String?
+    let groupName: String?
+    let groupId: String?
 
     enum CodingKeys: String, CodingKey {
         case id = "choiceId"
         case label
         case voteCount
+        case idolId
+        case imageUrl
+        case groupName
+        case groupId
     }
 
-    init(id: String, label: String, voteCount: Int) {
+    init(id: String, label: String, voteCount: Int, idolId: String? = nil, imageUrl: String? = nil, groupName: String? = nil, groupId: String? = nil) {
         self.id = id
         self.label = label
         self.voteCount = voteCount
+        self.idolId = idolId
+        self.imageUrl = imageUrl
+        self.groupName = groupName
+        self.groupId = groupId
     }
 }
 
@@ -235,5 +261,24 @@ extension RankingItem {
     var rank: Int {
         // This will be set by the view model
         0
+    }
+}
+
+// MARK: - VoteChoice Extension for Resolved Data
+extension VoteChoice {
+    @MainActor
+    func resolvedImageUrl(using lookupService: IdolGroupLookupService) -> String? {
+        if let imageUrl = self.imageUrl, !imageUrl.isEmpty { return imageUrl }
+        return lookupService.getImageUrl(forLabel: label)
+    }
+
+    @MainActor
+    func resolvedGroupName(using lookupService: IdolGroupLookupService) -> String? {
+        if let groupName = self.groupName, !groupName.isEmpty { return groupName }
+        return lookupService.getGroupName(forLabel: label)
+    }
+
+    var isGroupChoice: Bool {
+        return groupId != nil && idolId == nil
     }
 }

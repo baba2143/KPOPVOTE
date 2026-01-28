@@ -49,119 +49,13 @@ struct VoteDetailView: View {
                         // Vote Header
                         VoteHeaderView(vote: vote)
 
-                        // Choices Section
-                        if !viewModel.hasVoted && vote.isActive {
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text("投票先を選択")
-                                    .font(.system(size: 18, weight: .bold))
-                                    .foregroundColor(Constants.Colors.textWhite)
-
-                                VStack(spacing: 12) {
-                                    ForEach(vote.choices) { choice in
-                                        ChoiceButton(
-                                            choice: choice,
-                                            isSelected: viewModel.selectedChoiceId == choice.id,
-                                            onTap: {
-                                                viewModel.selectChoice(choice.id)
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                            .padding()
-                            .background(Constants.Colors.cardDark)
-                            .cornerRadius(12)
-                        }
-
-                        // Ranking Section
-                        if let ranking = viewModel.ranking {
-                            RankingView(ranking: ranking)
-                        }
-
-                        // Vote Button
-                        if !viewModel.hasVoted && vote.isActive {
-                            VStack(spacing: Constants.Spacing.small) {
-                                // Premium Multiplier Badge (Phase 1: 非表示)
-                                if FeatureFlags.pointsEnabled && pointsViewModel.isPremium {
-                                    PremiumMultiplierBadge(multiplier: 2, style: .medium)
-                                        .frame(maxWidth: .infinity, alignment: .center)
-                                }
-
-                                // Multiple vote support
-                                if let restrictions = vote.restrictions {
-                                    MultipleVoteSection(
-                                        voteCount: $viewModel.voteCount,
-                                        selectedPointMode: $viewModel.selectedPointMode,
-                                        maxVoteCount: viewModel.maxVoteCount,
-                                        pointsToBeUsed: viewModel.pointsToBeUsed,
-                                        premiumPointsToBeUsed: viewModel.premiumPointsToBeUsed,
-                                        regularPointsToBeUsed: viewModel.regularPointsToBeUsed,
-                                        premiumPoints: viewModel.premiumPoints,
-                                        regularPoints: viewModel.regularPoints,
-                                        pointSelectionError: viewModel.pointSelectionError,
-                                        minVoteCount: restrictions.minVoteCount ?? 1,
-                                        canVote: viewModel.canVote,
-                                        isExecuting: viewModel.isExecuting,
-                                        isPremium: pointsViewModel.isPremium,
-                                        minVoteCountError: viewModel.minVoteCountError,  // 🆕 追加
-                                        onVoteCountChange: { newCount in
-                                            viewModel.updateVoteCount(newCount)
-                                        },
-                                        onPointModeChange: { mode in
-                                            viewModel.updatePointMode(mode)
-                                        },
-                                        onVoteAll: {
-                                            viewModel.voteAll()
-                                        },
-                                        onVote: {
-                                            if authService.isGuest {
-                                                showLoginPrompt = true
-                                            } else {
-                                                Task {
-                                                    await viewModel.executeVote()
-                                                }
-                                            }
-                                        }
-                                    )
-                                } else {
-                                    VoteButton(
-                                        canVote: viewModel.canVote,
-                                        isExecuting: viewModel.isExecuting,
-                                        requiredPoints: vote.requiredPoints,
-                                        isPremium: pointsViewModel.isPremium,
-                                        onVote: {
-                                            // Check if user is guest
-                                            if authService.isGuest {
-                                                showLoginPrompt = true
-                                            } else {
-                                                Task {
-                                                    await viewModel.executeVote()
-                                                }
-                                            }
-                                        }
-                                    )
-                                }
-                            }
-                        }
-
-                        // Success Message (投票成功時に表示)
-                        if viewModel.successMessage != nil {
-                            VStack(spacing: 12) {
-                                HStack {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .font(.system(size: 24))
-                                        .foregroundColor(.green)
-
-                                    Text(viewModel.successMessage ?? "投票完了")
-                                        .font(.system(size: 16, weight: .semibold))
-                                        .foregroundColor(Constants.Colors.textWhite)
-                                }
-                                .padding()
-                                .frame(maxWidth: .infinity)
-                                .background(Color.green.opacity(0.2))
-                                .cornerRadius(12)
-                            }
-                        }
+                        // Unified Ranking List - アイドルランキングと同じスタイル
+                        VoteRankingListView(
+                            vote: vote,
+                            viewModel: viewModel,
+                            authService: authService,
+                            showLoginPrompt: $showLoginPrompt
+                        )
                     }
                     .padding()
                 }
@@ -181,6 +75,9 @@ struct VoteDetailView: View {
         }
         .navigationTitle("投票詳細")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(Constants.Colors.backgroundDark, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarColorScheme(.dark, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button("キャンセル") {
@@ -198,6 +95,11 @@ struct VoteDetailView: View {
             if let errorMessage = viewModel.errorMessage {
                 Text(errorMessage)
             }
+        }
+        .alert("投票完了", isPresented: $viewModel.showVoteSuccess) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("投票しました!")
         }
         .task {
             print("🚀 [VoteDetailView] Task started - loading detail for voteId: \(voteId)")
@@ -362,48 +264,223 @@ struct InfoItem: View {
     }
 }
 
-// MARK: - Choice Button
-struct ChoiceButton: View {
-    let choice: VoteChoice
-    let isSelected: Bool
-    let onTap: () -> Void
+// MARK: - Vote Ranking List View (Unified Ranking + Voting)
+struct VoteRankingListView: View {
+    let vote: InAppVote
+    @ObservedObject var viewModel: VoteDetailViewModel
+    @ObservedObject var authService: AuthService
+    @Binding var showLoginPrompt: Bool
+
+    // 投票数順にソート
+    private var sortedChoices: [VoteChoice] {
+        vote.choices.sorted { $0.voteCount > $1.voteCount }
+    }
+
+    // ワンタップ投票可能かどうか
+    private var canVoteNow: Bool {
+        // 日次上限がある場合、残り投票数が0なら投票不可
+        if let remaining = viewModel.remainingVotes, remaining <= 0 {
+            return false
+        }
+        return !viewModel.hasVoted && vote.isActive
+    }
 
     var body: some View {
-        Button(action: onTap) {
+        VStack(alignment: .leading, spacing: 0) {
+            // Daily Limit Badge (if dailyVoteLimitPerUser is set)
+            if viewModel.hasDailyLimit, let limit = viewModel.dailyVoteLimit {
+                let used = (viewModel.vote?.userDailyVotes ?? 0)
+                DailyLimitBadgeView(votesUsed: used, maxVotes: limit)
+                    .padding(.horizontal)
+                    .padding(.top)
+            }
+
+            // Header with total votes
             HStack {
-                // Radio button
-                ZStack {
-                    Circle()
-                        .stroke(isSelected ? Constants.Colors.accentPink : Constants.Colors.textGray, lineWidth: 2)
-                        .frame(width: 24, height: 24)
-
-                    if isSelected {
-                        Circle()
-                            .fill(Constants.Colors.accentPink)
-                            .frame(width: 12, height: 12)
-                    }
-                }
-
-                Text(choice.label)
-                    .font(.system(size: 16, weight: isSelected ? .semibold : .regular))
+                Text("ランキング")
+                    .font(.system(size: 18, weight: .bold))
                     .foregroundColor(Constants.Colors.textWhite)
 
                 Spacer()
 
-                Text("\(choice.voteCount)票")
+                Text("総投票数: \(vote.totalVotes)")
                     .font(.system(size: 14))
                     .foregroundColor(Constants.Colors.textGray)
             }
             .padding()
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(isSelected ? Constants.Colors.accentPink.opacity(0.2) : Color.white.opacity(0.05))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(isSelected ? Constants.Colors.accentPink : Color.clear, lineWidth: 2)
-            )
+
+            // Ranking rows
+            ForEach(Array(sortedChoices.enumerated()), id: \.element.id) { index, choice in
+                VoteRankingRowView(
+                    rank: index + 1,
+                    choice: choice,
+                    resolvedImageUrl: choice.resolvedImageUrl(using: viewModel.lookupService),
+                    resolvedGroupName: choice.resolvedGroupName(using: viewModel.lookupService),
+                    canVote: canVoteNow,
+                    isVoting: viewModel.isExecuting && viewModel.selectedChoiceId == choice.id,
+                    onVote: {
+                        if authService.isGuest {
+                            showLoginPrompt = true
+                        } else {
+                            viewModel.selectChoice(choice.id)
+                            Task {
+                                await viewModel.executeVote()
+                            }
+                        }
+                    }
+                )
+                if index < sortedChoices.count - 1 {
+                    Divider()
+                        .background(Constants.Colors.backgroundDark)
+                }
+            }
         }
+        .background(Constants.Colors.cardDark)
+        .cornerRadius(12)
+    }
+}
+
+// MARK: - Vote Ranking Row View (IdolRanking Style with Rank Number)
+struct VoteRankingRowView: View {
+    let rank: Int
+    let choice: VoteChoice
+    let resolvedImageUrl: String?
+    let resolvedGroupName: String?
+    let canVote: Bool
+    let isVoting: Bool
+    let onVote: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            // Rank
+            rankView
+
+            // Profile Image (50x50)
+            profileImage
+
+            // Name & Group
+            VStack(alignment: .leading, spacing: 2) {
+                Text(choice.label)
+                    .font(.headline)
+                    .foregroundColor(Constants.Colors.textWhite)
+                    .lineLimit(1)
+
+                if let groupName = choice.groupName, !groupName.isEmpty {
+                    Text(groupName)
+                        .font(.caption)
+                        .foregroundColor(Constants.Colors.textGray)
+                        .lineLimit(1)
+                } else if let groupName = resolvedGroupName, !groupName.isEmpty {
+                    Text(groupName)
+                        .font(.caption)
+                        .foregroundColor(Constants.Colors.textGray)
+                        .lineLimit(1)
+                }
+            }
+
+            Spacer()
+
+            // Vote Count
+            VStack(alignment: .trailing, spacing: 2) {
+                Text("\(choice.voteCount.formatted())")
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .foregroundColor(Constants.Colors.textWhite)
+                Text("票")
+                    .font(.caption2)
+                    .foregroundColor(Constants.Colors.textGray)
+            }
+
+            // Vote Button (Heart)
+            voteButton
+        }
+        .padding(.vertical, 8)
+        .padding(.horizontal, 12)
+    }
+
+    // Rank medal view (like IdolRankingEntryView)
+    private var rankView: some View {
+        Group {
+            if rank <= 3 {
+                Text(rankMedal)
+                    .font(.title2)
+                    .frame(width: 32)
+            } else {
+                Text("\(rank)")
+                    .font(.headline)
+                    .foregroundColor(Constants.Colors.textGray)
+                    .frame(width: 32)
+            }
+        }
+    }
+
+    private var rankMedal: String {
+        switch rank {
+        case 1: return "🥇"
+        case 2: return "🥈"
+        case 3: return "🥉"
+        default: return "\(rank)"
+        }
+    }
+
+    private var effectiveImageUrl: String? {
+        if let imageUrl = choice.imageUrl, !imageUrl.isEmpty {
+            return imageUrl
+        }
+        return resolvedImageUrl
+    }
+
+    private var profileImage: some View {
+        Group {
+            if let imageUrl = effectiveImageUrl,
+               let url = URL(string: imageUrl) {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .empty:
+                        ProgressView()
+                            .frame(width: 50, height: 50)
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 50, height: 50)
+                            .clipShape(Circle())
+                    case .failure:
+                        placeholderImage
+                    @unknown default:
+                        placeholderImage
+                    }
+                }
+            } else {
+                placeholderImage
+            }
+        }
+    }
+
+    private var placeholderImage: some View {
+        Circle()
+            .fill(Constants.Colors.cardDark)
+            .frame(width: 50, height: 50)
+            .overlay(
+                Image(systemName: choice.isGroupChoice ? "person.3.fill" : "person.fill")
+                    .foregroundColor(Constants.Colors.textGray)
+            )
+    }
+
+    private var voteButton: some View {
+        Button(action: onVote) {
+            if isVoting {
+                ProgressView()
+                    .progressViewStyle(.circular)
+                    .frame(width: 44, height: 44)
+            } else {
+                Image(systemName: "heart.fill")
+                    .font(.title2)
+                    .foregroundColor(canVote ? Constants.Colors.accentPink : Constants.Colors.textGray)
+                    .frame(width: 44, height: 44)
+            }
+        }
+        .disabled(!canVote || isVoting)
         .buttonStyle(.plain)
     }
 }
@@ -422,47 +499,27 @@ struct VoteButton: View {
 
     var body: some View {
         Button(action: onVote) {
-            VStack(spacing: 8) {
-                HStack {
-                    if isExecuting {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                        Text("投票中...")
+            HStack {
+                if isExecuting {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                    Text("投票中...")
+                } else {
+                    Image(systemName: "heart.fill")
+                    // Phase 1: ポイント消費なしで投票
+                    if FeatureFlags.pointsEnabled {
+                        Text("投票（\(requiredPoints)pt消費）")
                     } else {
-                        Image(systemName: "hand.thumbsup.fill")
-                        // Phase 1: ポイント消費なしで投票
-                        if FeatureFlags.pointsEnabled {
-                            Text("投票する（\(requiredPoints)pt消費）")
-                        } else {
-                            Text("投票する")
-                        }
+                        Text("投票")
                     }
-                }
-                .font(.system(size: 18, weight: .bold))
-
-                // Show earned points if premium (Phase 1: 非表示)
-                if FeatureFlags.pointsEnabled && isPremium && !isExecuting {
-                    HStack(spacing: 4) {
-                        Image(systemName: "star.fill")
-                            .font(.system(size: 12))
-                        Text("\(earnedPoints)pt 獲得")
-                            .font(.system(size: 14, weight: .semibold))
-                    }
-                    .foregroundColor(.yellow)
                 }
             }
+            .font(.system(size: 18, weight: .bold))
             .foregroundColor(.white)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
-            .background(
-                LinearGradient(
-                    gradient: Gradient(colors: canVote ? [Constants.Colors.gradientPink, Constants.Colors.gradientPurple] : [Color.gray, Color.gray]),
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-            )
-            .cornerRadius(12)
-            .shadow(color: canVote ? Constants.Colors.accentPink.opacity(0.4) : Color.clear, radius: 8, x: 0, y: 4)
+            .background(canVote ? Constants.Colors.accentPink : Color.gray)
+            .cornerRadius(16)
         }
         .disabled(!canVote || isExecuting)
     }
@@ -571,12 +628,12 @@ struct MultipleVoteSection: View {
                                 .progressViewStyle(CircularProgressViewStyle(tint: .white))
                             Text("投票中...")
                         } else {
-                            Image(systemName: "hand.thumbsup.fill")
+                            Image(systemName: "heart.fill")
                             // Phase 1: ポイント消費なしで投票
                             if FeatureFlags.pointsEnabled {
-                                Text("投票する（\(pointsToBeUsed)pt）")
+                                Text("投票（\(pointsToBeUsed)pt）")
                             } else {
-                                Text("投票する")
+                                Text("投票")
                             }
                         }
                     }
@@ -584,14 +641,8 @@ struct MultipleVoteSection: View {
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
-                    .background(
-                        LinearGradient(
-                            gradient: Gradient(colors: canVoteWithMode ? [Constants.Colors.gradientPink, Constants.Colors.gradientPurple] : [Color.gray, Color.gray]),
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .cornerRadius(12)
+                    .background(canVoteWithMode ? Constants.Colors.accentPink : Color.gray)
+                    .cornerRadius(16)
                 }
                 .disabled(!canVoteWithMode || isExecuting)
 
