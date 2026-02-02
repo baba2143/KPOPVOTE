@@ -101,14 +101,29 @@ class VoteDetailViewModel: ObservableObject {
         do {
             debugLog("📱 [VoteDetailViewModel] Loading vote detail: \(voteId)")
 
-            // Load vote detail
-            vote = try await VoteService.shared.fetchVoteDetail(voteId: voteId)
+            // Load vote detail and ranking in parallel
+            async let voteDetail = VoteService.shared.fetchVoteDetail(voteId: voteId)
+            // ランキングは失敗しても画面表示に影響しないよう、エラーを握りつぶす
+            let rankingTask = Task { () -> VoteRanking? in
+                do {
+                    return try await VoteService.shared.fetchRanking(voteId: self.voteId)
+                } catch {
+                    debugLog("❌ [VoteDetailViewModel] Failed to load ranking: \(error)")
+                    return nil
+                }
+            }
+
+            // Wait for both to complete
+            vote = try await voteDetail
             debugLog("✅ [VoteDetailViewModel] Loaded vote detail")
+            debugLog("📊 [VoteDetailViewModel] dailyLimit: limit=\(vote?.restrictions?.dailyVoteLimitPerUser ?? -1), userDailyVotes=\(vote?.userDailyVotes ?? -1), userDailyRemaining=\(vote?.userDailyRemaining ?? -1)")
 
-            await lookupLoad  // 完了を待つ
+            ranking = await rankingTask.value
+            if ranking != nil {
+                debugLog("✅ [VoteDetailViewModel] Loaded ranking")
+            }
 
-            // Load ranking
-            await loadRanking()
+            await lookupLoad  // Lookup完了を待つ
         } catch {
             debugLog("❌ [VoteDetailViewModel] Failed to load detail: \(error)")
             errorMessage = error.localizedDescription
@@ -249,6 +264,7 @@ class VoteDetailViewModel: ObservableObject {
             userDailyRemaining: result.userDailyRemaining ?? currentVote.userDailyRemaining
         )
 
+        debugLog("📊 [VoteDetailViewModel] API result: userDailyVotes=\(result.userDailyVotes ?? -1), userDailyRemaining=\(result.userDailyRemaining ?? -1)")
         debugLog("📊 [VoteDetailViewModel] Local vote count updated: choice \(choiceId) +\(addedVotes), remaining=\(result.userDailyRemaining ?? -1)")
     }
 
