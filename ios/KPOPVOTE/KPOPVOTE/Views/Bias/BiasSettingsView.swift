@@ -20,49 +20,54 @@ struct BiasSettingsView: View {
         if isGuest {
             // ゲストモード - ログイン促進画面
             NavigationView {
-                VStack(spacing: 20) {
-                    Spacer()
+                ZStack {
+                    Constants.Colors.backgroundDark
+                        .ignoresSafeArea()
 
-                    Image(systemName: "person.crop.circle.badge.exclamationmark")
-                        .font(.system(size: 64))
-                        .foregroundColor(.blue)
+                    VStack(spacing: 20) {
+                        Spacer()
 
-                    Text("ログインが必要です")
-                        .font(.system(size: 20, weight: .bold))
+                        Image(systemName: "person.crop.circle.badge.exclamationmark")
+                            .font(.system(size: 64))
+                            .foregroundColor(.blue)
 
-                    Text("推しを設定するには\nログインしてください")
-                        .font(.system(size: 14))
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
+                        Text("ログインが必要です")
+                            .font(.system(size: 20, weight: .bold))
 
-                    VStack(spacing: 12) {
-                        Button(action: {
-                            dismiss()
-                            authService.exitGuestMode()
-                        }) {
-                            HStack {
-                                Image(systemName: "person.fill")
-                                Text("ログイン・新規登録")
+                        Text("推しを設定するには\nログインしてください")
+                            .font(.system(size: 14))
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+
+                        VStack(spacing: 12) {
+                            Button(action: {
+                                dismiss()
+                                authService.exitGuestMode()
+                            }) {
+                                HStack {
+                                    Image(systemName: "person.fill")
+                                    Text("ログイン・新規登録")
+                                }
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .background(Color.blue)
+                                .cornerRadius(24)
                             }
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(Color.blue)
-                            .cornerRadius(24)
-                        }
-                        .padding(.horizontal, 32)
+                            .padding(.horizontal, 32)
 
-                        Button(action: { dismiss() }) {
-                            Text("閉じる")
-                                .font(.system(size: 14))
-                                .foregroundColor(.secondary)
+                            Button(action: { dismiss() }) {
+                                Text("閉じる")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.secondary)
+                            }
                         }
+
+                        Spacer()
                     }
-
-                    Spacer()
-                }
-                .padding()
+                    .padding()
+                } // ZStack
                 .navigationTitle("推し設定")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -77,6 +82,9 @@ struct BiasSettingsView: View {
             // 通常モード
             NavigationView {
             ZStack {
+                Constants.Colors.backgroundDark
+                    .ignoresSafeArea()
+
                 // Loading state
                 if viewModel.isLoading {
                     VStack(spacing: 16) {
@@ -144,7 +152,7 @@ struct BiasSettingsView: View {
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
                         }
-                        .background(Color(.systemGroupedBackground))
+                        .background(Constants.Colors.backgroundDark)
 
                         // List content based on mode
                         if viewModel.selectionMode == .group {
@@ -166,6 +174,7 @@ struct BiasSettingsView: View {
                                             )
                                         }
                                         .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
+                                        .listRowBackground(Constants.Colors.cardDark)
                                     }
                                 }
 
@@ -179,12 +188,15 @@ struct BiasSettingsView: View {
                                                 viewModel.toggleGroup(group)
                                             }
                                         )
+                                        .listRowBackground(Constants.Colors.cardDark)
                                     }
                                 } header: {
                                     Text("グループ一覧 (\(viewModel.filteredGroupsByAlphabet.count))")
                                 }
                             }
-                            .listStyle(.insetGrouped)
+                            .listStyle(.plain)
+                            .scrollContentBackground(.hidden)
+                            .background(Constants.Colors.backgroundDark)
                         } else {
                             // Idol list (existing implementation)
                             List {
@@ -204,6 +216,7 @@ struct BiasSettingsView: View {
                                             )
                                         }
                                         .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
+                                        .listRowBackground(Constants.Colors.cardDark)
                                     }
                                 }
 
@@ -218,13 +231,16 @@ struct BiasSettingsView: View {
                                                     viewModel.toggleIdol(idol)
                                                 }
                                             )
+                                            .listRowBackground(Constants.Colors.cardDark)
                                         }
                                     } header: {
                                         Text("\(groupName) (\(viewModel.groupedIdols[groupName]?.count ?? 0))")
                                     }
                                 }
                             }
-                            .listStyle(.insetGrouped)
+                            .listStyle(.plain)
+                            .scrollContentBackground(.hidden)
+                            .background(Constants.Colors.backgroundDark)
                         }
                     }
                     .dismissKeyboardOnTap()
@@ -360,18 +376,19 @@ struct IdolRowView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(idol.name)
                         .font(.body)
-                        .foregroundColor(.primary)
+                        .foregroundColor(.white)
 
                     Text(idol.groupName)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.gray)
                 }
 
                 Spacer()
             }
             .padding(.vertical, 4)
+            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.borderless)
     }
 }
 
@@ -409,13 +426,14 @@ struct GroupRowView: View {
                 // Group name
                 Text(group.name)
                     .font(.body)
-                    .foregroundColor(.primary)
+                    .foregroundColor(.white)
 
                 Spacer()
             }
             .padding(.vertical, 4)
+            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.borderless)
     }
 }
 
