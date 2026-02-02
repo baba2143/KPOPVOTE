@@ -124,3 +124,79 @@ export interface ValidationResult {
   valid: boolean;
   error?: string;
 }
+
+// Idol Ranking types
+export type RankingType = "individual" | "group";
+export type RankingPeriod = "weekly" | "allTime";
+
+export interface IdolRankingVote {
+  entityId: string;
+  rankingType: RankingType;
+  name: string;
+  groupName?: string; // Only for individual
+  imageUrl: string | null;
+  weeklyVotes: number;
+  allTimeVotes: number;
+  lastWeeklyReset: Date;
+  updatedAt: Date;
+}
+
+export interface IdolRankingDailyLimit {
+  userId: string;
+  date: string; // YYYY-MM-DD
+  votesUsed: number;
+  voteDetails: VoteDetail[];
+  createdAt: Date;
+}
+
+export interface VoteDetail {
+  entityId: string;
+  entityType: RankingType;
+  votedAt: Date;
+}
+
+// Idol Ranking API types
+export interface IdolRankingVoteRequest {
+  entityId: string;
+  entityType: RankingType;
+  name: string;
+  groupName?: string;
+  imageUrl?: string;
+}
+
+export interface IdolRankingVoteResponse {
+  success: boolean;
+  remainingVotes: number;
+  totalVotes: number;
+}
+
+export interface IdolRankingEntry {
+  rank: number;
+  entityId: string;
+  entityType: RankingType;
+  name: string;
+  groupName?: string;
+  imageUrl: string | null;
+  votes: number;
+}
+
+export interface GetRankingRequest {
+  rankingType: RankingType;
+  period: RankingPeriod;
+  limit?: number;
+  offset?: number;
+}
+
+export interface GetRankingResponse {
+  rankings: IdolRankingEntry[];
+  total: number;
+  period: RankingPeriod;
+  rankingType: RankingType;
+}
+
+export interface DailyLimitResponse {
+  votesUsed: number;
+  maxVotes: number;
+  remainingVotes: number;
+  voteDetails: VoteDetail[];
+}

@@ -101,5 +101,32 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
+
+    // ========================================
+    // Idol Ranking Collections
+    // ========================================
+
+    // Idol Ranking Votes - Public read, server-side write only
+    match /idolRankingVotes/{voteId} {
+      // Anyone can read rankings (no auth required for public display)
+      allow read: if true;
+      // Only server (Cloud Functions) can write
+      allow write: if false;
+    }
+
+    // Idol Ranking Daily Limits - User can only read their own
+    match /idolRankingDailyLimits/{limitId} {
+      // Users can only read their own daily limit
+      allow read: if isAuthenticated() &&
+                    limitId.matches(request.auth.uid + '_.*');
+      // Only server (Cloud Functions) can write
+      allow write: if false;
+    }
+
+    // Idol Ranking Weekly Snapshots - Admin read only
+    match /idolRankingWeeklySnapshots/{snapshotId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
   }
 }

@@ -19,6 +19,14 @@ export { getUserTasks } from "./task/getUserTasks";
 export { fetchTaskOGP } from "./task/fetchTaskOGP";
 export { updateTaskStatus } from "./task/updateTaskStatus";
 
+// Idol Ranking functions
+export { idolRankingVote } from "./idolRanking/vote";
+export { idolRankingGetRanking } from "./idolRanking/getRanking";
+export { idolRankingGetDailyLimit } from "./idolRanking/getDailyLimit";
+
+// Scheduled functions
+export { resetWeeklyIdolRanking } from "./scheduled/resetWeeklyIdolRanking";
+
 // Placeholder function for testing
 import * as functions from "firebase-functions";
 
