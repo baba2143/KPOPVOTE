@@ -55,6 +55,34 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "idolRankingVotes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "rankingType",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "weeklyVotes",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "idolRankingVotes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "rankingType",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "allTimeVotes",
+          "order": "DESCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []
