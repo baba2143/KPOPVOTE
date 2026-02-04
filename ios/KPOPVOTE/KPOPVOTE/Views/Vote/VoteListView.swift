@@ -9,29 +9,36 @@ import SwiftUI
 
 struct VoteListView: View {
     @StateObject private var viewModel = VoteListViewModel()
+    @EnvironmentObject var authService: AuthService
     @State private var selectedVoteId: String?
     @State private var showVoteDetail = false
+    @State private var showLoginPrompt = false
 
     var body: some View {
         ZStack {
             Constants.Colors.backgroundDark
                 .ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                // Status Filter Segment
-                StatusFilterView(
-                    selectedStatus: viewModel.selectedStatus,
-                    onStatusChange: { status in
-                        Task {
-                            await viewModel.changeStatusFilter(status)
+            if authService.isGuest {
+                // ゲストユーザー向けUI
+                guestContentView
+            } else {
+                VStack(spacing: 0) {
+                    // Status Filter Segment
+                    StatusFilterView(
+                        selectedStatus: viewModel.selectedStatus,
+                        onStatusChange: { status in
+                            Task {
+                                await viewModel.changeStatusFilter(status)
+                            }
                         }
-                    }
-                )
-                .padding(.horizontal)
-                .padding(.vertical, 12)
+                    )
+                    .padding(.horizontal)
+                    .padding(.vertical, 12)
 
-                // Content
-                contentView
+                    // Content
+                    contentView
+                }
             }
         }
         .navigationTitle("投票")
@@ -48,6 +55,13 @@ struct VoteListView: View {
                 }
             }
         }
+        .overlay(
+            Group {
+                if showLoginPrompt {
+                    LoginPromptView(isPresented: $showLoginPrompt, featureName: "投票")
+                }
+            }
+        )
         .onChange(of: showVoteDetail) { newValue in
             print("📱 [VoteListView] showVoteDetail changed to: \(newValue), selectedVoteId: \(String(describing: selectedVoteId))")
         }
@@ -55,11 +69,14 @@ struct VoteListView: View {
             print("📱 [VoteListView] selectedVoteId changed to: \(String(describing: newValue))")
         }
         .task {
+            // ゲストの場合はAPIを呼ばない
+            guard !authService.isGuest else { return }
             await viewModel.loadVotes()
             await viewModel.loadUserTasks()
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("taskRegisteredNotification"))) { _ in
             Task {
+                guard !authService.isGuest else { return }
                 await viewModel.loadUserTasks()
             }
         }
@@ -94,6 +111,66 @@ struct VoteListView: View {
             Spacer()
         } else {
             voteListContent
+        }
+    }
+
+    // ゲストユーザー向けコンテンツ
+    @ViewBuilder
+    private var guestContentView: some View {
+        VStack(spacing: 24) {
+            Spacer()
+
+            ZStack {
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Constants.Colors.accentPink.opacity(0.2),
+                                Constants.Colors.accentBlue.opacity(0.2)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 120, height: 120)
+
+                Image(systemName: "hand.raised.fill")
+                    .font(.system(size: 56, weight: .medium))
+                    .foregroundColor(Constants.Colors.accentPink)
+            }
+
+            VStack(spacing: 8) {
+                Text("投票に参加しよう")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(Constants.Colors.textWhite)
+
+                Text("ログインして推しに投票しましょう")
+                    .font(.system(size: 14))
+                    .foregroundColor(Constants.Colors.textGray)
+                    .multilineTextAlignment(.center)
+            }
+
+            Button(action: { showLoginPrompt = true }) {
+                HStack(spacing: 8) {
+                    Image(systemName: "person.fill")
+                    Text("ログイン・新規登録")
+                        .font(.system(size: 16, weight: .semibold))
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(
+                    LinearGradient(
+                        colors: [Constants.Colors.accentPink, Constants.Colors.gradientPink],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .cornerRadius(12)
+            }
+            .padding(.horizontal, 48)
+
+            Spacer()
         }
     }
 
