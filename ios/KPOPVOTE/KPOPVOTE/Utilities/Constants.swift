@@ -169,7 +169,18 @@ enum Constants {
         static let getConversations = "\(apiBaseURL)/getConversations"
         static let getMessages = "\(apiBaseURL)/getMessages"
         static let markAsRead = "\(apiBaseURL)/markAsRead"
+
+        // Idol Ranking
+        static let idolRankingVote = "\(apiBaseURL)/idolRankingVote"
+        static let idolRankingGetRanking = "\(apiBaseURL)/idolRankingGetRanking"
+        static let idolRankingGetDailyLimit = "\(apiBaseURL)/idolRankingGetDailyLimit"
+        static let idolRankingGetArchiveList = "\(apiBaseURL)/idolRankingGetArchiveList"
+        static let idolRankingGetArchive = "\(apiBaseURL)/idolRankingGetArchive"
     }
+
+    // MARK: - Idol Ranking
+    static let maxDailyVotes = 5
+    static let rankingPageSize = 20
 
     // MARK: - UserDefaults Keys
     enum UserDefaultsKeys {

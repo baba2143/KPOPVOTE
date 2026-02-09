@@ -132,3 +132,25 @@ struct ApiResponse<T: Codable>: Codable {
     let data: T?
     let error: String?
 }
+
+// MARK: - Archive Models
+
+/// 月別アーカイブ一覧のアイテム
+struct ArchiveListItem: Codable, Identifiable {
+    let id: String      // "2025-01" 形式
+    let label: String   // "2025年1月" 形式
+}
+
+/// アーカイブ一覧レスポンス
+struct ArchiveListResponse: Codable {
+    let archives: [ArchiveListItem]
+}
+
+/// アーカイブ詳細レスポンス
+struct ArchiveDetailResponse: Codable {
+    let rankings: [IdolRankingEntry]
+    let total: Int
+    let archiveId: String
+    let archiveType: String
+    let rankingType: RankingType
+}
