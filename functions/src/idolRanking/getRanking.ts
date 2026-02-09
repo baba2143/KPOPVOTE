@@ -13,7 +13,9 @@ import {
   RankingPeriod,
 } from "../types";
 
-export const idolRankingGetRanking = functions.https.onRequest(async (req, res) => {
+export const idolRankingGetRanking = functions
+  .runWith({ memory: "256MB", timeoutSeconds: 60, maxInstances: 100 })
+  .https.onRequest(async (req, res) => {
   // Enable CORS
   res.set("Access-Control-Allow-Origin", "*");
   res.set("Access-Control-Allow-Methods", "GET");
@@ -116,6 +118,9 @@ export const idolRankingGetRanking = functions.https.onRequest(async (req, res) 
 
       currentRank++;
     });
+
+    // CDN cache: 10s browser, 30s CDN edge
+    res.set("Cache-Control", "public, max-age=10, s-maxage=30");
 
     res.status(200).json({
       success: true,

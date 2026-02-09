@@ -26,10 +26,13 @@ export { idolRankingGetDailyLimit } from "./idolRanking/getDailyLimit";
 
 // Scheduled functions
 export { resetWeeklyIdolRanking } from "./scheduled/resetWeeklyIdolRanking";
+export { aggregateIdolRankings } from "./scheduled/aggregateIdolRankings";
 
 // Placeholder function for testing
 import * as functions from "firebase-functions";
 
-export const helloWorld = functions.https.onRequest((request, response) => {
+export const helloWorld = functions
+  .runWith({ memory: "256MB", timeoutSeconds: 60, maxInstances: 5 })
+  .https.onRequest((request, response) => {
   response.json({ message: "K-VOTE COLLECTOR API is running!" });
 });

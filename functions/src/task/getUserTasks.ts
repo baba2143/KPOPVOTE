@@ -6,7 +6,9 @@ import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { ApiResponse, TasksResponse } from "../types";
 
-export const getUserTasks = functions.https.onRequest(async (req, res) => {
+export const getUserTasks = functions
+  .runWith({ memory: "256MB", timeoutSeconds: 60, maxInstances: 100 })
+  .https.onRequest(async (req, res) => {
   // Enable CORS
   res.set("Access-Control-Allow-Origin", "*");
   res.set("Access-Control-Allow-Methods", "GET");

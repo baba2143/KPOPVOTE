@@ -11,6 +11,8 @@ import {
   IdolRankingVoteResponse,
   RankingType,
 } from "../types";
+import { checkRateLimit, VOTE_RATE_LIMIT } from "../middleware/rateLimit";
+import { incrementShardInTransaction, initializeShards, shardsExist } from "../utils/shardedCounter";
 
 const MAX_DAILY_VOTES = 5;
 
@@ -23,7 +25,9 @@ function getTodayDateString(): string {
   return jstDate.toISOString().split("T")[0];
 }
 
-export const idolRankingVote = functions.https.onRequest(async (req, res) => {
+export const idolRankingVote = functions
+  .runWith({ memory: "512MB", timeoutSeconds: 120, maxInstances: 50, minInstances: 0 })
+  .https.onRequest(async (req, res) => {
   // Enable CORS
   res.set("Access-Control-Allow-Origin", "*");
   res.set("Access-Control-Allow-Methods", "POST");
@@ -60,6 +64,17 @@ export const idolRankingVote = functions.https.onRequest(async (req, res) => {
     const decodedToken = await admin.auth().verifyIdToken(token);
     const uid = decodedToken.uid;
 
+    // Rate limit check
+    const rateLimitResult = checkRateLimit(`vote:${uid}`, VOTE_RATE_LIMIT);
+    if (!rateLimitResult.allowed) {
+      res.set("Retry-After", String(rateLimitResult.retryAfterSeconds));
+      res.status(429).json({
+        success: false,
+        error: "Too many requests. Please try again later.",
+      } as ApiResponse<null>);
+      return;
+    }
+
     // Get request body
     const { entityId, entityType, name, groupName, imageUrl } =
       req.body as IdolRankingVoteRequest;
@@ -94,9 +109,39 @@ export const idolRankingVote = functions.https.onRequest(async (req, res) => {
 
     // Check daily limit
     const dailyLimitDocId = `${uid}_${today}`;
+    console.log(`[vote] uid=${uid}, today=${today}, docId=${dailyLimitDocId}`);
+
     const dailyLimitRef = db.collection("idolRankingDailyLimits").doc(dailyLimitDocId);
 
-    // Use transaction to ensure atomic operation
+    const voteDocId = `${entityType}_${entityId}`;
+    const voteRef = db.collection("idolRankingVotes").doc(voteDocId);
+
+    // Ensure parent document exists with entity metadata (idempotent, set with merge)
+    // Initialize weeklyVotes/allTimeVotes to 0 so the document appears in ranking queries
+    // Note: merge:true means existing values won't be overwritten
+    await voteRef.set(
+      {
+        entityId,
+        rankingType: entityType,
+        name,
+        groupName: entityType === "individual" ? groupName || null : null,
+        imageUrl: imageUrl || null,
+        weeklyVotes: 0,
+        allTimeVotes: 0,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
+
+    // Ensure shards exist for this entity
+    const hasShards = await shardsExist(db, voteDocId);
+    if (!hasShards) {
+      await initializeShards(db, voteDocId);
+    }
+
+    // Transaction: check daily limit + write to random shard
+    // The transaction only reads/writes user-scoped docs (no hot document contention)
+    // and writes to a random shard (distributed across 10 documents)
     const result = await db.runTransaction(async (transaction) => {
       // Check daily limit
       const dailyLimitDoc = await transaction.get(dailyLimitRef);
@@ -107,43 +152,18 @@ export const idolRankingVote = functions.https.onRequest(async (req, res) => {
         const data = dailyLimitDoc.data()!;
         votesUsed = data.votesUsed || 0;
         voteDetails = data.voteDetails || [];
+        console.log(`[vote] Transaction: doc exists, votesUsed=${votesUsed}, voteDetailsCount=${voteDetails.length}`);
+      } else {
+        console.log("[vote] Transaction: doc does not exist, will create new");
       }
 
       if (votesUsed >= MAX_DAILY_VOTES) {
+        console.log(`[vote] DAILY_LIMIT_EXCEEDED: votesUsed=${votesUsed} >= MAX=${MAX_DAILY_VOTES}`);
         throw new Error("DAILY_LIMIT_EXCEEDED");
       }
 
-      // Update or create idol ranking vote document
-      const voteDocId = `${entityType}_${entityId}`;
-      const voteRef = db.collection("idolRankingVotes").doc(voteDocId);
-      const voteDoc = await transaction.get(voteRef);
-
-      let newWeeklyVotes = 1;
-      let newAllTimeVotes = 1;
-
-      if (voteDoc.exists) {
-        const voteData = voteDoc.data()!;
-        newWeeklyVotes = (voteData.weeklyVotes || 0) + 1;
-        newAllTimeVotes = (voteData.allTimeVotes || 0) + 1;
-
-        transaction.update(voteRef, {
-          weeklyVotes: newWeeklyVotes,
-          allTimeVotes: newAllTimeVotes,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
-      } else {
-        transaction.set(voteRef, {
-          entityId,
-          rankingType: entityType,
-          name,
-          groupName: entityType === "individual" ? groupName || null : null,
-          imageUrl: imageUrl || null,
-          weeklyVotes: 1,
-          allTimeVotes: 1,
-          lastWeeklyReset: admin.firestore.FieldValue.serverTimestamp(),
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
-      }
+      // Write to a random shard (distributed write)
+      incrementShardInTransaction(transaction, db, voteDocId);
 
       // Update daily limit
       const newVoteDetail = {
@@ -169,7 +189,6 @@ export const idolRankingVote = functions.https.onRequest(async (req, res) => {
 
       return {
         remainingVotes: MAX_DAILY_VOTES - (votesUsed + 1),
-        totalVotes: newAllTimeVotes,
       };
     });
 
@@ -178,7 +197,7 @@ export const idolRankingVote = functions.https.onRequest(async (req, res) => {
       data: {
         success: true,
         remainingVotes: result.remainingVotes,
-        totalVotes: result.totalVotes,
+        totalVotes: 0, // Actual total is updated by aggregation function (~1 min delay)
       },
     } as ApiResponse<IdolRankingVoteResponse>);
   } catch (error: unknown) {

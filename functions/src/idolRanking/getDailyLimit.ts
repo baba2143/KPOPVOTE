@@ -22,7 +22,9 @@ function getTodayDateString(): string {
   return jstDate.toISOString().split("T")[0];
 }
 
-export const idolRankingGetDailyLimit = functions.https.onRequest(async (req, res) => {
+export const idolRankingGetDailyLimit = functions
+  .runWith({ memory: "256MB", timeoutSeconds: 60, maxInstances: 100 })
+  .https.onRequest(async (req, res) => {
   // Enable CORS
   res.set("Access-Control-Allow-Origin", "*");
   res.set("Access-Control-Allow-Methods", "GET");
@@ -64,6 +66,8 @@ export const idolRankingGetDailyLimit = functions.https.onRequest(async (req, re
 
     // Get daily limit document
     const dailyLimitDocId = `${uid}_${today}`;
+    console.log(`[getDailyLimit] uid=${uid}, today=${today}, docId=${dailyLimitDocId}`);
+
     const dailyLimitRef = db.collection("idolRankingDailyLimits").doc(dailyLimitDocId);
     const dailyLimitDoc = await dailyLimitRef.get();
 
@@ -71,6 +75,7 @@ export const idolRankingGetDailyLimit = functions.https.onRequest(async (req, re
     let voteDetails: VoteDetail[] = [];
 
     if (dailyLimitDoc.exists) {
+      console.log("[getDailyLimit] Document exists, data:", JSON.stringify(dailyLimitDoc.data()));
       const data = dailyLimitDoc.data()!;
       votesUsed = data.votesUsed || 0;
       voteDetails = (data.voteDetails || []).map((detail: { entityId: string; entityType: "individual" | "group"; votedAt: admin.firestore.Timestamp }) => ({

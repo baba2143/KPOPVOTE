@@ -5,10 +5,12 @@
 
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
+import { resetWeeklyVotesInShards } from "../utils/shardedCounter";
 
 // Run every Monday at 00:00 UTC (09:00 JST)
-export const resetWeeklyIdolRanking = functions.pubsub
-  .schedule("0 0 * * 1")
+export const resetWeeklyIdolRanking = functions
+  .runWith({ memory: "512MB", timeoutSeconds: 300, maxInstances: 1 })
+  .pubsub.schedule("0 0 * * 1")
   .timeZone("UTC")
   .onRun(async (_context) => {
     console.log("Starting weekly idol ranking reset...");
@@ -113,7 +115,19 @@ export const resetWeeklyIdolRanking = functions.pubsub
         await batch.commit();
       }
 
-      console.log(`Weekly idol ranking reset completed. Reset ${resetCount} documents.`);
+      console.log(`Weekly idol ranking reset completed. Reset ${resetCount} parent documents.`);
+
+      // Also reset weekly votes in shard sub-documents
+      let shardResetCount = 0;
+      for (const doc of votesSnapshot.docs) {
+        const shardsSnapshot = await doc.ref.collection("shards").limit(1).get();
+        if (!shardsSnapshot.empty) {
+          await resetWeeklyVotesInShards(db, doc.id);
+          shardResetCount++;
+        }
+      }
+      console.log(`Reset shards for ${shardResetCount} entities.`);
+
       return null;
     } catch (error) {
       console.error("Error resetting weekly idol ranking:", error);

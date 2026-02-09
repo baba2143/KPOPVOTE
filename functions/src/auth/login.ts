@@ -1,5 +1,8 @@
 /**
  * User login endpoint
+ * Supports both:
+ * 1. Phone number authentication (Bearer token in Authorization header)
+ * 2. Email/password authentication (legacy, for backward compatibility)
  */
 
 import * as functions from "firebase-functions";
@@ -7,11 +10,13 @@ import * as admin from "firebase-admin";
 import { LoginRequest, AuthResponse, ApiResponse } from "../types";
 import { validateEmail, validatePassword } from "../utils/validation";
 
-export const login = functions.https.onRequest(async (req, res) => {
+export const login = functions
+  .runWith({ memory: "256MB", timeoutSeconds: 60, maxInstances: 30 })
+  .https.onRequest(async (req, res) => {
   // Enable CORS
   res.set("Access-Control-Allow-Origin", "*");
   res.set("Access-Control-Allow-Methods", "POST");
-  res.set("Access-Control-Allow-Headers", "Content-Type");
+  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
   // Handle preflight request
   if (req.method === "OPTIONS") {
@@ -29,6 +34,55 @@ export const login = functions.https.onRequest(async (req, res) => {
   }
 
   try {
+    // Check for Bearer token authentication (phone number auth)
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const idToken = authHeader.split("Bearer ")[1];
+
+      // Verify the Firebase ID token
+      const decodedToken = await admin.auth().verifyIdToken(idToken);
+      const uid = decodedToken.uid;
+
+      // Get or create user profile in Firestore
+      const userRef = admin.firestore().collection("users").doc(uid);
+      let userDoc = await userRef.get();
+
+      if (!userDoc.exists) {
+        // Create new user profile
+        const phoneNumber = req.body?.phoneNumber ||
+          decodedToken.phone_number || "";
+        const newUserData = {
+          uid,
+          email: decodedToken.email || "",
+          phoneNumber,
+          points: 100,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        };
+        await userRef.set(newUserData);
+        userDoc = await userRef.get();
+        console.log("Created new user profile for phone auth:", uid);
+      }
+
+      const userData = userDoc.data();
+
+      // Return success response for phone auth
+      res.status(200).json({
+        success: true,
+        data: {
+          uid,
+          email: userData?.email || decodedToken.email || "",
+          displayName: userData?.displayName || null,
+          phoneNumber: userData?.phoneNumber || decodedToken.phone_number || "",
+          photoURL: userData?.photoURL || null,
+          points: userData?.points || 0,
+          isSuspended: userData?.isSuspended || false,
+        },
+      });
+      return;
+    }
+
+    // Legacy email/password authentication flow
     const { email, password } = req.body as LoginRequest;
 
     // Validate input
@@ -86,14 +140,31 @@ export const login = functions.https.onRequest(async (req, res) => {
     if (
       typeof error === "object" &&
       error !== null &&
-      "code" in error &&
-      error.code === "auth/user-not-found"
+      "code" in error
     ) {
-      res.status(404).json({
-        success: false,
-        error: "User not found",
-      } as ApiResponse<null>);
-      return;
+      const errorCode = (error as { code: string }).code;
+      if (errorCode === "auth/user-not-found") {
+        res.status(404).json({
+          success: false,
+          error: "User not found",
+        } as ApiResponse<null>);
+        return;
+      }
+      if (errorCode === "auth/id-token-expired") {
+        res.status(401).json({
+          success: false,
+          error: "Token expired. Please re-authenticate.",
+        } as ApiResponse<null>);
+        return;
+      }
+      if (errorCode === "auth/argument-error" ||
+          errorCode === "auth/id-token-revoked") {
+        res.status(401).json({
+          success: false,
+          error: "Invalid token. Please re-authenticate.",
+        } as ApiResponse<null>);
+        return;
+      }
     }
 
     res.status(500).json({

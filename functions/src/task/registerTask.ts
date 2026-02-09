@@ -11,7 +11,9 @@ import {
 } from "../types";
 import { validateURL, validateISODate } from "../utils/validation";
 
-export const registerTask = functions.https.onRequest(async (req, res) => {
+export const registerTask = functions
+  .runWith({ memory: "256MB", timeoutSeconds: 60, maxInstances: 30 })
+  .https.onRequest(async (req, res) => {
   // Enable CORS
   res.set("Access-Control-Allow-Origin", "*");
   res.set("Access-Control-Allow-Methods", "POST");

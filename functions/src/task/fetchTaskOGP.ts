@@ -37,7 +37,9 @@ function extractOGP(html: string): { title: string | null; image: string | null 
   return { title, image };
 }
 
-export const fetchTaskOGP = functions.https.onRequest(async (req, res) => {
+export const fetchTaskOGP = functions
+  .runWith({ memory: "256MB", timeoutSeconds: 60, maxInstances: 30 })
+  .https.onRequest(async (req, res) => {
   // Enable CORS
   res.set("Access-Control-Allow-Origin", "*");
   res.set("Access-Control-Allow-Methods", "POST");
