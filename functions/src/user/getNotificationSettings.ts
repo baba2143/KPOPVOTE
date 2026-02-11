@@ -5,9 +5,11 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { UserNotificationSettings, ApiResponse } from "../types";
+import { STANDARD_CONFIG } from "../utils/functionConfig";
 
-export const getNotificationSettings = functions.https.onRequest(
-  async (req, res) => {
+export const getNotificationSettings = functions
+  .runWith(STANDARD_CONFIG)
+  .https.onRequest(async (req, res) => {
     // Enable CORS
     res.set("Access-Control-Allow-Origin", "*");
     res.set("Access-Control-Allow-Methods", "GET");
@@ -120,4 +122,4 @@ export const getNotificationSettings = functions.https.onRequest(
       } as ApiResponse<null>);
     }
   }
-);
+  );

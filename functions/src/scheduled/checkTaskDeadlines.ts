@@ -11,6 +11,7 @@ import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { sendPushNotification } from "../utils/fcmHelper";
 import { shouldSendNotificationCached } from "../utils/notificationHelper";
+import { SCHEDULED_CONFIG } from "../utils/functionConfig";
 
 const db = admin.firestore();
 
@@ -24,7 +25,9 @@ const NOTIFICATION_WINDOW_HOURS = 0.5;
  * Check task deadlines and send reminder notifications
  * Uses Collection Group Query to scan all user tasks
  */
-export const checkTaskDeadlines = functions.pubsub
+export const checkTaskDeadlines = functions
+  .runWith(SCHEDULED_CONFIG)
+  .pubsub
   .schedule("every 1 hours")
   .onRun(async (_context) => {
     const now = admin.firestore.Timestamp.now();

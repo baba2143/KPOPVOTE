@@ -5,91 +5,133 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { ApiResponse } from "../types";
+import { STANDARD_CONFIG } from "../utils/functionConfig";
 
-export const getInAppVoteDetail = functions.https.onRequest(async (req, res) => {
+export const getInAppVoteDetail = functions
+  .runWith(STANDARD_CONFIG)
+  .https.onRequest(async (req, res) => {
   // Set CORS headers for all requests
-  res.set("Access-Control-Allow-Origin", "*");
-  res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.set("Access-Control-Max-Age", "3600");
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.set("Access-Control-Max-Age", "3600");
 
-  // Handle CORS preflight request
-  if (req.method === "OPTIONS") {
-    res.status(204).send("");
-    return;
-  }
+    // Handle CORS preflight request
+    if (req.method === "OPTIONS") {
+      res.status(204).send("");
+      return;
+    }
 
-  if (req.method !== "GET") {
-    res.status(405).json({
-      success: false,
-      error: "Method not allowed. Use GET.",
-    } as ApiResponse<null>);
-    return;
-  }
-
-  try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      res.status(401).json({
+    if (req.method !== "GET") {
+      res.status(405).json({
         success: false,
-        error: "Unauthorized: No token provided",
+        error: "Method not allowed. Use GET.",
       } as ApiResponse<null>);
       return;
     }
 
-    const token = authHeader.split("Bearer ")[1];
-    await admin.auth().verifyIdToken(token);
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        res.status(401).json({
+          success: false,
+          error: "Unauthorized: No token provided",
+        } as ApiResponse<null>);
+        return;
+      }
 
-    const voteId = req.query.voteId as string;
+      const token = authHeader.split("Bearer ")[1];
+      const decodedToken = await admin.auth().verifyIdToken(token);
+      const uid = decodedToken.uid;
 
-    if (!voteId) {
-      res.status(400).json({
+      const voteId = req.query.voteId as string;
+
+      if (!voteId) {
+        res.status(400).json({
+          success: false,
+          error: "voteId is required",
+        } as ApiResponse<null>);
+        return;
+      }
+
+      const voteDoc = await admin
+        .firestore()
+        .collection("inAppVotes")
+        .doc(voteId)
+        .get();
+
+      if (!voteDoc.exists) {
+        res.status(404).json({
+          success: false,
+          error: "Vote not found",
+        } as ApiResponse<null>);
+        return;
+      }
+
+      const data = voteDoc.data()!;
+      const now = new Date();
+      const startDate = data.startDate.toDate();
+      const endDate = data.endDate.toDate();
+
+      // Calculate status dynamically based on current time
+      let calculatedStatus: "upcoming" | "active" | "ended" = "upcoming";
+      if (now >= startDate) {
+        calculatedStatus = "active";
+      }
+      if (now >= endDate) {
+        calculatedStatus = "ended";
+      }
+
+      // Get user's daily vote count for this vote (if dailyVoteLimitPerUser is set)
+      const restrictions = data.restrictions || {};
+      let userDailyVotes = 0;
+      let userDailyRemaining: number | null = null;
+
+      if (restrictions.dailyVoteLimitPerUser) {
+        const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+        const dailyVoteHistoryRef = admin.firestore()
+          .collection("dailyVoteHistory")
+          .doc(`${voteId}_${uid}_${today}`);
+        const dailyVoteHistory = await dailyVoteHistoryRef.get();
+
+        userDailyVotes = dailyVoteHistory.exists ?
+          (dailyVoteHistory.data()!.voteCount || 0) : 0;
+        userDailyRemaining = Math.max(0, restrictions.dailyVoteLimitPerUser - userDailyVotes);
+      }
+
+      console.log(
+        `📊 [getInAppVoteDetail] userDailyVotes=${userDailyVotes}, ` +
+      `userDailyRemaining=${userDailyRemaining}, ` +
+      `dailyVoteLimitPerUser=${restrictions.dailyVoteLimitPerUser}`
+      );
+
+      res.status(200).json({
+        success: true,
+        data: {
+          voteId: voteDoc.id,
+          title: data.title,
+          description: data.description,
+          choices: data.choices,
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
+          requiredPoints: data.requiredPoints,
+          status: calculatedStatus,
+          totalVotes: data.totalVotes,
+          coverImageUrl: data.coverImageUrl || null,
+          isFeatured: data.isFeatured || false,
+          restrictions: data.restrictions || null,
+          createdAt: data.createdAt?.toDate().toISOString() || null,
+          updatedAt: data.updatedAt?.toDate().toISOString() || null,
+          // User-specific daily vote info
+          userDailyVotes,
+          userDailyRemaining,
+        },
+      } as ApiResponse<unknown>);
+    } catch (error: unknown) {
+      console.error("Get in-app vote detail error:", error);
+      res.status(500).json({
         success: false,
-        error: "voteId is required",
+        error: "Internal server error",
       } as ApiResponse<null>);
-      return;
     }
-
-    const voteDoc = await admin
-      .firestore()
-      .collection("inAppVotes")
-      .doc(voteId)
-      .get();
-
-    if (!voteDoc.exists) {
-      res.status(404).json({
-        success: false,
-        error: "Vote not found",
-      } as ApiResponse<null>);
-      return;
-    }
-
-    const data = voteDoc.data()!;
-
-    res.status(200).json({
-      success: true,
-      data: {
-        voteId: voteDoc.id,
-        title: data.title,
-        description: data.description,
-        choices: data.choices,
-        startDate: data.startDate.toDate().toISOString(),
-        endDate: data.endDate.toDate().toISOString(),
-        requiredPoints: data.requiredPoints,
-        status: data.status,
-        totalVotes: data.totalVotes,
-        coverImageUrl: data.coverImageUrl || null,
-        isFeatured: data.isFeatured || false,
-        restrictions: data.restrictions || null,
-        createdAt: data.createdAt?.toDate().toISOString() || null,
-        updatedAt: data.updatedAt?.toDate().toISOString() || null,
-      },
-    } as ApiResponse<unknown>);
-  } catch (error: unknown) {
-    console.error("Get in-app vote detail error:", error);
-    res.status(500).json({
-      success: false,
-      error: "Internal server error",
-    } as ApiResponse<null>);
-  }
-});
+  });

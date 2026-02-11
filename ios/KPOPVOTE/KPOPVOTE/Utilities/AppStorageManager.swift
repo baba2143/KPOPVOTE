@@ -15,6 +15,7 @@ class AppStorageManager {
     // MARK: - Keys
     private enum Keys {
         static let hasCompletedOnboarding = "hasCompletedOnboarding"
+        static let hasCompletedSocialLinking = "hasCompletedSocialLinking"
         static let isGuestMode = "isGuestMode"
         static let lastAuthenticatedUserId = "lastAuthenticatedUserId"
         static let pendingBiasIds = "pendingBiasIds"
@@ -28,6 +29,16 @@ class AppStorageManager {
         }
         set {
             userDefaults.set(newValue, forKey: Keys.hasCompletedOnboarding)
+        }
+    }
+
+    // MARK: - Social Linking (Apple/Google連携)
+    var hasCompletedSocialLinking: Bool {
+        get {
+            userDefaults.bool(forKey: Keys.hasCompletedSocialLinking)
+        }
+        set {
+            userDefaults.set(newValue, forKey: Keys.hasCompletedSocialLinking)
         }
     }
 
@@ -82,6 +93,7 @@ class AppStorageManager {
 
     func clearAllData() {
         userDefaults.removeObject(forKey: Keys.hasCompletedOnboarding)
+        userDefaults.removeObject(forKey: Keys.hasCompletedSocialLinking)
         userDefaults.removeObject(forKey: Keys.isGuestMode)
         userDefaults.removeObject(forKey: Keys.lastAuthenticatedUserId)
         userDefaults.removeObject(forKey: Keys.pendingBiasIds)

@@ -94,7 +94,9 @@ class HomeViewModel: ObservableObject {
 
     // MARK: - Refresh
     func refresh() async {
-        await loadActiveTasks()
-        await loadFeaturedVotes()
+        // Run both loads in parallel for faster refresh
+        async let tasksResult: () = loadActiveTasks()
+        async let votesResult: () = loadFeaturedVotes()
+        _ = await (tasksResult, votesResult)
     }
 }

@@ -19,6 +19,9 @@ class AuthService: ObservableObject {
     @Published var verificationID: String?
     @Published var phoneNumber: String?
 
+    // Linked providers state (e.g., ["phone", "apple.com", "google.com"])
+    @Published var linkedProviders: [String] = []
+
     private var cancellables = Set<AnyCancellable>()
     private var authStateListener: AuthStateDidChangeListenerHandle?
 
@@ -447,6 +450,16 @@ class AuthService: ObservableObject {
                 self.isAuthenticated = true
                 self.verificationID = nil
                 self.phoneNumber = nil
+                self.refreshLinkedProviders()
+
+                // 既にApple/Google連携済みならオンボーディング完了フラグも設定
+                // （アプリ再インストール時の既存ユーザー対応）
+                let providers = self.getLinkedProviders()
+                if providers.contains("apple.com") || providers.contains("google.com") {
+                    AppStorageManager.shared.hasCompletedSocialLinking = true
+                    AppStorageManager.shared.hasCompletedOnboarding = true
+                    debugLog("🔗 [PhoneAuth] Social linking already complete, setting onboarding flags (providers: \(providers))")
+                }
             }
 
             // Register FCM token after successful login
@@ -554,7 +567,17 @@ class AuthService: ObservableObject {
             await MainActor.run {
                 self.currentUser = user
                 self.isAuthenticated = true
+                self.refreshLinkedProviders()
                 debugLog("🔄 [Auth] loadUserData - currentUser.photoURL set to: \(self.currentUser?.photoURL ?? "nil")")
+
+                // 既にApple/Google連携済みならオンボーディング完了フラグも設定
+                // （アプリ再インストール時の既存ユーザー対応）
+                let providers = self.getLinkedProviders()
+                if providers.contains("apple.com") || providers.contains("google.com") {
+                    AppStorageManager.shared.hasCompletedSocialLinking = true
+                    AppStorageManager.shared.hasCompletedOnboarding = true
+                    debugLog("🔗 [Auth] Social linking already complete, setting onboarding flags (providers: \(providers))")
+                }
             }
 
             // Register FCM token after auth state restored
@@ -573,6 +596,254 @@ class AuthService: ObservableObject {
 
         } catch {
             debugLog("❌ [Auth] Failed to load user data: \(error.localizedDescription)")
+        }
+    }
+
+    // MARK: - Social Sign-In (Apple/Google)
+
+    /// 現在のユーザーに紐づいている認証プロバイダを取得
+    /// - Returns: プロバイダID配列 (e.g., ["phone", "apple.com", "google.com"])
+    func getLinkedProviders() -> [String] {
+        guard let firebaseUser = Auth.auth().currentUser else {
+            return []
+        }
+        return firebaseUser.providerData.map { $0.providerID }
+    }
+
+    /// 連携プロバイダの状態を更新
+    func refreshLinkedProviders() {
+        linkedProviders = getLinkedProviders()
+        debugLog("🔗 [Auth] Linked providers: \(linkedProviders)")
+    }
+
+    /// Apple Sign-In でサインイン（既存連携済みユーザーのみ）
+    /// - Note: 未連携のApple IDでサインインしようとした場合はエラーを返す
+    /// - Returns: ログインしたユーザー
+    func signInWithApple() async throws -> User {
+        debugLog("🍎 [AppleSignIn] Starting Apple Sign-In...")
+
+        let authResult = try await AppleSignInHelper.shared.signInWithApple()
+        debugLog("✅ [AppleSignIn] Firebase Auth successful: \(authResult.user.uid)")
+
+        // Check if this is a new user (not linked to existing account)
+        // New users must first register via SMS and then link Apple account
+        if authResult.additionalUserInfo?.isNewUser == true {
+            debugLog("⚠️ [AppleSignIn] New user detected - Apple Sign-In requires SMS registration first")
+            // Delete the newly created account to prevent orphan accounts
+            do {
+                try await authResult.user.delete()
+                debugLog("🗑️ [AppleSignIn] Deleted newly created account")
+            } catch {
+                debugLog("⚠️ [AppleSignIn] Failed to delete new account: \(error.localizedDescription)")
+            }
+            throw AuthError.socialLoginNotLinked
+        }
+
+        // Get ID Token
+        let token = try await authResult.user.getIDToken()
+
+        // Register/Login with Cloud Functions
+        let user = try await registerOrLoginWithSocial(
+            uid: authResult.user.uid,
+            email: authResult.user.email,
+            displayName: authResult.user.displayName,
+            photoURL: authResult.user.photoURL?.absoluteString,
+            token: token
+        )
+
+        await MainActor.run {
+            self.objectWillChange.send()
+            self.currentUser = user
+            self.isAuthenticated = true
+            self.refreshLinkedProviders()
+        }
+
+        // Register FCM token
+        PushNotificationManager.shared.onUserLogin()
+
+        // Sync pending bias data
+        await syncPendingBiasData()
+
+        debugLog("✅ [AppleSignIn] Login complete")
+        return user
+    }
+
+    /// 現在のユーザーに Apple アカウントをリンク
+    func linkAppleAccount() async throws {
+        guard Auth.auth().currentUser != nil else {
+            throw AuthError.loginFailed
+        }
+
+        debugLog("🍎 [AppleSignIn] Linking Apple account to current user...")
+
+        do {
+            _ = try await AppleSignInHelper.shared.linkToCurrentUser()
+            refreshLinkedProviders()
+            debugLog("✅ [AppleSignIn] Successfully linked Apple account")
+        } catch let error as AppleSignInError {
+            debugLog("❌ [AppleSignIn] Link error: \(error.localizedDescription)")
+            throw mapAppleSignInError(error)
+        }
+    }
+
+    /// Google Sign-In でサインイン（既存連携済みユーザーのみ）
+    /// - Note: 未連携のGoogle アカウントでサインインしようとした場合はエラーを返す
+    /// - Returns: ログインしたユーザー
+    func signInWithGoogle() async throws -> User {
+        debugLog("🔵 [GoogleSignIn] Starting Google Sign-In...")
+
+        let authResult = try await GoogleSignInHelper.shared.signInWithGoogle()
+        debugLog("✅ [GoogleSignIn] Firebase Auth successful: \(authResult.user.uid)")
+
+        // Check if this is a new user (not linked to existing account)
+        // New users must first register via SMS and then link Google account
+        if authResult.additionalUserInfo?.isNewUser == true {
+            debugLog("⚠️ [GoogleSignIn] New user detected - Google Sign-In requires SMS registration first")
+            // Delete the newly created account to prevent orphan accounts
+            do {
+                try await authResult.user.delete()
+                debugLog("🗑️ [GoogleSignIn] Deleted newly created account")
+            } catch {
+                debugLog("⚠️ [GoogleSignIn] Failed to delete new account: \(error.localizedDescription)")
+            }
+            throw AuthError.socialLoginNotLinked
+        }
+
+        // Get ID Token
+        let token = try await authResult.user.getIDToken()
+
+        // Register/Login with Cloud Functions
+        let user = try await registerOrLoginWithSocial(
+            uid: authResult.user.uid,
+            email: authResult.user.email,
+            displayName: authResult.user.displayName,
+            photoURL: authResult.user.photoURL?.absoluteString,
+            token: token
+        )
+
+        await MainActor.run {
+            self.objectWillChange.send()
+            self.currentUser = user
+            self.isAuthenticated = true
+            self.refreshLinkedProviders()
+        }
+
+        // Register FCM token
+        PushNotificationManager.shared.onUserLogin()
+
+        // Sync pending bias data
+        await syncPendingBiasData()
+
+        debugLog("✅ [GoogleSignIn] Login complete")
+        return user
+    }
+
+    /// 現在のユーザーに Google アカウントをリンク
+    func linkGoogleAccount() async throws {
+        guard Auth.auth().currentUser != nil else {
+            throw AuthError.loginFailed
+        }
+
+        debugLog("🔵 [GoogleSignIn] Linking Google account to current user...")
+
+        do {
+            _ = try await GoogleSignInHelper.shared.linkToCurrentUser()
+            refreshLinkedProviders()
+            debugLog("✅ [GoogleSignIn] Successfully linked Google account")
+        } catch let error as GoogleSignInError {
+            debugLog("❌ [GoogleSignIn] Link error: \(error.localizedDescription)")
+            throw mapGoogleSignInError(error)
+        }
+    }
+
+    /// ソーシャルログインユーザーをCloud Functionsに登録/ログイン
+    private func registerOrLoginWithSocial(
+        uid: String,
+        email: String?,
+        displayName: String?,
+        photoURL: String?,
+        token: String
+    ) async throws -> User {
+        let url = URL(string: Constants.API.login)!
+        debugLog("📡 [SocialAuth] Calling API: \(url.absoluteString)")
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        // Include user info in request body
+        var body: [String: Any] = [:]
+        if let email = email {
+            body["email"] = email
+        }
+        if let displayName = displayName {
+            body["displayName"] = displayName
+        }
+        if let photoURL = photoURL {
+            body["photoURL"] = photoURL
+        }
+
+        if !body.isEmpty {
+            request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        }
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        if let httpResponse = response as? HTTPURLResponse {
+            debugLog("📥 [SocialAuth] HTTP Status: \(httpResponse.statusCode)")
+
+            guard httpResponse.statusCode == 200 else {
+                debugLog("❌ [SocialAuth] API returned non-200 status")
+                throw AuthError.loginFailed
+            }
+        }
+
+        let result = try JSONDecoder().decode(LoginResponse.self, from: data)
+
+        return User(
+            id: result.data.uid,
+            email: result.data.email,
+            displayName: result.data.displayName,
+            photoURL: result.data.photoURL,
+            points: result.data.points,
+            isSuspended: result.data.isSuspended
+        )
+    }
+
+    /// AppleSignInError を AuthError にマッピング
+    private func mapAppleSignInError(_ error: AppleSignInError) -> AuthError {
+        switch error {
+        case .userCancelled:
+            return .apiError("サインインがキャンセルされました")
+        case .credentialAlreadyInUse:
+            return .apiError("このApple IDは別のアカウントで使用されています")
+        case .providerAlreadyLinked:
+            return .apiError("すでにAppleアカウントと連携済みです")
+        case .emailAlreadyInUse:
+            return .emailAlreadyInUse
+        case .networkError:
+            return .networkError
+        default:
+            return .apiError(error.localizedDescription ?? "Apple認証エラー")
+        }
+    }
+
+    /// GoogleSignInError を AuthError にマッピング
+    private func mapGoogleSignInError(_ error: GoogleSignInError) -> AuthError {
+        switch error {
+        case .userCancelled:
+            return .apiError("サインインがキャンセルされました")
+        case .credentialAlreadyInUse:
+            return .apiError("このGoogleアカウントは別のアカウントで使用されています")
+        case .providerAlreadyLinked:
+            return .apiError("すでにGoogleアカウントと連携済みです")
+        case .emailAlreadyInUse:
+            return .emailAlreadyInUse
+        case .networkError:
+            return .networkError
+        default:
+            return .apiError(error.localizedDescription ?? "Google認証エラー")
         }
     }
 }
@@ -594,6 +865,8 @@ enum AuthError: LocalizedError {
     case sessionExpired
     case invalidPhoneNumber
     case tooManyRequests
+    // Social login errors
+    case socialLoginNotLinked
 
     var errorDescription: String? {
         switch self {
@@ -625,6 +898,8 @@ enum AuthError: LocalizedError {
             return "電話番号の形式が正しくありません"
         case .tooManyRequests:
             return "リクエストが多すぎます。しばらくしてからお試しください"
+        case .socialLoginNotLinked:
+            return "Apple/GoogleでのログインはSMS認証後に連携設定を行うと利用できます"
         }
     }
 }

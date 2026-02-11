@@ -5,6 +5,7 @@
 
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
+import { STANDARD_CONFIG } from "../utils/functionConfig";
 
 interface RewardSettingData {
   actionType: string;
@@ -52,70 +53,72 @@ const defaultRewardSettings: RewardSettingData[] = [
   },
 ];
 
-export const seedRewardSettings = functions.https.onRequest(async (req, res) => {
+export const seedRewardSettings = functions
+  .runWith(STANDARD_CONFIG)
+  .https.onRequest(async (req, res) => {
   // CORS設定
-  res.set("Access-Control-Allow-Origin", "*");
-  res.set("Access-Control-Allow-Methods", "POST");
-  res.set("Access-Control-Allow-Headers", "Content-Type");
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Methods", "POST");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
 
-  if (req.method === "OPTIONS") {
-    res.status(204).send("");
-    return;
-  }
-
-  if (req.method !== "POST") {
-    res.status(405).json({
-      success: false,
-      error: "Method not allowed. Use POST.",
-    });
-    return;
-  }
-
-  try {
-    const db = admin.firestore();
-    const batch = db.batch();
-    const now = admin.firestore.FieldValue.serverTimestamp();
-
-    let createdCount = 0;
-    let skippedCount = 0;
-
-    for (const setting of defaultRewardSettings) {
-      const docRef = db.collection("rewardSettings").doc(setting.actionType);
-      const doc = await docRef.get();
-
-      if (doc.exists) {
-        console.log(`⏭️  Skipped (already exists): ${setting.actionType}`);
-        skippedCount++;
-      } else {
-        batch.set(docRef, {
-          ...setting,
-          updatedAt: now,
-          createdAt: now,
-        });
-        console.log(`✅ Created: ${setting.actionType}`);
-        createdCount++;
-      }
+    if (req.method === "OPTIONS") {
+      res.status(204).send("");
+      return;
     }
 
-    await batch.commit();
+    if (req.method !== "POST") {
+      res.status(405).json({
+        success: false,
+        error: "Method not allowed. Use POST.",
+      });
+      return;
+    }
 
-    console.log(
-      `🎉 Seed completed: ${createdCount} created, ${skippedCount} skipped`,
-    );
+    try {
+      const db = admin.firestore();
+      const batch = db.batch();
+      const now = admin.firestore.FieldValue.serverTimestamp();
 
-    res.status(200).json({
-      success: true,
-      data: {
-        created: createdCount,
-        skipped: skippedCount,
-        total: defaultRewardSettings.length,
-      },
-    });
-  } catch (error: unknown) {
-    console.error("❌ Seed error:", error);
-    res.status(500).json({
-      success: false,
-      error: error instanceof Error ? error.message : "Internal server error",
-    });
-  }
-});
+      let createdCount = 0;
+      let skippedCount = 0;
+
+      for (const setting of defaultRewardSettings) {
+        const docRef = db.collection("rewardSettings").doc(setting.actionType);
+        const doc = await docRef.get();
+
+        if (doc.exists) {
+          console.log(`⏭️  Skipped (already exists): ${setting.actionType}`);
+          skippedCount++;
+        } else {
+          batch.set(docRef, {
+            ...setting,
+            updatedAt: now,
+            createdAt: now,
+          });
+          console.log(`✅ Created: ${setting.actionType}`);
+          createdCount++;
+        }
+      }
+
+      await batch.commit();
+
+      console.log(
+        `🎉 Seed completed: ${createdCount} created, ${skippedCount} skipped`,
+      );
+
+      res.status(200).json({
+        success: true,
+        data: {
+          created: createdCount,
+          skipped: skippedCount,
+          total: defaultRewardSettings.length,
+        },
+      });
+    } catch (error: unknown) {
+      console.error("❌ Seed error:", error);
+      res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : "Internal server error",
+      });
+    }
+  });

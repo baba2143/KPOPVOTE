@@ -112,6 +112,8 @@ export async function getTrending(
       collectionsWithScores.map(({ trendingScore: _trendingScore,
         ...collection }) => collection);
 
+    // CDN cache for trending data (5min browser, 10min CDN)
+    res.set("Cache-Control", "public, max-age=300, s-maxage=600");
     res.status(200).json({
       success: true,
       data: {

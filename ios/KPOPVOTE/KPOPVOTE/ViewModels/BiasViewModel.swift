@@ -146,19 +146,24 @@ class BiasViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            debugLog("📱 [BiasViewModel] Loading groups and idols...")
+            debugLog("📱 [BiasViewModel] Loading groups, idols, and bias settings...")
 
-            // Load groups and idols in parallel
+            // Load groups, idols, and bias in parallel
             async let groupsTask = GroupService.shared.fetchGroups()
             async let idolsTask = IdolService.shared.fetchIdols()
+            let biasTask = Task { await self.loadCurrentBias() }
 
             allGroups = try await groupsTask
             allIdols = try await idolsTask
 
             debugLog("✅ [BiasViewModel] Loaded \(allGroups.count) groups and \(allIdols.count) idols")
 
-            // Load current bias settings
-            await loadCurrentBias()
+            // Wait for bias loading to complete
+            await biasTask.value
+        } catch is CancellationError {
+            debugLog("⏸️ [BiasViewModel] Data loading cancelled (view transition)")
+        } catch let urlError as URLError where urlError.code == .cancelled {
+            debugLog("⏸️ [BiasViewModel] URLSession cancelled (view transition)")
         } catch {
             debugLog("❌ [BiasViewModel] Failed to load data: \(error)")
             errorMessage = error.localizedDescription

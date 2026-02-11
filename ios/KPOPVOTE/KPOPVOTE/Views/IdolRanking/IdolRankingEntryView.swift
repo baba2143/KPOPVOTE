@@ -25,12 +25,13 @@ struct IdolRankingEntryView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(entry.name)
                     .font(.headline)
+                    .foregroundColor(Constants.Colors.textWhite)
                     .lineLimit(1)
 
                 if let groupName = entry.groupName, !groupName.isEmpty {
                     Text(groupName)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Constants.Colors.textGray)
                         .lineLimit(1)
                 }
             }
@@ -42,9 +43,10 @@ struct IdolRankingEntryView: View {
                 Text("\(entry.votes.formatted())")
                     .font(.title3)
                     .fontWeight(.bold)
+                    .foregroundColor(Constants.Colors.textWhite)
                 Text("票")
                     .font(.caption2)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Constants.Colors.textGray)
             }
 
             // Vote button
@@ -62,7 +64,7 @@ struct IdolRankingEntryView: View {
             } else {
                 Text("\(entry.rank)")
                     .font(.headline)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Constants.Colors.textGray)
                     .frame(width: 40)
             }
         }
@@ -97,11 +99,11 @@ struct IdolRankingEntryView: View {
 
     private var placeholderImage: some View {
         Circle()
-            .fill(Color.gray.opacity(0.3))
+            .fill(Constants.Colors.cardDark)
             .frame(width: 50, height: 50)
             .overlay(
                 Image(systemName: entry.entityType == .group ? "person.3.fill" : "person.fill")
-                    .foregroundColor(.gray)
+                    .foregroundColor(Constants.Colors.textGray)
             )
     }
 
@@ -114,7 +116,7 @@ struct IdolRankingEntryView: View {
             } else {
                 Image(systemName: "heart.fill")
                     .font(.title2)
-                    .foregroundColor(canVote ? .pink : .gray)
+                    .foregroundColor(canVote ? Constants.Colors.accentPink : Constants.Colors.textGray)
                     .frame(width: 44, height: 44)
             }
         }

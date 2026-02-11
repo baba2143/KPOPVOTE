@@ -6,114 +6,127 @@ import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { ApiResponse } from "../types";
 import { verifyToken, AuthenticatedRequest } from "../middleware/auth";
+import { READ_HIGH_TRAFFIC_CONFIG } from "../utils/functionConfig";
 
-export const getPosts = functions.https.onRequest(async (req, res) => {
-  res.set("Access-Control-Allow-Origin", "*");
-  res.set("Access-Control-Allow-Methods", "GET");
-  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+export const getPosts = functions
+  .runWith(READ_HIGH_TRAFFIC_CONFIG)
+  .https.onRequest(async (req, res) => {
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Methods", "GET");
+    res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
-  if (req.method === "OPTIONS") {
-    res.status(204).send("");
-    return;
-  }
-
-  if (req.method !== "GET") {
-    res.status(405).json({ success: false, error: "Method not allowed. Use GET." } as ApiResponse<null>);
-    return;
-  }
-
-  await new Promise<void>((resolve, reject) => {
-    verifyToken(req as AuthenticatedRequest, res, (error?: unknown) => error ? reject(error) : resolve());
-  });
-
-  const currentUser = (req as AuthenticatedRequest).user;
-  if (!currentUser) {
-    res.status(401).json({ success: false, error: "Unauthorized" } as ApiResponse<null>);
-    return;
-  }
-
-  try {
-    const type = req.query.type as string;
-    const biasId = req.query.biasId as string | undefined;
-    const limit = parseInt(req.query.limit as string) || 20;
-    const lastPostId = req.query.lastPostId as string | undefined;
-
-    if (!type || !["bias", "following", "discover"].includes(type)) {
-      const errMsg = "type must be 'bias', 'following', or 'discover'";
-      res.status(400).json({ success: false, error: errMsg } as ApiResponse<null>);
+    if (req.method === "OPTIONS") {
+      res.status(204).send("");
       return;
     }
 
-    if (type === "bias" && !biasId) {
-      res.status(400).json({ success: false, error: "biasId is required for bias timeline" } as ApiResponse<null>);
+    if (req.method !== "GET") {
+      res.status(405).json({ success: false, error: "Method not allowed. Use GET." } as ApiResponse<null>);
       return;
     }
 
-    const db = admin.firestore();
+    await new Promise<void>((resolve, reject) => {
+      verifyToken(req as AuthenticatedRequest, res, (error?: unknown) => error ? reject(error) : resolve());
+    });
 
-    // Get blocked users for current user (Apple Guideline 1.2 compliance)
-    const blockedUsersSnapshot = await db.collection("users")
-      .doc(currentUser.uid)
-      .collection("blockedUsers")
-      .get();
-    const blockedUserIds = blockedUsersSnapshot.docs.map((doc) => doc.id);
+    const currentUser = (req as AuthenticatedRequest).user;
+    if (!currentUser) {
+      res.status(401).json({ success: false, error: "Unauthorized" } as ApiResponse<null>);
+      return;
+    }
 
-    let query: admin.firestore.Query = db.collection("posts");
+    try {
+      const type = req.query.type as string;
+      const biasId = req.query.biasId as string | undefined;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const lastPostId = req.query.lastPostId as string | undefined;
 
-    if (type === "bias") {
-      // Bias timeline: posts with matching biasId
-      query = query.where("biasIds", "array-contains", biasId);
-    } else if (type === "discover") {
-      // Discover timeline: all posts (no filter) - just order by createdAt
-      // No additional filtering needed
-    } else {
-      // Following timeline: posts from followed users
-      const followingSnapshot = await db.collection("follows")
-        .where("followerId", "==", currentUser.uid)
-        .get();
-
-      if (followingSnapshot.empty) {
-        // No following users, return empty
-        res.status(200).json({
-          success: true,
-          data: { posts: [], hasMore: false },
-        } as ApiResponse<unknown>);
+      if (!type || !["bias", "following", "discover"].includes(type)) {
+        const errMsg = "type must be 'bias', 'following', or 'discover'";
+        res.status(400).json({ success: false, error: errMsg } as ApiResponse<null>);
         return;
       }
 
-      const followingIds = followingSnapshot.docs.map((doc) => doc.data().followingId);
+      if (type === "bias" && !biasId) {
+        res.status(400).json({ success: false, error: "biasId is required for bias timeline" } as ApiResponse<null>);
+        return;
+      }
 
-      // Firestore 'in' query limited to 10 items
-      if (followingIds.length > 10) {
-        query = query.where("userId", "in", followingIds.slice(0, 10));
+      const db = admin.firestore();
+
+      // Get blocked users for current user (Apple Guideline 1.2 compliance)
+      const blockedUsersSnapshot = await db.collection("users")
+        .doc(currentUser.uid)
+        .collection("blockedUsers")
+        .get();
+      const blockedUserIds = blockedUsersSnapshot.docs.map((doc) => doc.id);
+
+      let query: admin.firestore.Query = db.collection("posts");
+
+      if (type === "bias") {
+      // Bias timeline: posts with matching biasId
+        query = query.where("biasIds", "array-contains", biasId);
+      } else if (type === "discover") {
+      // Discover timeline: all posts (no filter) - just order by createdAt
+      // No additional filtering needed
       } else {
-        query = query.where("userId", "in", followingIds);
+      // Following timeline: posts from followed users
+        const followingSnapshot = await db.collection("follows")
+          .where("followerId", "==", currentUser.uid)
+          .get();
+
+        if (followingSnapshot.empty) {
+        // No following users, return empty
+          res.status(200).json({
+            success: true,
+            data: { posts: [], hasMore: false },
+          } as ApiResponse<unknown>);
+          return;
+        }
+
+        const followingIds = followingSnapshot.docs.map((doc) => doc.data().followingId);
+
+        // Firestore 'in' query limited to 10 items
+        if (followingIds.length > 10) {
+          query = query.where("userId", "in", followingIds.slice(0, 10));
+        } else {
+          query = query.where("userId", "in", followingIds);
+        }
       }
-    }
 
-    // Add pagination
-    query = query.orderBy("createdAt", "desc").limit(limit + 1);
+      // Add pagination
+      query = query.orderBy("createdAt", "desc").limit(limit + 1);
 
-    if (lastPostId) {
-      const lastPostDoc = await db.collection("posts").doc(lastPostId).get();
-      if (lastPostDoc.exists) {
-        query = query.startAfter(lastPostDoc);
+      if (lastPostId) {
+        const lastPostDoc = await db.collection("posts").doc(lastPostId).get();
+        if (lastPostDoc.exists) {
+          query = query.startAfter(lastPostDoc);
+        }
       }
-    }
 
-    const snapshot = await query.get();
-    const hasMore = snapshot.size > limit;
-    const posts = snapshot.docs.slice(0, limit);
+      const snapshot = await query.get();
+      const hasMore = snapshot.size > limit;
+      const posts = snapshot.docs.slice(0, limit);
 
-    // Get user info for each post
-    const postsData = await Promise.all(
-      posts.map(async (doc) => {
+      // Batch fetch user info (N+1 → 1 query)
+      const userIds = [...new Set(posts.map((p) => p.data().userId))];
+      const userRefs = userIds.map((id) => db.collection("users").doc(id));
+      const userDocs = userRefs.length > 0 ? await db.getAll(...userRefs) : [];
+      const userMap = new Map(
+        userDocs.filter((d) => d.exists).map((d) => [d.id, d.data()])
+      );
+
+      // Batch fetch like status (N+1 → 1 query)
+      const likeRefs = posts.map((doc) =>
+        db.collection("posts").doc(doc.id).collection("likes").doc(currentUser.uid)
+      );
+      const likeDocs = likeRefs.length > 0 ? await db.getAll(...likeRefs) : [];
+      const likeMap = new Map(likeDocs.map((d, i) => [posts[i].id, d.exists]));
+
+      // Build posts data using pre-fetched maps
+      const postsData = posts.map((doc) => {
         const data = doc.data();
-        const userDoc = await db.collection("users").doc(data.userId).get();
-        const userData = userDoc.exists ? userDoc.data() : null;
-
-        // Check if current user liked this post
-        const likeDoc = await db.collection("posts").doc(doc.id).collection("likes").doc(currentUser.uid).get();
+        const userData = userMap.get(data.userId) || null;
 
         // Build user object
         const userObject = {
@@ -138,27 +151,26 @@ export const getPosts = functions.https.onRequest(async (req, res) => {
           user: userObject,
           createdAt: data.createdAt?.toDate().toISOString() || null,
           updatedAt: data.updatedAt?.toDate().toISOString() || null,
-          isLikedByCurrentUser: likeDoc.exists,
+          isLikedByCurrentUser: likeMap.get(doc.id) || false,
           userDisplayName: userData?.displayName || null,
           userPhotoURL: userData?.photoURL || null,
         };
-      })
-    );
+      });
 
-    // Filter out blocked users' posts (Apple Guideline 1.2 compliance)
-    const filteredPosts = blockedUserIds.length > 0 ?
-      postsData.filter((post) => !blockedUserIds.includes(post.user.uid)) :
-      postsData;
+      // Filter out blocked users' posts (Apple Guideline 1.2 compliance)
+      const filteredPosts = blockedUserIds.length > 0 ?
+        postsData.filter((post) => !blockedUserIds.includes(post.user.uid)) :
+        postsData;
 
-    res.status(200).json({
-      success: true,
-      data: {
-        posts: filteredPosts,
-        hasMore,
-      },
-    } as ApiResponse<unknown>);
-  } catch (error: unknown) {
-    console.error("Get posts error:", error);
-    res.status(500).json({ success: false, error: "Internal server error" } as ApiResponse<null>);
-  }
-});
+      res.status(200).json({
+        success: true,
+        data: {
+          posts: filteredPosts,
+          hasMore,
+        },
+      } as ApiResponse<unknown>);
+    } catch (error: unknown) {
+      console.error("Get posts error:", error);
+      res.status(500).json({ success: false, error: "Internal server error" } as ApiResponse<null>);
+    }
+  });

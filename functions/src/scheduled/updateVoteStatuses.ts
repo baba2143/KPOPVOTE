@@ -8,6 +8,7 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { sendPushNotification } from "../utils/fcmHelper";
+import { SCHEDULED_CONFIG } from "../utils/functionConfig";
 
 const db = admin.firestore();
 
@@ -22,7 +23,9 @@ interface VoteStatusChange {
  * Update vote statuses based on current time
  * Scheduled to run every minute
  */
-export const updateVoteStatuses = functions.pubsub
+export const updateVoteStatuses = functions
+  .runWith(SCHEDULED_CONFIG)
+  .pubsub
   .schedule("every 1 minutes")
   .onRun(async () => {
     const now = admin.firestore.Timestamp.now();

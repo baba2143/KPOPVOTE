@@ -10,6 +10,7 @@ import UserNotifications
 import FirebaseCore
 import FirebaseMessaging
 import FirebaseAuth
+import FirebaseAppCheck
 
 class AppDelegate: NSObject, UIApplicationDelegate {
 
@@ -19,6 +20,14 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
+        // App Check を Firebase 初期化前に設定
+        #if DEBUG
+        let providerFactory = AppCheckDebugProviderFactory()
+        #else
+        let providerFactory = DeviceCheckProviderFactory()
+        #endif
+        AppCheck.setAppCheckProviderFactory(providerFactory)
+
         // Firebase を最初に初期化（Auth.auth() を使う前に必須）
         FirebaseApp.configure()
 

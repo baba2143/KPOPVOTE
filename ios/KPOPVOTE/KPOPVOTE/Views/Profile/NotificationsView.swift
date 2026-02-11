@@ -36,7 +36,7 @@ struct NotificationsView: View {
                     .padding()
                 }
             }
-            .navigationTitle("Notifications")
+            .navigationTitle("通知設定")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -63,13 +63,13 @@ struct NotificationsView: View {
                     .font(.system(size: 20))
                     .foregroundColor(Constants.Colors.accentPink)
 
-                Text("Push Notifications")
+                Text("プッシュ通知")
                     .font(.system(size: Constants.Typography.headlineSize, weight: .semibold))
                     .foregroundColor(Constants.Colors.textWhite)
             }
 
             Toggle(isOn: $viewModel.pushEnabled) {
-                Text("Enable Push Notifications")
+                Text("プッシュ通知を有効にする")
                     .font(.system(size: Constants.Typography.bodySize))
                     .foregroundColor(Constants.Colors.textWhite)
             }
@@ -89,7 +89,7 @@ struct NotificationsView: View {
     @ViewBuilder
     private var notificationTypesSection: some View {
         VStack(alignment: .leading, spacing: Constants.Spacing.small) {
-            Text("Notification Types")
+            Text("通知の種類")
                 .font(.system(size: Constants.Typography.headlineSize, weight: .semibold))
                 .foregroundColor(Constants.Colors.textWhite)
                 .padding(.bottom, Constants.Spacing.small)
@@ -97,8 +97,8 @@ struct NotificationsView: View {
             VStack(spacing: 0) {
                 NotificationToggleRow(
                     icon: "heart.fill",
-                    title: "Likes",
-                    subtitle: "When someone likes your content",
+                    title: "いいね",
+                    subtitle: "あなたのコンテンツにいいねがついたとき",
                     color: .red,
                     isOn: $viewModel.likesEnabled
                 )
@@ -109,8 +109,8 @@ struct NotificationsView: View {
 
                 NotificationToggleRow(
                     icon: "bubble.left.fill",
-                    title: "Comments",
-                    subtitle: "When someone comments on your post",
+                    title: "コメント",
+                    subtitle: "あなたの投稿にコメントがついたとき",
                     color: .blue,
                     isOn: $viewModel.commentsEnabled
                 )
@@ -121,8 +121,8 @@ struct NotificationsView: View {
 
                 NotificationToggleRow(
                     icon: "at",
-                    title: "Mentions",
-                    subtitle: "When someone mentions you in a comment",
+                    title: "メンション",
+                    subtitle: "コメントであなたがメンションされたとき",
                     color: .cyan,
                     isOn: $viewModel.mentionsEnabled
                 )
@@ -133,8 +133,8 @@ struct NotificationsView: View {
 
                 NotificationToggleRow(
                     icon: "person.fill.badge.plus",
-                    title: "Followers",
-                    subtitle: "When someone follows you",
+                    title: "フォロワー",
+                    subtitle: "誰かにフォローされたとき",
                     color: .purple,
                     isOn: $viewModel.followersEnabled
                 )
@@ -145,8 +145,8 @@ struct NotificationsView: View {
 
                 NotificationToggleRow(
                     icon: "bell.badge.fill",
-                    title: "New Posts",
-                    subtitle: "When someone you follow posts",
+                    title: "新着投稿",
+                    subtitle: "フォロー中のユーザーが投稿したとき",
                     color: .indigo,
                     isOn: $viewModel.newPostsEnabled
                 )
@@ -157,8 +157,8 @@ struct NotificationsView: View {
 
                 NotificationToggleRow(
                     icon: "checkmark.square.fill",
-                    title: "Vote Reminders",
-                    subtitle: "Reminders for upcoming votes",
+                    title: "投票リマインダー",
+                    subtitle: "投票予定のリマインダー",
                     color: Constants.Colors.accentPink,
                     isOn: $viewModel.voteRemindersEnabled
                 )
@@ -169,8 +169,8 @@ struct NotificationsView: View {
 
                 NotificationToggleRow(
                     icon: "calendar.badge.clock",
-                    title: "Calendar Reminders",
-                    subtitle: "Event and schedule notifications",
+                    title: "カレンダーリマインダー",
+                    subtitle: "イベントやスケジュールの通知",
                     color: .orange,
                     isOn: $viewModel.calendarRemindersEnabled
                 )
@@ -181,8 +181,8 @@ struct NotificationsView: View {
 
                 NotificationToggleRow(
                     icon: "megaphone.fill",
-                    title: "Announcements",
-                    subtitle: "Important app updates and news",
+                    title: "お知らせ",
+                    subtitle: "アプリの重要なお知らせ",
                     color: .green,
                     isOn: $viewModel.announcementsEnabled
                 )
@@ -193,8 +193,8 @@ struct NotificationsView: View {
 
                 NotificationToggleRow(
                     icon: "envelope.fill",
-                    title: "Direct Messages",
-                    subtitle: "When you receive a direct message",
+                    title: "メッセージ",
+                    subtitle: "メッセージを受信したとき",
                     color: .pink,
                     isOn: $viewModel.directMessagesEnabled
                 )
@@ -213,11 +213,11 @@ struct NotificationsView: View {
                 .font(.system(size: 40))
                 .foregroundColor(.orange)
 
-            Text("Notifications Disabled")
+            Text("通知が無効です")
                 .font(.system(size: Constants.Typography.headlineSize, weight: .semibold))
                 .foregroundColor(Constants.Colors.textWhite)
 
-            Text("Enable notifications in Settings to receive updates about votes, comments, and more.")
+            Text("設定から通知を有効にすると、投票やコメントなどの更新を受け取れます。")
                 .font(.system(size: Constants.Typography.bodySize))
                 .foregroundColor(Constants.Colors.textGray)
                 .multilineTextAlignment(.center)
@@ -225,7 +225,7 @@ struct NotificationsView: View {
             Button {
                 viewModel.openSettings()
             } label: {
-                Text("Open Settings")
+                Text("設定を開く")
                     .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
                     .foregroundColor(.white)
                     .padding(.horizontal, Constants.Spacing.large)

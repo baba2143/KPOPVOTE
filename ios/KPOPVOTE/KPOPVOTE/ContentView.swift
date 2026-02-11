@@ -10,6 +10,7 @@ import SwiftUI
 struct ContentView: View {
     @StateObject private var authService = AuthService()
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+    @AppStorage("hasCompletedSocialLinking") private var hasCompletedSocialLinking = false
 
     var body: some View {
         Group {
@@ -17,6 +18,18 @@ struct ContentView: View {
                 // 初回起動 - チュートリアル表示
                 TutorialView()
                     .environmentObject(authService)
+            } else if authService.isAuthenticated && !hasCompletedSocialLinking {
+                // 認証済みだがソーシャル連携未完了 - socialLinking画面表示
+                ZStack {
+                    Constants.Colors.backgroundDark
+                        .ignoresSafeArea()
+                    TutorialSocialLinkingView(
+                        authService: authService,
+                        onComplete: {
+                            // onComplete内でフラグ設定済み
+                        }
+                    )
+                }
             } else if authService.isAuthenticated {
                 // 認証済み - メイン画面
                 MainTabView()

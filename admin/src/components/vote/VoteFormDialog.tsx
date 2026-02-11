@@ -29,8 +29,10 @@ import {
 } from '@mui/icons-material';
 import { createVote, updateVote, uploadVoteCoverImage } from '../../services/voteService';
 import { listIdols } from '../../services/idolService';
-import { InAppVoteCreateRequest, InAppVoteUpdateRequest, InAppVote, VoteRestrictions } from '../../types/vote';
+import { listGroups } from '../../services/groupService';
+import { InAppVoteCreateRequest, InAppVoteUpdateRequest, InAppVote, VoteRestrictions, VoteChoiceInput } from '../../types/vote';
 import { IdolMaster } from '../../types/idol';
+import { GroupMaster } from '../../types/group';
 
 interface VoteFormDialogProps {
   open: boolean;
@@ -40,7 +42,7 @@ interface VoteFormDialogProps {
   initialVote?: InAppVote;
 }
 
-type ChoiceInputMode = 'manual' | 'idol';
+type ChoiceInputMode = 'manual' | 'idol' | 'group';
 
 export const VoteFormDialog: React.FC<VoteFormDialogProps> = ({
   open,
@@ -80,6 +82,11 @@ export const VoteFormDialog: React.FC<VoteFormDialogProps> = ({
   const [selectedIdolIds, setSelectedIdolIds] = useState<string[]>([]);
   const [loadingIdols, setLoadingIdols] = useState(false);
 
+  // Group selection mode
+  const [allGroups, setAllGroups] = useState<GroupMaster[]>([]);
+  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
+  const [loadingGroups, setLoadingGroups] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -87,6 +94,13 @@ export const VoteFormDialog: React.FC<VoteFormDialogProps> = ({
   useEffect(() => {
     if (open && inputMode === 'idol' && allIdols.length === 0) {
       loadIdols();
+    }
+  }, [open, inputMode]);
+
+  // Load groups when dialog opens and group mode is selected
+  useEffect(() => {
+    if (open && inputMode === 'group' && allGroups.length === 0) {
+      loadGroups();
     }
   }, [open, inputMode]);
 
@@ -130,6 +144,19 @@ export const VoteFormDialog: React.FC<VoteFormDialogProps> = ({
     }
   };
 
+  const loadGroups = async () => {
+    try {
+      setLoadingGroups(true);
+      const groups = await listGroups();
+      setAllGroups(groups);
+    } catch (err) {
+      console.error('Error loading groups:', err);
+      setError('グループ一覧の取得に失敗しました');
+    } finally {
+      setLoadingGroups(false);
+    }
+  };
+
   // Get unique group names
   const groupNames = Array.from(
     new Set(allIdols.map((idol) => idol.groupName))
@@ -144,6 +171,11 @@ export const VoteFormDialog: React.FC<VoteFormDialogProps> = ({
   // Selected idol objects
   const selectedIdols = allIdols.filter((idol) =>
     selectedIdolIds.includes(idol.idolId)
+  );
+
+  // Selected group objects
+  const selectedGroups = allGroups.filter((group) =>
+    selectedGroupIds.includes(group.groupId)
   );
 
   // Manual input mode handlers
@@ -172,6 +204,15 @@ export const VoteFormDialog: React.FC<VoteFormDialogProps> = ({
       prev.includes(idolId)
         ? prev.filter((id) => id !== idolId)
         : [...prev, idolId]
+    );
+  };
+
+  // Group selection mode handlers
+  const handleToggleGroup = (groupId: string) => {
+    setSelectedGroupIds((prev) =>
+      prev.includes(groupId)
+        ? prev.filter((id) => id !== groupId)
+        : [...prev, groupId]
     );
   };
 
@@ -241,9 +282,14 @@ export const VoteFormDialog: React.FC<VoteFormDialogProps> = ({
           setError('選択肢は最低2つ必要です');
           return false;
         }
-      } else {
+      } else if (inputMode === 'idol') {
         if (selectedIdolIds.length < 2) {
           setError('アイドルを最低2人選択してください');
+          return false;
+        }
+      } else if (inputMode === 'group') {
+        if (selectedGroupIds.length < 2) {
+          setError('グループを最低2つ選択してください');
           return false;
         }
       }
@@ -324,8 +370,8 @@ export const VoteFormDialog: React.FC<VoteFormDialogProps> = ({
           voteId: initialVote.voteId,
           title: title.trim(),
           description: description.trim(),
-          startDate: new Date(startDate).toISOString(),
-          endDate: new Date(endDate).toISOString(),
+          startDate: startDate + ":00",  // JSTのまま保存（例: "2026-01-25T22:00:00"）
+          endDate: endDate + ":00",
           requiredPoints,
           ...(coverImageUrl && { coverImageUrl }),
           isFeatured,
@@ -336,17 +382,29 @@ export const VoteFormDialog: React.FC<VoteFormDialogProps> = ({
         await updateVote(updateData);
       } else {
         // Create mode: create new vote
-        const choices =
+        const choices: (string | VoteChoiceInput)[] =
           inputMode === 'manual'
             ? manualChoices.filter((c) => c.trim() !== '').map((c) => c.trim())
-            : selectedIdols.map((idol) => idol.name);
+            : inputMode === 'idol'
+              ? selectedIdols.map((idol) => ({
+                  label: idol.name,
+                  idolId: idol.idolId,
+                  imageUrl: idol.imageUrl,
+                  groupName: idol.groupName,
+                  groupId: idol.groupId,
+                }))
+              : selectedGroups.map((group) => ({
+                  label: group.name,
+                  groupId: group.groupId,
+                  imageUrl: group.imageUrl,
+                }));
 
         const createData: InAppVoteCreateRequest = {
           title: title.trim(),
           description: description.trim(),
           choices,
-          startDate: new Date(startDate).toISOString(),
-          endDate: new Date(endDate).toISOString(),
+          startDate: startDate + ":00",  // JSTのまま保存（例: "2026-01-25T22:00:00"）
+          endDate: endDate + ":00",
           requiredPoints,
           ...(coverImageUrl && { coverImageUrl }),
           isFeatured,
@@ -379,6 +437,7 @@ export const VoteFormDialog: React.FC<VoteFormDialogProps> = ({
     setInputMode('manual');
     setManualChoices(['', '']);
     setSelectedIdolIds([]);
+    setSelectedGroupIds([]);
     setGroupFilter('all');
     setDailyVoteLimitPerUser('');
     setMinVoteCount('');
@@ -419,6 +478,8 @@ export const VoteFormDialog: React.FC<VoteFormDialogProps> = ({
             rows={3}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            inputProps={{ maxLength: 200 }}
+            helperText={`${description.length}/200`}
             required
           />
 
@@ -602,7 +663,11 @@ export const VoteFormDialog: React.FC<VoteFormDialogProps> = ({
                 </ToggleButton>
                 <ToggleButton value="idol">
                   <GroupIcon sx={{ mr: 1 }} />
-                  アイドルから選択
+                  メンバー選択
+                </ToggleButton>
+                <ToggleButton value="group">
+                  <GroupIcon sx={{ mr: 1 }} />
+                  グループ選択
                 </ToggleButton>
               </ToggleButtonGroup>
             </Box>
@@ -751,6 +816,87 @@ export const VoteFormDialog: React.FC<VoteFormDialogProps> = ({
                             avatar={<Avatar src={idol.imageUrl || undefined} />}
                             label={idol.name}
                             onDelete={() => handleToggleIdol(idol.idolId)}
+                          />
+                        ))}
+                      </Box>
+                    </Box>
+                  )}
+                </>
+              )}
+            </Box>
+          )}
+
+          {/* Group Selection Mode - Only in create mode */}
+          {mode === 'create' && inputMode === 'group' && (
+            <Box>
+              {loadingGroups ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+                  <CircularProgress />
+                </Box>
+              ) : (
+                <>
+                  <Box
+                    sx={{
+                      maxHeight: 300,
+                      overflow: 'auto',
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      borderRadius: 1,
+                      p: 1,
+                    }}
+                  >
+                    {allGroups.length === 0 ? (
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        align="center"
+                        sx={{ py: 3 }}
+                      >
+                        グループが登録されていません
+                      </Typography>
+                    ) : (
+                      allGroups.map((group) => (
+                        <Box
+                          key={group.groupId}
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1,
+                            py: 1,
+                            px: 1,
+                            cursor: 'pointer',
+                            '&:hover': { bgcolor: 'action.hover' },
+                            borderRadius: 1,
+                          }}
+                          onClick={() => handleToggleGroup(group.groupId)}
+                        >
+                          <Checkbox
+                            checked={selectedGroupIds.includes(group.groupId)}
+                            readOnly
+                          />
+                          <Avatar
+                            src={group.imageUrl || undefined}
+                            alt={group.name}
+                            sx={{ width: 40, height: 40 }}
+                          />
+                          <Typography variant="body1">{group.name}</Typography>
+                        </Box>
+                      ))
+                    )}
+                  </Box>
+
+                  {selectedGroups.length > 0 && (
+                    <Box sx={{ mt: 2 }}>
+                      <Typography variant="subtitle2" gutterBottom>
+                        選択済み ({selectedGroups.length})
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                        {selectedGroups.map((group) => (
+                          <Chip
+                            key={group.groupId}
+                            avatar={<Avatar src={group.imageUrl || undefined} />}
+                            label={group.name}
+                            onDelete={() => handleToggleGroup(group.groupId)}
                           />
                         ))}
                       </Box>

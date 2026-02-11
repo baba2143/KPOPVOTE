@@ -5,6 +5,7 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { ApiResponse } from "../types";
+import { STANDARD_CONFIG } from "../utils/functionConfig";
 
 /**
  * Request body for setNotificationSettings endpoint
@@ -23,8 +24,9 @@ interface SetNotificationSettingsRequest {
   directMessages?: boolean;
 }
 
-export const setNotificationSettings = functions.https.onRequest(
-  async (req, res) => {
+export const setNotificationSettings = functions
+  .runWith(STANDARD_CONFIG)
+  .https.onRequest(async (req, res) => {
     // Enable CORS
     res.set("Access-Control-Allow-Origin", "*");
     res.set("Access-Control-Allow-Methods", "POST");
@@ -169,4 +171,4 @@ export const setNotificationSettings = functions.https.onRequest(
       } as ApiResponse<null>);
     }
   }
-);
+  );

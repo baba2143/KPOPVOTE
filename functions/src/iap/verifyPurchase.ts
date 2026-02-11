@@ -6,6 +6,7 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { ApiResponse } from "../types";
+import { STANDARD_CONFIG } from "../utils/functionConfig";
 
 interface VerifyPurchaseRequest {
   receiptData: string; // Base64-encoded App Store receipt
@@ -35,143 +36,145 @@ const PRODUCT_POINTS: { [key: string]: number } = {
   "com.kpopvote.points.5500.promo": 13000,
 };
 
-export const verifyPurchase = functions.https.onRequest(async (req, res) => {
-  res.set("Access-Control-Allow-Origin", "*");
-  res.set("Access-Control-Allow-Methods", "POST");
-  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+export const verifyPurchase = functions
+  .runWith(STANDARD_CONFIG)
+  .https.onRequest(async (req, res) => {
+    res.set("Access-Control-Allow-Origin", "*");
+    res.set("Access-Control-Allow-Methods", "POST");
+    res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
-  if (req.method === "OPTIONS") {
-    res.status(204).send("");
-    return;
-  }
+    if (req.method === "OPTIONS") {
+      res.status(204).send("");
+      return;
+    }
 
-  if (req.method !== "POST") {
-    res.status(405).json({ success: false, error: "Method not allowed. Use POST." } as ApiResponse<null>);
-    return;
-  }
+    if (req.method !== "POST") {
+      res.status(405).json({ success: false, error: "Method not allowed. Use POST." } as ApiResponse<null>);
+      return;
+    }
 
-  try {
+    try {
     // Authenticate user
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      res.status(401).json({ success: false, error: "Unauthorized: No token provided" } as ApiResponse<null>);
-      return;
-    }
-
-    const token = authHeader.split("Bearer ")[1];
-    const decodedToken = await admin.auth().verifyIdToken(token);
-    const uid = decodedToken.uid;
-
-    // Parse request body
-    const { receiptData, productId, transactionId } = req.body as VerifyPurchaseRequest;
-
-    if (!receiptData || !productId || !transactionId) {
-      res.status(400).json({ success: false, error: "Missing required fields" } as ApiResponse<null>);
-      return;
-    }
-
-    const db = admin.firestore();
-
-    // Check if transaction already processed (prevent duplicates)
-    const existingPurchase = await db
-      .collection("purchases")
-      .where("transactionId", "==", transactionId)
-      .limit(1)
-      .get();
-
-    if (!existingPurchase.empty) {
-      console.log(`Transaction ${transactionId} already processed`);
-      res.status(400).json({
-        success: false,
-        error: "Transaction already processed",
-      } as ApiResponse<null>);
-      return;
-    }
-
-    // Verify receipt with App Store (Production & Sandbox)
-    const isValidReceipt = await verifyReceiptWithAppStore(receiptData);
-
-    if (!isValidReceipt) {
-      console.error("Invalid receipt from App Store");
-      res.status(400).json({
-        success: false,
-        error: "Invalid receipt",
-      } as ApiResponse<null>);
-      return;
-    }
-
-    // Get points for product
-    const pointsToGrant = PRODUCT_POINTS[productId];
-    if (!pointsToGrant) {
-      res.status(400).json({
-        success: false,
-        error: "Invalid product ID",
-      } as ApiResponse<null>);
-      return;
-    }
-
-    // Use Firestore transaction for atomicity
-    const result = await db.runTransaction(async (transaction) => {
-      const userRef = db.collection("users").doc(uid);
-      const userDoc = await transaction.get(userRef);
-
-      if (!userDoc.exists) {
-        throw new Error("User not found");
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        res.status(401).json({ success: false, error: "Unauthorized: No token provided" } as ApiResponse<null>);
+        return;
       }
 
-      const userData = userDoc.data()!;
-      const currentPoints = userData.points || 0;
-      const newBalance = currentPoints + pointsToGrant;
+      const token = authHeader.split("Bearer ")[1];
+      const decodedToken = await admin.auth().verifyIdToken(token);
+      const uid = decodedToken.uid;
 
-      // Update user points
-      transaction.update(userRef, {
-        points: newBalance,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      // Parse request body
+      const { receiptData, productId, transactionId } = req.body as VerifyPurchaseRequest;
+
+      if (!receiptData || !productId || !transactionId) {
+        res.status(400).json({ success: false, error: "Missing required fields" } as ApiResponse<null>);
+        return;
+      }
+
+      const db = admin.firestore();
+
+      // Check if transaction already processed (prevent duplicates)
+      const existingPurchase = await db
+        .collection("purchases")
+        .where("transactionId", "==", transactionId)
+        .limit(1)
+        .get();
+
+      if (!existingPurchase.empty) {
+        console.log(`Transaction ${transactionId} already processed`);
+        res.status(400).json({
+          success: false,
+          error: "Transaction already processed",
+        } as ApiResponse<null>);
+        return;
+      }
+
+      // Verify receipt with App Store (Production & Sandbox)
+      const isValidReceipt = await verifyReceiptWithAppStore(receiptData);
+
+      if (!isValidReceipt) {
+        console.error("Invalid receipt from App Store");
+        res.status(400).json({
+          success: false,
+          error: "Invalid receipt",
+        } as ApiResponse<null>);
+        return;
+      }
+
+      // Get points for product
+      const pointsToGrant = PRODUCT_POINTS[productId];
+      if (!pointsToGrant) {
+        res.status(400).json({
+          success: false,
+          error: "Invalid product ID",
+        } as ApiResponse<null>);
+        return;
+      }
+
+      // Use Firestore transaction for atomicity
+      const result = await db.runTransaction(async (transaction) => {
+        const userRef = db.collection("users").doc(uid);
+        const userDoc = await transaction.get(userRef);
+
+        if (!userDoc.exists) {
+          throw new Error("User not found");
+        }
+
+        const userData = userDoc.data()!;
+        const currentPoints = userData.points || 0;
+        const newBalance = currentPoints + pointsToGrant;
+
+        // Update user points
+        transaction.update(userRef, {
+          points: newBalance,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        // Record purchase
+        const purchaseRef = db.collection("purchases").doc();
+        transaction.set(purchaseRef, {
+          userId: uid,
+          productId,
+          transactionId,
+          points: pointsToGrant,
+          receiptData, // Store for potential reverification
+          status: "completed",
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        // Record point transaction
+        const transactionRef = db.collection("pointTransactions").doc();
+        transaction.set(transactionRef, {
+          userId: uid,
+          points: pointsToGrant,
+          type: "purchase",
+          reason: `ポイント購入 (${productId})`,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        return { pointsGranted: pointsToGrant, newBalance };
       });
 
-      // Record purchase
-      const purchaseRef = db.collection("purchases").doc();
-      transaction.set(purchaseRef, {
-        userId: uid,
-        productId,
+      console.log(`Points granted: ${result.pointsGranted} to user ${uid}`);
+
+      const response: VerifyPurchaseResponse = {
+        success: true,
+        pointsGranted: result.pointsGranted,
+        newBalance: result.newBalance,
         transactionId,
-        points: pointsToGrant,
-        receiptData, // Store for potential reverification
-        status: "completed",
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
+      };
 
-      // Record point transaction
-      const transactionRef = db.collection("pointTransactions").doc();
-      transaction.set(transactionRef, {
-        userId: uid,
-        points: pointsToGrant,
-        type: "purchase",
-        reason: `ポイント購入 (${productId})`,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
-
-      return { pointsGranted: pointsToGrant, newBalance };
-    });
-
-    console.log(`Points granted: ${result.pointsGranted} to user ${uid}`);
-
-    const response: VerifyPurchaseResponse = {
-      success: true,
-      pointsGranted: result.pointsGranted,
-      newBalance: result.newBalance,
-      transactionId,
-    };
-
-    res.status(200).json({
-      success: true,
-      data: response,
-    } as ApiResponse<VerifyPurchaseResponse>);
-  } catch (error: unknown) {
-    console.error("Verify purchase error:", error);
-    res.status(500).json({ success: false, error: "Internal server error" } as ApiResponse<null>);
-  }
-});
+      res.status(200).json({
+        success: true,
+        data: response,
+      } as ApiResponse<VerifyPurchaseResponse>);
+    } catch (error: unknown) {
+      console.error("Verify purchase error:", error);
+      res.status(500).json({ success: false, error: "Internal server error" } as ApiResponse<null>);
+    }
+  });
 
 /**
  * Verify receipt with App Store

@@ -34,14 +34,14 @@ struct DailyLimitBadgeView: View {
         HStack(spacing: 12) {
             // Vote icon
             Image(systemName: "heart.fill")
-                .foregroundColor(.pink)
+                .foregroundColor(Constants.Colors.accentPink)
                 .font(.title3)
 
             // Text info
             VStack(alignment: .leading, spacing: 2) {
                 Text("本日の残り投票数")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Constants.Colors.textGray)
 
                 HStack(spacing: 4) {
                     Text("\(remainingVotes)")
@@ -50,7 +50,7 @@ struct DailyLimitBadgeView: View {
                         .foregroundColor(badgeColor)
                     Text("/ \(maxVotes)票")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Constants.Colors.textGray)
                 }
             }
 
@@ -59,7 +59,7 @@ struct DailyLimitBadgeView: View {
             // Progress indicator
             ZStack {
                 Circle()
-                    .stroke(Color.gray.opacity(0.3), lineWidth: 4)
+                    .stroke(Constants.Colors.textGray.opacity(0.3), lineWidth: 4)
                     .frame(width: 44, height: 44)
 
                 Circle()
@@ -75,7 +75,7 @@ struct DailyLimitBadgeView: View {
             }
         }
         .padding()
-        .background(Color(.secondarySystemBackground))
+        .background(Constants.Colors.cardDark)
         .cornerRadius(12)
     }
 }

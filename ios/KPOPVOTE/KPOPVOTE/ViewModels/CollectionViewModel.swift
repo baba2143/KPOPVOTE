@@ -99,6 +99,10 @@ class CollectionViewModel: ObservableObject {
             trendingCollections = try await collectionService.getTrendingCollections(period: period, limit: limit)
             filterBlockedUsers()
             debugLog("✅ [CollectionViewModel] Loaded \(trendingCollections.count) trending collections")
+        } catch is CancellationError {
+            debugLog("⏸️ [CollectionViewModel] Trending loading cancelled (view transition)")
+        } catch let urlError as URLError where urlError.code == .cancelled {
+            debugLog("⏸️ [CollectionViewModel] URLSession cancelled (view transition)")
         } catch {
             errorMessage = NetworkErrorHandler.getUserMessage(for: error)
             debugLog("❌ [CollectionViewModel] Failed to load trending: \(error.localizedDescription)")
@@ -132,6 +136,10 @@ class CollectionViewModel: ObservableObject {
             hasNextPage = response.data.pagination.hasNext
 
             debugLog("✅ [CollectionViewModel] Loaded \(response.data.collections.count) collections (page \(page))")
+        } catch is CancellationError {
+            debugLog("⏸️ [CollectionViewModel] Latest loading cancelled (view transition)")
+        } catch let urlError as URLError where urlError.code == .cancelled {
+            debugLog("⏸️ [CollectionViewModel] URLSession cancelled (view transition)")
         } catch {
             errorMessage = NetworkErrorHandler.getUserMessage(for: error)
             debugLog("❌ [CollectionViewModel] Failed to load latest: \(error.localizedDescription)")
@@ -177,6 +185,10 @@ class CollectionViewModel: ObservableObject {
             hasNextPage = response.data.pagination.hasNext
 
             debugLog("✅ [CollectionViewModel] Found \(response.data.collections.count) collections for '\(query)'")
+        } catch is CancellationError {
+            debugLog("⏸️ [CollectionViewModel] Search cancelled (view transition)")
+        } catch let urlError as URLError where urlError.code == .cancelled {
+            debugLog("⏸️ [CollectionViewModel] URLSession cancelled (view transition)")
         } catch {
             errorMessage = NetworkErrorHandler.getUserMessage(for: error)
             debugLog("❌ [CollectionViewModel] Search failed: \(error.localizedDescription)")
@@ -213,6 +225,10 @@ class CollectionViewModel: ObservableObject {
             hasNextPage = response.data.pagination.hasNext
 
             debugLog("✅ [CollectionViewModel] Loaded \(response.data.collections.count) saved collections")
+        } catch is CancellationError {
+            debugLog("⏸️ [CollectionViewModel] Saved collections loading cancelled (view transition)")
+        } catch let urlError as URLError where urlError.code == .cancelled {
+            debugLog("⏸️ [CollectionViewModel] URLSession cancelled (view transition)")
         } catch {
             errorMessage = NetworkErrorHandler.getUserMessage(for: error)
             debugLog("❌ [CollectionViewModel] Failed to load saved: \(error.localizedDescription)")
@@ -248,6 +264,10 @@ class CollectionViewModel: ObservableObject {
             hasNextPage = response.data.pagination.hasNext
 
             debugLog("✅ [CollectionViewModel] Loaded \(response.data.collections.count) created collections")
+        } catch is CancellationError {
+            debugLog("⏸️ [CollectionViewModel] My collections loading cancelled (view transition)")
+        } catch let urlError as URLError where urlError.code == .cancelled {
+            debugLog("⏸️ [CollectionViewModel] URLSession cancelled (view transition)")
         } catch {
             errorMessage = NetworkErrorHandler.getUserMessage(for: error)
             debugLog("❌ [CollectionViewModel] Failed to load my collections: \(error.localizedDescription)")
@@ -274,6 +294,10 @@ class CollectionViewModel: ObservableObject {
             isFollowingCreator = response.data.isFollowingCreator
 
             debugLog("✅ [CollectionViewModel] Loaded collection detail: \(response.data.collection.title)")
+        } catch is CancellationError {
+            debugLog("⏸️ [CollectionViewModel] Detail loading cancelled (view transition)")
+        } catch let urlError as URLError where urlError.code == .cancelled {
+            debugLog("⏸️ [CollectionViewModel] URLSession cancelled (view transition)")
         } catch {
             let userMessage = NetworkErrorHandler.getUserMessage(for: error)
             errorMessage = userMessage

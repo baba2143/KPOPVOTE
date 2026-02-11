@@ -17,6 +17,7 @@ struct NewIdolVoteView: View {
     @State private var searchText = ""
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var votedEntityId: String? = nil
 
     var body: some View {
         NavigationView {
@@ -32,18 +33,18 @@ struct NewIdolVoteView: View {
                 // Search bar
                 HStack {
                     Image(systemName: "magnifyingglass")
-                        .foregroundColor(.gray)
+                        .foregroundColor(Constants.Colors.textGray)
                     TextField("検索...", text: $searchText)
                         .textFieldStyle(.plain)
                     if !searchText.isEmpty {
                         Button(action: { searchText = "" }) {
                             Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.gray)
+                                .foregroundColor(Constants.Colors.textGray)
                         }
                     }
                 }
                 .padding(10)
-                .background(Color(.systemGray6))
+                .background(Constants.Colors.cardDark)
                 .cornerRadius(10)
                 .padding(.horizontal)
 
@@ -51,6 +52,7 @@ struct NewIdolVoteView: View {
                 if isLoading {
                     Spacer()
                     ProgressView("読み込み中...")
+                        .tint(Constants.Colors.textWhite)
                     Spacer()
                 } else if let error = errorMessage {
                     Spacer()
@@ -59,7 +61,7 @@ struct NewIdolVoteView: View {
                             .font(.largeTitle)
                             .foregroundColor(.orange)
                         Text(error)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(Constants.Colors.textGray)
                             .multilineTextAlignment(.center)
                         Button("再試行") {
                             Task { await loadData() }
@@ -72,33 +74,37 @@ struct NewIdolVoteView: View {
                     List {
                         if selectedTab == .individual {
                             ForEach(filteredIdols) { idol in
-                                VoteIdolRowView(idol: idol) {
-                                    voteForIdol(idol)
-                                }
-                                .disabled(!viewModel.canVote || viewModel.isVoting)
+                                VoteIdolRowView(
+                                    idol: idol,
+                                    isVoted: votedEntityId == idol.id,
+                                    onVote: { voteForIdol(idol) }
+                                )
+                                .disabled(!viewModel.canVote || viewModel.isVoting || votedEntityId != nil)
+                                .listRowBackground(Constants.Colors.backgroundDark)
                             }
                         } else {
                             ForEach(filteredGroups) { group in
-                                VoteGroupRowView(group: group) {
-                                    voteForGroup(group)
-                                }
-                                .disabled(!viewModel.canVote || viewModel.isVoting)
+                                VoteGroupRowView(
+                                    group: group,
+                                    isVoted: votedEntityId == group.id,
+                                    onVote: { voteForGroup(group) }
+                                )
+                                .disabled(!viewModel.canVote || viewModel.isVoting || votedEntityId != nil)
+                                .listRowBackground(Constants.Colors.backgroundDark)
                             }
                         }
                     }
                     .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
+                    .background(Constants.Colors.backgroundDark)
                 }
             }
+            .background(Constants.Colors.backgroundDark)
             .navigationTitle("投票対象を選択")
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarItems(leading: Button("閉じる") { dismiss() })
             .task {
                 await loadData()
-            }
-            .onChange(of: viewModel.showVoteSuccess) { success in
-                if success {
-                    dismiss()
-                }
             }
         }
     }
@@ -155,6 +161,11 @@ struct NewIdolVoteView: View {
                 groupName: idol.groupName,
                 imageUrl: idol.imageUrl
             )
+            if viewModel.showVoteSuccess {
+                votedEntityId = idol.id
+                try? await Task.sleep(nanoseconds: 1_500_000_000)
+                dismiss()
+            }
         }
     }
 
@@ -167,6 +178,11 @@ struct NewIdolVoteView: View {
                 groupName: nil,
                 imageUrl: group.imageUrl
             )
+            if viewModel.showVoteSuccess {
+                votedEntityId = group.id
+                try? await Task.sleep(nanoseconds: 1_500_000_000)
+                dismiss()
+            }
         }
     }
 }
@@ -175,6 +191,7 @@ struct NewIdolVoteView: View {
 
 private struct VoteIdolRowView: View {
     let idol: IdolMaster
+    let isVoted: Bool
     let onVote: () -> Void
 
     var body: some View {
@@ -186,30 +203,45 @@ private struct VoteIdolRowView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(idol.name)
                     .font(.headline)
+                    .foregroundColor(Constants.Colors.textWhite)
                     .lineLimit(1)
                 Text(idol.groupName)
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Constants.Colors.textGray)
                     .lineLimit(1)
             }
 
             Spacer()
 
             // Vote button
-            Button(action: onVote) {
+            if isVoted {
                 HStack(spacing: 4) {
-                    Image(systemName: "heart.fill")
-                    Text("投票")
+                    Image(systemName: "checkmark.circle.fill")
+                    Text("投票しました!")
                 }
                 .font(.subheadline)
                 .fontWeight(.medium)
                 .foregroundColor(.white)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(Color.pink)
+                .background(Color.green)
                 .cornerRadius(16)
+            } else {
+                Button(action: onVote) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "heart.fill")
+                        Text("投票")
+                    }
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Constants.Colors.accentPink)
+                    .cornerRadius(16)
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
         }
         .padding(.vertical, 4)
     }
@@ -243,11 +275,11 @@ private struct VoteIdolRowView: View {
 
     private var placeholderImage: some View {
         Circle()
-            .fill(Color.gray.opacity(0.3))
+            .fill(Constants.Colors.cardDark)
             .frame(width: 44, height: 44)
             .overlay(
                 Image(systemName: "person.fill")
-                    .foregroundColor(.gray)
+                    .foregroundColor(Constants.Colors.textGray)
             )
     }
 }
@@ -256,6 +288,7 @@ private struct VoteIdolRowView: View {
 
 private struct VoteGroupRowView: View {
     let group: GroupMaster
+    let isVoted: Bool
     let onVote: () -> Void
 
     var body: some View {
@@ -266,25 +299,40 @@ private struct VoteGroupRowView: View {
             // Name
             Text(group.name)
                 .font(.headline)
+                .foregroundColor(Constants.Colors.textWhite)
                 .lineLimit(1)
 
             Spacer()
 
             // Vote button
-            Button(action: onVote) {
+            if isVoted {
                 HStack(spacing: 4) {
-                    Image(systemName: "heart.fill")
-                    Text("投票")
+                    Image(systemName: "checkmark.circle.fill")
+                    Text("投票しました!")
                 }
                 .font(.subheadline)
                 .fontWeight(.medium)
                 .foregroundColor(.white)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(Color.pink)
+                .background(Color.green)
                 .cornerRadius(16)
+            } else {
+                Button(action: onVote) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "heart.fill")
+                        Text("投票")
+                    }
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Constants.Colors.accentPink)
+                    .cornerRadius(16)
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
         }
         .padding(.vertical, 4)
     }
@@ -318,11 +366,11 @@ private struct VoteGroupRowView: View {
 
     private var placeholderImage: some View {
         Circle()
-            .fill(Color.gray.opacity(0.3))
+            .fill(Constants.Colors.cardDark)
             .frame(width: 44, height: 44)
             .overlay(
                 Image(systemName: "person.3.fill")
-                    .foregroundColor(.gray)
+                    .foregroundColor(Constants.Colors.textGray)
             )
     }
 }

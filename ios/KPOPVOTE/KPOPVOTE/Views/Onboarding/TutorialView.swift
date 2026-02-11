@@ -13,6 +13,7 @@ enum TutorialStep: Int, CaseIterable {
     case intro = 0
     case biasSelection = 1
     case accountPromotion = 2
+    case socialLinking = 3
 }
 
 struct TutorialView: View {
@@ -28,15 +29,21 @@ struct TutorialView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Skip Button (top right) - 全ステップで表示
-                HStack {
-                    Spacer()
-                    Button("スキップ") {
-                        completeOnboardingAsGuest()
+                // Skip Button (top right) - socialLinkingステップ以外で表示
+                if currentStep != .socialLinking {
+                    HStack {
+                        Spacer()
+                        Button("スキップ") {
+                            completeOnboardingAsGuest()
+                        }
+                        .font(.system(size: Constants.Typography.bodySize))
+                        .foregroundColor(Constants.Colors.textGray)
+                        .padding()
                     }
-                    .font(.system(size: Constants.Typography.bodySize))
-                    .foregroundColor(Constants.Colors.textGray)
-                    .padding()
+                } else {
+                    // socialLinkingステップでは空のスペースを確保
+                    Spacer()
+                        .frame(height: 52)
                 }
 
                 // Step Content
@@ -84,12 +91,30 @@ struct TutorialView: View {
                             completeOnboardingAsGuest()
                         }
                     )
+
+                case .socialLinking:
+                    TutorialSocialLinkingView(
+                        authService: authService,
+                        onComplete: {
+                            // onComplete内でフラグ設定済み
+                        }
+                    )
                 }
             }
         }
         .fullScreenCover(isPresented: $showLogin) {
             NavigationView {
                 LoginView(authService: authService)
+            }
+        }
+        .onChange(of: authService.isAuthenticated) { isAuthenticated in
+            // SMS認証完了後にsocialLinkingステップへ遷移
+            // currentStepに関係なく、認証成功時はLoginViewを閉じてsocialLinkingへ
+            if isAuthenticated {
+                showLogin = false
+                withAnimation {
+                    currentStep = .socialLinking
+                }
             }
         }
         .task {

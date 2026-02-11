@@ -9,6 +9,7 @@ import * as admin from "firebase-admin";
 import { sendPushNotification } from "../utils/fcmHelper";
 import { CalendarEventType, UserCalendarSettings } from "../types/calendar";
 import { shouldSendNotificationCached } from "../utils/notificationHelper";
+import { SCHEDULED_CONFIG } from "../utils/functionConfig";
 
 const db = admin.firestore();
 
@@ -37,7 +38,9 @@ const EVENT_TYPE_LABELS: Record<CalendarEventType, string> = {
  * Check calendar event reminders and send notifications
  * Scheduled to run every hour
  */
-export const checkCalendarReminders = functions.pubsub
+export const checkCalendarReminders = functions
+  .runWith(SCHEDULED_CONFIG)
+  .pubsub
   .schedule("every 1 hours")
   .onRun(async () => {
     const now = admin.firestore.Timestamp.now();

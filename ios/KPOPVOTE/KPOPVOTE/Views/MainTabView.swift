@@ -454,6 +454,8 @@ struct ProfileView: View {
     @State private var showBlockedUsers = false
     // Login Sheet for Guest users
     @State private var showLoginSheet = false
+    // Linked Accounts (Apple/Google Sign-In)
+    @State private var showLinkedAccounts = false
 
     var body: some View {
         NavigationView {
@@ -710,6 +712,16 @@ struct ProfileView: View {
                             }
                             .buttonStyle(.plain)
                             Divider().padding(.leading, 60).background(Constants.Colors.textGray.opacity(0.3))
+                            // Linked Accounts (Apple/Google) - Only show for authenticated users
+                            if authService.isAuthenticated {
+                                Button {
+                                    showLinkedAccounts = true
+                                } label: {
+                                    SettingsRow(icon: "link.circle.fill", title: "連携アカウント", color: Constants.Colors.primaryBlue)
+                                }
+                                .buttonStyle(.plain)
+                                Divider().padding(.leading, 60).background(Constants.Colors.textGray.opacity(0.3))
+                            }
                             Button {
                                 showBlockedUsers = true
                             } label: {
@@ -874,6 +886,10 @@ struct ProfileView: View {
             }
             .fullScreenCover(isPresented: $showLoginSheet) {
                 LoginView(authService: authService)
+            }
+            .fullScreenCover(isPresented: $showLinkedAccounts) {
+                LinkedAccountsView(authService: authService)
+                    .environmentObject(authService)
             }
             .task {
                 await loadFollowCounts()

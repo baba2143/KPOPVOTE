@@ -7,11 +7,19 @@
 
 import Foundation
 import FirebaseAuth
+import FirebaseAppCheck
 
 class VoteService {
     static let shared = VoteService()
 
     private init() {}
+
+    // MARK: - Get App Check Token
+
+    private func getAppCheckToken() async throws -> String {
+        let token = try await AppCheck.appCheck().token(forcingRefresh: false)
+        return token.token
+    }
 
     /// Fetch featured votes for HOME display
     /// - Returns: Array of featured InAppVote
@@ -125,6 +133,11 @@ class VoteService {
             throw VoteError.fetchFailed
         }
 
+        // デバッグ: 生のAPIレスポンスをログ出力
+        if let jsonString = String(data: data, encoding: .utf8) {
+            debugLog("📦 [VoteService] fetchVoteDetail raw response: \(jsonString)")
+        }
+
         let result = try JSONDecoder().decode(VoteDetailResponse.self, from: data)
         debugLog("✅ [VoteService] Successfully fetched vote detail")
 
@@ -143,11 +156,14 @@ class VoteService {
             throw VoteError.notAuthenticated
         }
 
+        let appCheckToken = try await getAppCheckToken()
+
         let url = URL(string: Constants.API.executeVote)!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(appCheckToken, forHTTPHeaderField: "X-Firebase-AppCheck")
 
         let body: [String: Any] = [
             "voteId": voteId,
@@ -183,6 +199,8 @@ class VoteService {
                     throw VoteError.insufficientPoints
                 } else if error.contains("not active") {
                     throw VoteError.voteNotActive
+                } else if error.contains("投票上限") || error.contains("投票数制限") {
+                    throw VoteError.dailyLimitReached(message: error)
                 }
             }
             throw VoteError.executeFailed
@@ -203,6 +221,11 @@ class VoteService {
             debugLog("❌ [VoteService] Unexpected status code: \(httpResponse.statusCode)")
             debugLog("  Response body: \(responseBody)")
             throw VoteError.executeFailed
+        }
+
+        // デバッグ: 生のAPIレスポンスをログ出力
+        if let jsonString = String(data: data, encoding: .utf8) {
+            debugLog("📦 [VoteService] executeVote raw response: \(jsonString)")
         }
 
         let result = try JSONDecoder().decode(VoteExecuteResponse.self, from: data)
@@ -278,6 +301,9 @@ struct VoteExecuteResult: Codable {
     let pointsDeducted: Int
     let premiumPointsDeducted: Int
     let regularPointsDeducted: Int
+    // User's daily vote info after this vote
+    let userDailyVotes: Int?
+    let userDailyRemaining: Int?
 
     enum CodingKeys: String, CodingKey {
         case voteId
@@ -286,6 +312,8 @@ struct VoteExecuteResult: Codable {
         case pointsDeducted = "totalPointsDeducted"
         case premiumPointsDeducted
         case regularPointsDeducted
+        case userDailyVotes
+        case userDailyRemaining
     }
 }
 
@@ -308,6 +336,7 @@ enum VoteError: LocalizedError {
     case alreadyVoted
     case insufficientPoints
     case voteNotActive
+    case dailyLimitReached(message: String)
 
     var errorDescription: String? {
         switch self {
@@ -325,6 +354,8 @@ enum VoteError: LocalizedError {
             return "ポイントが不足しています"
         case .voteNotActive:
             return "この投票は開催されていません"
+        case .dailyLimitReached(let message):
+            return message
         }
     }
 }

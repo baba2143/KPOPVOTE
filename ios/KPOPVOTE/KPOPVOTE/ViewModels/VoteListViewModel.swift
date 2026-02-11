@@ -167,7 +167,8 @@ class VoteListViewModel: ObservableObject {
 
     /// Refresh all data
     func refreshAll() async {
-        await loadVotes()
-        await loadUserTasks()
+        async let votesTask: () = loadVotes()
+        async let tasksTask: () = loadUserTasks()
+        _ = await (votesTask, tasksTask)
     }
 }

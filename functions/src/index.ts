@@ -47,6 +47,12 @@ export { deleteInAppVote } from "./inAppVote/deleteInAppVote";
 export { executeVote } from "./inAppVote/executeVote";
 export { getRanking } from "./inAppVote/getRanking";
 
+// Vote processing triggers (Phase 3 - Async processing)
+export {
+  processVoteCount,
+  processIdolRankingVoteCount,
+} from "./inAppVote/processVoteCount";
+
 // Master Data functions (Phase 0+)
 export { createIdol } from "./master/createIdol";
 export { listIdols } from "./master/listIdols";
@@ -141,10 +147,26 @@ export { checkVoteDeadlines } from "./scheduled/checkVoteDeadlines";
 export { checkCalendarReminders } from "./scheduled/checkCalendarReminders";
 export { checkTaskDeadlines } from "./scheduled/checkTaskDeadlines";
 
+// Scheduled functions (Vote aggregation - Phase 2 Scaling)
+export {
+  aggregateVoteCounts,
+  aggregateVoteCountsManual,
+} from "./scheduled/aggregateVoteCounts";
+export {
+  aggregateIdolRankings,
+  aggregateIdolRankingsManual,
+} from "./scheduled/aggregateIdolRankings";
+
+// Idol Ranking functions
+export { idolRankingVote } from "./idolRanking/idolRankingVote";
+export { idolRankingGetRanking } from "./idolRanking/idolRankingGetRanking";
+export { idolRankingGetDailyLimit } from "./idolRanking/idolRankingGetDailyLimit";
+
 // API Routes (Express)
 import * as functions from "firebase-functions";
 import collectionsRouter from "./api/collections";
 import calendarRouter from "./api/calendar";
+import { EXPRESS_API_CONFIG, STANDARD_CONFIG } from "./utils/functionConfig";
 import express = require("express");
 
 const app = express();
@@ -152,9 +174,13 @@ app.use(express.json());
 app.use("/collections", collectionsRouter);
 app.use("/calendar", calendarRouter);
 
-export const api = functions.https.onRequest(app);
+export const api = functions
+  .runWith(EXPRESS_API_CONFIG)
+  .https.onRequest(app);
 
 // Placeholder function for testing
-export const helloWorld = functions.https.onRequest((request, response) => {
-  response.json({ message: "K-VOTE COLLECTOR API is running!" });
-});
+export const helloWorld = functions
+  .runWith(STANDARD_CONFIG)
+  .https.onRequest((request, response) => {
+    response.json({ message: "K-VOTE COLLECTOR API is running!" });
+  });

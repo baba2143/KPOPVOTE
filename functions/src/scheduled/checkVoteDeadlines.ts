@@ -10,6 +10,7 @@ import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { sendPushNotification } from "../utils/fcmHelper";
 import { shouldSendNotificationCached } from "../utils/notificationHelper";
+import { SCHEDULED_CONFIG } from "../utils/functionConfig";
 
 const db = admin.firestore();
 
@@ -20,7 +21,9 @@ const REMINDER_HOURS = [24, 6, 1];
  * Check vote deadlines and send reminder notifications
  * Scheduled to run every hour
  */
-export const checkVoteDeadlines = functions.pubsub
+export const checkVoteDeadlines = functions
+  .runWith(SCHEDULED_CONFIG)
+  .pubsub
   .schedule("every 1 hours")
   .onRun(async () => {
     const now = admin.firestore.Timestamp.now();

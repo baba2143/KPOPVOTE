@@ -7,6 +7,7 @@
 
 import Foundation
 import FirebaseAuth
+import FirebaseAppCheck
 
 enum IdolRankingError: LocalizedError {
     case notAuthenticated
@@ -44,6 +45,13 @@ class IdolRankingService {
         }
 
         return try await user.getIDToken()
+    }
+
+    // MARK: - Get App Check Token
+
+    private func getAppCheckToken() async throws -> String {
+        let token = try await AppCheck.appCheck().token(forcingRefresh: false)
+        return token.token
     }
 
     // MARK: - Get Ranking
@@ -139,6 +147,7 @@ class IdolRankingService {
         imageUrl: String? = nil
     ) async throws -> VoteResponse {
         let token = try await getAuthToken()
+        let appCheckToken = try await getAppCheckToken()
 
         guard let url = URL(string: Constants.API.idolRankingVote) else {
             throw IdolRankingError.networkError(URLError(.badURL))
@@ -148,6 +157,7 @@ class IdolRankingService {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue(appCheckToken, forHTTPHeaderField: "X-Firebase-AppCheck")
 
         let voteRequest = VoteRequest(
             entityId: entityId,
