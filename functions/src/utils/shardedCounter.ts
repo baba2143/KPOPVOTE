@@ -7,7 +7,7 @@
  *
  * Structure:
  *   idolRankingVotes/{entityType}_{entityId}/shards/shard_0..9
- *   Each shard: { weeklyVotes: number, allTimeVotes: number, updatedAt: timestamp }
+ *   Each shard: { weeklyVotes: number, monthlyVotes: number, allTimeVotes: number, updatedAt: timestamp }
  *
  * The parent document (idolRankingVotes/{entityType}_{entityId}) holds the
  * aggregated totals and entity metadata. It is updated periodically by a
@@ -36,12 +36,14 @@ function getShardsRef(
  * @param db - Firestore instance
  * @param voteDocId - The parent document ID (e.g. "individual_abc123")
  * @param initialWeeklyVotes - Initial weekly votes to put in shard_0 (default 0)
+ * @param initialMonthlyVotes - Initial monthly votes to put in shard_0 (default 0)
  * @param initialAllTimeVotes - Initial allTime votes to put in shard_0 (default 0)
  */
 export async function initializeShards(
   db: admin.firestore.Firestore,
   voteDocId: string,
   initialWeeklyVotes: number = 0,
+  initialMonthlyVotes: number = 0,
   initialAllTimeVotes: number = 0
 ): Promise<void> {
   const shardsRef = getShardsRef(db, voteDocId);
@@ -51,6 +53,7 @@ export async function initializeShards(
     const shardRef = shardsRef.doc(`shard_${i}`);
     batch.set(shardRef, {
       weeklyVotes: i === 0 ? initialWeeklyVotes : 0,
+      monthlyVotes: i === 0 ? initialMonthlyVotes : 0,
       allTimeVotes: i === 0 ? initialAllTimeVotes : 0,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
@@ -79,6 +82,7 @@ export function incrementShardInTransaction(
 
   transaction.update(shardRef, {
     weeklyVotes: admin.firestore.FieldValue.increment(incrementAmount),
+    monthlyVotes: admin.firestore.FieldValue.increment(incrementAmount),
     allTimeVotes: admin.firestore.FieldValue.increment(incrementAmount),
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
   });
@@ -90,24 +94,26 @@ export function incrementShardInTransaction(
  *
  * @param db - Firestore instance
  * @param voteDocId - The parent document ID
- * @returns Aggregated weeklyVotes and allTimeVotes
+ * @returns Aggregated weeklyVotes, monthlyVotes and allTimeVotes
  */
 export async function getAggregatedCounts(
   db: admin.firestore.Firestore,
   voteDocId: string
-): Promise<{ weeklyVotes: number; allTimeVotes: number }> {
+): Promise<{ weeklyVotes: number; monthlyVotes: number; allTimeVotes: number }> {
   const shardsSnapshot = await getShardsRef(db, voteDocId).get();
 
   let weeklyVotes = 0;
+  let monthlyVotes = 0;
   let allTimeVotes = 0;
 
   shardsSnapshot.docs.forEach((doc) => {
     const data = doc.data();
     weeklyVotes += data.weeklyVotes || 0;
+    monthlyVotes += data.monthlyVotes || 0;
     allTimeVotes += data.allTimeVotes || 0;
   });
 
-  return { weeklyVotes, allTimeVotes };
+  return { weeklyVotes, monthlyVotes, allTimeVotes };
 }
 
 /**
@@ -127,6 +133,30 @@ export async function resetWeeklyVotesInShards(
   shardsSnapshot.docs.forEach((doc) => {
     batch.update(doc.ref, {
       weeklyVotes: 0,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  });
+
+  await batch.commit();
+}
+
+/**
+ * Reset monthly votes across all shards for an entity.
+ * Used by the monthly reset scheduled function.
+ *
+ * @param db - Firestore instance
+ * @param voteDocId - The parent document ID
+ */
+export async function resetMonthlyVotesInShards(
+  db: admin.firestore.Firestore,
+  voteDocId: string
+): Promise<void> {
+  const shardsSnapshot = await getShardsRef(db, voteDocId).get();
+  const batch = db.batch();
+
+  shardsSnapshot.docs.forEach((doc) => {
+    batch.update(doc.ref, {
+      monthlyVotes: 0,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
   });

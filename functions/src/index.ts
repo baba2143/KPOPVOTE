@@ -23,9 +23,12 @@ export { updateTaskStatus } from "./task/updateTaskStatus";
 export { idolRankingVote } from "./idolRanking/vote";
 export { idolRankingGetRanking } from "./idolRanking/getRanking";
 export { idolRankingGetDailyLimit } from "./idolRanking/getDailyLimit";
+export { idolRankingGetArchiveList } from "./idolRanking/getArchiveList";
+export { idolRankingGetArchive } from "./idolRanking/getArchive";
 
 // Scheduled functions
 export { resetWeeklyIdolRanking } from "./scheduled/resetWeeklyIdolRanking";
+export { resetMonthlyIdolRanking } from "./scheduled/resetMonthlyIdolRanking";
 export { aggregateIdolRankings } from "./scheduled/aggregateIdolRankings";
 
 // Placeholder function for testing

@@ -177,7 +177,10 @@ export interface IdolRankingEntry {
   name: string;
   groupName?: string;
   imageUrl: string | null;
-  votes: number;
+  weeklyVotes: number;
+  totalVotes: number;
+  previousRank?: number;
+  rankChange?: number;
 }
 
 export interface GetRankingRequest {
@@ -192,6 +195,7 @@ export interface GetRankingResponse {
   total: number;
   period: RankingPeriod;
   rankingType: RankingType;
+  lastUpdated?: string;
 }
 
 export interface DailyLimitResponse {
@@ -199,4 +203,34 @@ export interface DailyLimitResponse {
   maxVotes: number;
   remainingVotes: number;
   voteDetails: VoteDetail[];
+}
+
+// Archive types
+export type ArchiveType = "monthly" | "weekly";
+
+export interface ArchiveListItem {
+  id: string;
+  label: string;
+}
+
+export interface ArchiveListResponse {
+  archiveType: ArchiveType;
+  archives: ArchiveListItem[];
+}
+
+export interface ArchiveRankingEntry {
+  rank: number;
+  entityId: string;
+  name: string;
+  groupName?: string;
+  votes: number;
+}
+
+export interface ArchiveDetailResponse {
+  archiveType: ArchiveType;
+  archiveId: string;
+  label: string;
+  rankingType: RankingType;
+  rankings: ArchiveRankingEntry[];
+  total: number;
 }

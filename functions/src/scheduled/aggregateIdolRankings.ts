@@ -46,11 +46,12 @@ export const aggregateIdolRankings = functions
 
           // Aggregate shard counts
           const aggregated = await getAggregatedCounts(db, voteDocId);
-          console.log(`[aggregateIdolRankings] Processing ${voteDocId}, weeklyVotes=${aggregated.weeklyVotes}, allTimeVotes=${aggregated.allTimeVotes}`);
+          console.log(`[aggregateIdolRankings] Processing ${voteDocId}, weeklyVotes=${aggregated.weeklyVotes}, monthlyVotes=${aggregated.monthlyVotes}, allTimeVotes=${aggregated.allTimeVotes}`);
 
           // Update parent document with aggregated totals
           batch.update(doc.ref, {
             weeklyVotes: aggregated.weeklyVotes,
+            monthlyVotes: aggregated.monthlyVotes,
             allTimeVotes: aggregated.allTimeVotes,
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           });

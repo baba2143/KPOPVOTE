@@ -117,7 +117,7 @@ export const idolRankingVote = functions
     const voteRef = db.collection("idolRankingVotes").doc(voteDocId);
 
     // Ensure parent document exists with entity metadata (idempotent, set with merge)
-    // Initialize weeklyVotes/allTimeVotes to 0 so the document appears in ranking queries
+    // Initialize weeklyVotes/monthlyVotes/allTimeVotes to 0 so the document appears in ranking queries
     // Note: merge:true means existing values won't be overwritten
     await voteRef.set(
       {
@@ -127,6 +127,7 @@ export const idolRankingVote = functions
         groupName: entityType === "individual" ? groupName || null : null,
         imageUrl: imageUrl || null,
         weeklyVotes: 0,
+        monthlyVotes: 0,
         allTimeVotes: 0,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       },

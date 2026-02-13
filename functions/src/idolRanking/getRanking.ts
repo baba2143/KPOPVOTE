@@ -42,6 +42,7 @@ export const idolRankingGetRanking = functions
     const period = req.query.period as RankingPeriod;
     const limit = parseInt(req.query.limit as string) || 50;
     const offset = parseInt(req.query.offset as string) || 0;
+    const refresh = req.query.refresh === "true";
 
     // Validate rankingType
     if (!rankingType || !["individual", "group"].includes(rankingType)) {
@@ -73,7 +74,8 @@ export const idolRankingGetRanking = functions
     const db = admin.firestore();
 
     // Determine sort field based on period
-    const sortField = period === "weekly" ? "weeklyVotes" : "allTimeVotes";
+    // Note: "allTime" period now uses monthlyVotes (monthly cumulative instead of all-time)
+    const sortField = period === "weekly" ? "weeklyVotes" : "monthlyVotes";
 
     // Query rankings
     const rankingsQuery = db
@@ -104,7 +106,6 @@ export const idolRankingGetRanking = functions
       }
 
       const data = doc.data();
-      const votes = period === "weekly" ? data.weeklyVotes : data.allTimeVotes;
 
       rankings.push({
         rank: currentRank,
@@ -113,14 +114,23 @@ export const idolRankingGetRanking = functions
         name: data.name,
         groupName: data.groupName || undefined,
         imageUrl: data.imageUrl,
-        votes: votes || 0,
+        weeklyVotes: data.weeklyVotes || 0,
+        totalVotes: data.allTimeVotes || 0,
+        previousRank: data.previousRank || undefined,
+        rankChange: data.previousRank ? data.previousRank - currentRank : undefined,
       });
 
       currentRank++;
     });
 
-    // CDN cache: 10s browser, 30s CDN edge
-    res.set("Cache-Control", "public, max-age=10, s-maxage=30");
+    // Cache control: shorter cache for faster updates, bypass with refresh=true
+    if (refresh) {
+      // No cache when refresh requested (after voting)
+      res.set("Cache-Control", "no-cache, no-store, must-revalidate");
+    } else {
+      // Short cache: 5s browser, 10s CDN edge
+      res.set("Cache-Control", "public, max-age=5, s-maxage=10");
+    }
 
     res.status(200).json({
       success: true,
@@ -129,6 +139,7 @@ export const idolRankingGetRanking = functions
         total,
         period,
         rankingType,
+        lastUpdated: new Date().toISOString(),
       },
     } as ApiResponse<GetRankingResponse>);
   } catch (error: unknown) {
