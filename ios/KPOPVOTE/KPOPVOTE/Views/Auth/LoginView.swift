@@ -36,13 +36,10 @@ struct LoginView: View {
                     VStack(spacing: Constants.Spacing.large) {
                         // Logo/Title
                         VStack(spacing: Constants.Spacing.small) {
-                            Image(systemName: "music.note.list")
-                                .font(.system(size: 60))
-                                .foregroundColor(Constants.Colors.primaryBlue)
-
-                            Text("OSHI Pick")
-                                .font(.system(size: Constants.Typography.titleSize, weight: .bold))
-                                .foregroundColor(Constants.Colors.textWhite)
+                            Image("oshi_pick_header_logo")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(height: 80)
 
                             Text(hasCompletedOnboarding ? "ログイン" : "電話番号で認証")
                                 .font(.system(size: Constants.Typography.captionSize))
@@ -51,12 +48,29 @@ struct LoginView: View {
                         .padding(.top, 60)
 
                         if !hasCompletedOnboarding {
-                            // オンボーディング中: SMS認証のみ表示
+                            // オンボーディング中: SMS認証のみ表示（利用規約同意必須）
                             phoneAuthSection
                             termsAgreementSection
                         } else {
-                            // オンボーディング完了後: Apple/Googleボタンのみ表示
+                            // オンボーディング完了後: Apple/Google + SMS認証の両方を表示
                             socialLoginSection
+
+                            // 区切り線
+                            HStack {
+                                Rectangle()
+                                    .fill(Constants.Colors.textGray.opacity(0.3))
+                                    .frame(height: 1)
+                                Text("または")
+                                    .font(.system(size: Constants.Typography.captionSize))
+                                    .foregroundColor(Constants.Colors.textGray)
+                                Rectangle()
+                                    .fill(Constants.Colors.textGray.opacity(0.3))
+                                    .frame(height: 1)
+                            }
+                            .padding(.vertical, Constants.Spacing.small)
+
+                            // SMS認証セクション（再ログイン用、利用規約同意不要）
+                            phoneAuthSectionForRelogin
                         }
 
                         // Guest Mode Button（常に表示）
@@ -433,6 +447,83 @@ extension LoginView {
             }
             .disabled(viewModel.isLoading)
         }
+    }
+
+    // 再ログイン用SMS認証セクション（利用規約同意済みのため不要）
+    private var phoneAuthSectionForRelogin: some View {
+        VStack(spacing: Constants.Spacing.medium) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("電話番号")
+                    .font(.system(size: Constants.Typography.captionSize, weight: .semibold))
+                    .foregroundColor(Constants.Colors.textGray)
+
+                HStack(spacing: 8) {
+                    // Country Code Picker
+                    Menu {
+                        ForEach(viewModel.countryCodes, id: \.code) { country in
+                            Button(action: {
+                                viewModel.selectedCountryCode = country.code
+                            }) {
+                                Text("\(country.flag) \(country.name) (\(country.code))")
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text(viewModel.selectedCountryFlag)
+                                .font(.system(size: 20))
+                            Text(viewModel.selectedCountryCode)
+                                .font(.system(size: Constants.Typography.bodySize))
+                                .foregroundColor(Constants.Colors.textWhite)
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 12))
+                                .foregroundColor(Constants.Colors.textGray)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 14)
+                        .background(Constants.Colors.cardDark)
+                        .cornerRadius(10)
+                    }
+
+                    // Phone Number TextField
+                    TextField("09012345678", text: $viewModel.phoneNumber)
+                        .keyboardType(.phonePad)
+                        .unifiedInputStyle()
+                }
+
+                if let error = viewModel.phoneNumberError {
+                    Text(error)
+                        .font(.system(size: Constants.Typography.captionSize))
+                        .foregroundColor(.red)
+                }
+            }
+
+            // Send Code Button（利用規約チェック不要）
+            Button(action: {
+                Task {
+                    await viewModel.sendVerificationCode()
+                }
+            }) {
+                HStack {
+                    if viewModel.isLoading {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                    } else {
+                        Image(systemName: "message.fill")
+                        Text("認証コードを送信")
+                            .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(viewModel.isValidPhoneNumber ? Constants.Colors.primaryBlue : Color.gray)
+                .foregroundColor(.white)
+                .cornerRadius(10)
+            }
+            .disabled(!viewModel.isValidPhoneNumber || viewModel.isLoading)
+        }
+        .padding()
+        .background(Constants.Colors.cardDark)
+        .cornerRadius(16)
     }
 }
 

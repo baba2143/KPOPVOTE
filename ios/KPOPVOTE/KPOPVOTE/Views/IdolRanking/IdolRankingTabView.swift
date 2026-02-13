@@ -97,7 +97,7 @@ struct IdolRankingTabView: View {
             // Daily limit badge (hidden in archive mode)
             if !viewModel.isArchiveMode {
                 DailyLimitBadgeView(
-                    votesUsed: viewModel.dailyLimit?.votesUsed ?? 0,
+                    votesUsed: viewModel.dailyLimit?.votesUsed ?? 5,  // データなしなら使用済みとして表示
                     maxVotes: viewModel.dailyLimit?.maxVotes ?? 5
                 )
                 .padding(.horizontal)

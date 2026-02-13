@@ -37,11 +37,11 @@ class IdolRankingViewModel: ObservableObject {
     // MARK: - Computed Properties
 
     var remainingVotes: Int {
-        dailyLimit?.remainingVotes ?? Constants.maxDailyVotes
+        dailyLimit?.remainingVotes ?? 0  // デフォルトを0に（独自投票と同様）
     }
 
     var canVote: Bool {
-        remainingVotes > 0 && !isArchiveMode
+        dailyLimit != nil && remainingVotes > 0 && !isArchiveMode  // dailyLimitが取得できていることを確認
     }
 
     /// アーカイブモードかどうか（過去の月が選択されている）
