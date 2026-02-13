@@ -9,10 +9,13 @@ import SwiftUI
 
 extension View {
     /// Dismiss keyboard when tapping on the view
+    /// Uses simultaneousGesture to allow buttons/list items to also receive taps
     func dismissKeyboardOnTap() -> some View {
-        self.onTapGesture {
-            hideKeyboard()
-        }
+        self.simultaneousGesture(
+            TapGesture().onEnded {
+                hideKeyboard()
+            }
+        )
     }
 
     /// Dismiss keyboard when dragging (useful with ScrollView)
