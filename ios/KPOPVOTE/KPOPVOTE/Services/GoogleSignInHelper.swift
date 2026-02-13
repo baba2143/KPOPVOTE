@@ -18,6 +18,12 @@ class GoogleSignInHelper: NSObject, ObservableObject {
     @Published var isLoading = false
     @Published var error: GoogleSignInError?
 
+    // MARK: - Private Properties
+    /// 最後に取得したcredential（既存アカウントでのサインイン用）
+    private var lastCredential: AuthCredential?
+    /// 最後に取得したメールアドレス（アラート表示用）
+    private var lastEmail: String?
+
     // MARK: - Singleton
     static let shared = GoogleSignInHelper()
 
@@ -118,6 +124,10 @@ class GoogleSignInHelper: NSObject, ObservableObject {
                 accessToken: result.user.accessToken.tokenString
             )
 
+            // credential と メールアドレスを保持（既存アカウントでのサインイン用）
+            self.lastCredential = credential
+            self.lastEmail = result.user.profile?.email
+
             let authResult = try await currentUser.link(with: credential)
             debugLog("✅ [GoogleSignIn] Successfully linked Google account to user: \(currentUser.uid)")
             return authResult
@@ -129,6 +139,47 @@ class GoogleSignInHelper: NSObject, ObservableObject {
             debugLog("❌ [GoogleSignIn] Link NSError: \(nsError.code) - \(nsError.localizedDescription)")
             throw mapFirebaseError(nsError)
         }
+    }
+
+    /// 保存されたcredentialで既存アカウントにサインイン
+    /// - Note: linkToCurrentUser() で CREDENTIAL_ALREADY_IN_USE エラーが発生した場合に使用
+    /// - Returns: Firebase AuthDataResult
+    func signInWithStoredCredential() async throws -> AuthDataResult {
+        guard let credential = lastCredential else {
+            debugLog("❌ [GoogleSignIn] No stored credential available")
+            throw GoogleSignInError.invalidCredential
+        }
+
+        isLoading = true
+        defer {
+            isLoading = false
+            lastCredential = nil  // 使用後はクリア
+        }
+
+        do {
+            let authResult = try await Auth.auth().signIn(with: credential)
+            debugLog("✅ [GoogleSignIn] Successfully signed in with stored credential: \(authResult.user.uid)")
+            return authResult
+        } catch let nsError as NSError {
+            debugLog("❌ [GoogleSignIn] Sign-in with stored credential failed: \(nsError.code) - \(nsError.localizedDescription)")
+            throw mapFirebaseError(nsError)
+        }
+    }
+
+    /// 保存されたcredentialが存在するかどうか
+    var hasStoredCredential: Bool {
+        return lastCredential != nil
+    }
+
+    /// 保存されたメールアドレス（アラート表示用）
+    var storedEmail: String? {
+        return lastEmail
+    }
+
+    /// 保存されたcredentialをクリア
+    func clearStoredCredential() {
+        lastCredential = nil
+        lastEmail = nil
     }
 
     // MARK: - Private Methods

@@ -22,6 +22,10 @@ class AppleSignInHelper: NSObject, ObservableObject {
     // MARK: - Private Properties
     private var currentNonce: String?
     private var continuation: CheckedContinuation<ASAuthorizationAppleIDCredential, Error>?
+    /// 最後に取得したcredential（既存アカウントでのサインイン用）
+    private var lastCredential: AuthCredential?
+    /// 最後に取得したメールアドレス（アラート表示用）
+    private var lastEmail: String?
 
     // MARK: - Singleton
     static let shared = AppleSignInHelper()
@@ -51,10 +55,14 @@ class AppleSignInHelper: NSObject, ObservableObject {
         request.nonce = sha256(nonce)
 
         // Execute authorization
-        let credential = try await performAuthorization(request: request)
+        let appleCredential = try await performAuthorization(request: request)
+
+        // メールアドレスを保存（アラート表示用）
+        // 注: Appleは初回認証時のみemailを返す。2回目以降はnilの場合がある
+        self.lastEmail = appleCredential.email
 
         // Create Firebase credential
-        guard let appleIDToken = credential.identityToken,
+        guard let appleIDToken = appleCredential.identityToken,
               let idTokenString = String(data: appleIDToken, encoding: .utf8) else {
             throw AppleSignInError.invalidCredential
         }
@@ -62,7 +70,7 @@ class AppleSignInHelper: NSObject, ObservableObject {
         let firebaseCredential = OAuthProvider.appleCredential(
             withIDToken: idTokenString,
             rawNonce: nonce,
-            fullName: credential.fullName
+            fullName: appleCredential.fullName
         )
 
         return firebaseCredential
@@ -82,6 +90,9 @@ class AppleSignInHelper: NSObject, ObservableObject {
 
         let credential = try await signIn()
 
+        // credential を保持（既存アカウントでのサインイン用）
+        self.lastCredential = credential
+
         do {
             let result = try await currentUser.link(with: credential)
             debugLog("✅ [AppleSignIn] Successfully linked Apple account to user: \(currentUser.uid)")
@@ -90,6 +101,47 @@ class AppleSignInHelper: NSObject, ObservableObject {
             debugLog("❌ [AppleSignIn] Link error: \(linkError.code) - \(linkError.localizedDescription)")
             throw mapFirebaseError(linkError)
         }
+    }
+
+    /// 保存されたcredentialで既存アカウントにサインイン
+    /// - Note: linkToCurrentUser() で CREDENTIAL_ALREADY_IN_USE エラーが発生した場合に使用
+    /// - Returns: Firebase AuthDataResult
+    func signInWithStoredCredential() async throws -> AuthDataResult {
+        guard let credential = lastCredential else {
+            debugLog("❌ [AppleSignIn] No stored credential available")
+            throw AppleSignInError.invalidCredential
+        }
+
+        isLoading = true
+        defer {
+            isLoading = false
+            lastCredential = nil  // 使用後はクリア
+        }
+
+        do {
+            let authResult = try await Auth.auth().signIn(with: credential)
+            debugLog("✅ [AppleSignIn] Successfully signed in with stored credential: \(authResult.user.uid)")
+            return authResult
+        } catch let nsError as NSError {
+            debugLog("❌ [AppleSignIn] Sign-in with stored credential failed: \(nsError.code) - \(nsError.localizedDescription)")
+            throw mapFirebaseError(nsError)
+        }
+    }
+
+    /// 保存されたcredentialが存在するかどうか
+    var hasStoredCredential: Bool {
+        return lastCredential != nil
+    }
+
+    /// 保存されたメールアドレス（アラート表示用）
+    var storedEmail: String? {
+        return lastEmail
+    }
+
+    /// 保存されたcredentialをクリア
+    func clearStoredCredential() {
+        lastCredential = nil
+        lastEmail = nil
     }
 
     /// Apple Sign-In でサインイン（新規/既存ユーザー）

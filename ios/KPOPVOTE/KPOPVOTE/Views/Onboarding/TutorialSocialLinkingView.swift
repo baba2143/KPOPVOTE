@@ -19,6 +19,12 @@ struct TutorialSocialLinkingView: View {
     @State private var linkedApple = false
     @State private var linkedGoogle = false
 
+    // CREDENTIAL_ALREADY_IN_USE エラー時のカスタムアラート
+    @State private var showCredentialInUseAlert = false
+    @State private var credentialInUseProvider: String? // "google" or "apple"
+    @State private var credentialInUseEmail: String? // 既存アカウントのメールアドレス
+    @State private var isSigningInWithExisting = false
+
     /// 連携済みかどうか（最低1つ）
     private var hasLinkedAny: Bool {
         linkedApple || linkedGoogle
@@ -193,6 +199,31 @@ struct TutorialSocialLinkingView: View {
         } message: {
             Text(errorMessage ?? "エラーが発生しました")
         }
+        .alert("アカウントが見つかりました", isPresented: $showCredentialInUseAlert) {
+            Button("別のアカウントを試す", role: .cancel) {
+                // credential をクリア
+                if credentialInUseProvider == "google" {
+                    GoogleSignInHelper.shared.clearStoredCredential()
+                } else {
+                    AppleSignInHelper.shared.clearStoredCredential()
+                }
+                credentialInUseProvider = nil
+                credentialInUseEmail = nil
+            }
+            Button("このアカウントでログイン") {
+                Task {
+                    await signInWithExistingAccount()
+                }
+            }
+        } message: {
+            if let email = credentialInUseEmail {
+                Text("\(email) は既に登録済みです。\nこのアカウントでログインしますか？\n\n※現在の電話番号アカウントは破棄されます")
+            } else if credentialInUseProvider == "google" {
+                Text("このGoogleアカウントは既に登録済みです。\nこのアカウントでログインしますか？\n\n※現在の電話番号アカウントは破棄されます")
+            } else {
+                Text("このApple IDは既に登録済みです。\nこのアカウントでログインしますか？\n\n※現在の電話番号アカウントは破棄されます")
+            }
+        }
         .onAppear {
             checkLinkedProviders()
         }
@@ -214,6 +245,16 @@ struct TutorialSocialLinkingView: View {
             try await authService.linkAppleAccount()
             linkedApple = true
             authService.refreshLinkedProviders()
+        } catch AuthError.apiError(let message) where message.contains("別のアカウントで使用") {
+            // CREDENTIAL_ALREADY_IN_USE エラー（AuthService経由）
+            credentialInUseProvider = "apple"
+            credentialInUseEmail = AppleSignInHelper.shared.storedEmail
+            showCredentialInUseAlert = true
+        } catch AppleSignInError.credentialAlreadyInUse {
+            // AppleSignInError.credentialAlreadyInUse（直接）
+            credentialInUseProvider = "apple"
+            credentialInUseEmail = AppleSignInHelper.shared.storedEmail
+            showCredentialInUseAlert = true
         } catch {
             errorMessage = error.localizedDescription
             showError = true
@@ -228,6 +269,47 @@ struct TutorialSocialLinkingView: View {
             try await authService.linkGoogleAccount()
             linkedGoogle = true
             authService.refreshLinkedProviders()
+        } catch AuthError.apiError(let message) where message.contains("別のアカウントで使用") {
+            // CREDENTIAL_ALREADY_IN_USE エラー（AuthService経由）
+            credentialInUseProvider = "google"
+            credentialInUseEmail = GoogleSignInHelper.shared.storedEmail
+            showCredentialInUseAlert = true
+        } catch GoogleSignInError.credentialAlreadyInUse {
+            // GoogleSignInError.credentialAlreadyInUse（直接）
+            credentialInUseProvider = "google"
+            credentialInUseEmail = GoogleSignInHelper.shared.storedEmail
+            showCredentialInUseAlert = true
+        } catch {
+            errorMessage = error.localizedDescription
+            showError = true
+        }
+    }
+
+    /// 既存アカウントでサインイン（CREDENTIAL_ALREADY_IN_USE 時の回復処理）
+    private func signInWithExistingAccount() async {
+        guard let provider = credentialInUseProvider else { return }
+
+        isSigningInWithExisting = true
+        defer {
+            isSigningInWithExisting = false
+            credentialInUseProvider = nil
+            credentialInUseEmail = nil
+        }
+
+        do {
+            if provider == "google" {
+                _ = try await authService.signInWithExistingGoogleAccount()
+            } else {
+                _ = try await authService.signInWithExistingAppleAccount()
+            }
+
+            // サインイン成功 - 連携済み状態を更新
+            checkLinkedProviders()
+
+            // ソーシャル連携は既に完了しているので、オンボーディングを完了
+            AppStorageManager.shared.hasCompletedSocialLinking = true
+            AppStorageManager.shared.hasCompletedOnboarding = true
+            onComplete()
         } catch {
             errorMessage = error.localizedDescription
             showError = true
