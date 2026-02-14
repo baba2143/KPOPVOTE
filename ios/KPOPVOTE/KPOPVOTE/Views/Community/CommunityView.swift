@@ -8,6 +8,21 @@
 import SwiftUI
 import FirebaseAuth
 
+// MARK: - Community Presentation State
+enum CommunityPresentation: Identifiable {
+    case postDetail(postId: String)
+    case search
+    case userProfile(userId: String)
+
+    var id: String {
+        switch self {
+        case .postDetail(let postId): return "postDetail_\(postId)"
+        case .search: return "search"
+        case .userProfile(let userId): return "userProfile_\(userId)"
+        }
+    }
+}
+
 // MARK: - Community Content Type
 enum CommunityContentType: String, CaseIterable {
     case posts = "posts"
@@ -37,11 +52,9 @@ struct CommunityView: View {
     @StateObject private var viewModel = CommunityViewModel()
     @StateObject private var biasViewModel = BiasViewModel()
     @StateObject private var activityViewModel = SearchViewModel()
-    @State private var selectedPost: IdentifiableString?
+    @State private var activePresentation: CommunityPresentation?
     @State private var showLoginPrompt = false
     @State private var showDeleteSuccess = false
-    @State private var showSearch = false
-    @State private var selectedUser: IdentifiableString?
     @State private var contentType: CommunityContentType = .posts
     @Binding var showCreatePost: Bool
 
@@ -77,7 +90,7 @@ struct CommunityView: View {
                         if authService.isGuest {
                             showLoginPrompt = true
                         } else {
-                            showSearch = true
+                            activePresentation = .search
                         }
                     }) {
                         Image(systemName: "magnifyingglass")
@@ -86,12 +99,21 @@ struct CommunityView: View {
                     }
                 }
             }
-            .fullScreenCover(item: $selectedPost) { identifiablePost in
-                NavigationStack {
-                    PostDetailView(postId: identifiablePost.id)
-                        .onAppear {
-                            print("🔶 [CommunityView] Sheet appeared with postId: \(identifiablePost.id)")
-                        }
+            .fullScreenCover(item: $activePresentation) { presentation in
+                switch presentation {
+                case .postDetail(let postId):
+                    NavigationStack {
+                        PostDetailView(postId: postId)
+                            .onAppear {
+                                print("🔶 [CommunityView] Sheet appeared with postId: \(postId)")
+                            }
+                    }
+                case .search:
+                    SearchView()
+                case .userProfile(let userId):
+                    NavigationView {
+                        UserProfileView(userId: userId)
+                    }
                 }
             }
             .fullScreenCover(isPresented: $showCreatePost) {
@@ -104,19 +126,10 @@ struct CommunityView: View {
                     }
                 }
             }
-            .fullScreenCover(isPresented: $showSearch) {
-                SearchView()
-            }
-            .fullScreenCover(item: $selectedUser) { identifiable in
-                NavigationView {
-                    UserProfileView(userId: identifiable.id)
-                }
-            }
             .task {
                 // Parallel execution: Independent API calls
                 await withTaskGroup(of: Void.self) { group in
-                    group.addTask { await biasViewModel.loadIdols() }
-                    group.addTask { await biasViewModel.loadCurrentBias() }
+                    group.addTask { await biasViewModel.loadIdols() }  // loadData()内でloadCurrentBias()も呼ばれる
                     group.addTask { await viewModel.loadPosts() }
                     group.addTask { await activityViewModel.loadFollowingActivity() }
                 }
@@ -199,11 +212,11 @@ struct CommunityView: View {
             // User Story Bar
             if !activityViewModel.followingActivity.isEmpty {
                 UserStoryBar(users: activityViewModel.followingActivity) { user in
-                    selectedUser = IdentifiableString(user.id)
+                    activePresentation = .userProfile(userId: user.id)
                 }
             } else if !activityViewModel.recommendedUsers.isEmpty {
                 UserStoryBar(users: convertRecommendedToActivity(activityViewModel.recommendedUsers)) { user in
-                    selectedUser = IdentifiableString(user.id)
+                    activePresentation = .userProfile(userId: user.id)
                 }
             }
 
@@ -253,8 +266,8 @@ struct CommunityView: View {
                                 post: post,
                                 onTap: {
                                     print("🔷 [CommunityView] Post tapped: \(post.id)")
-                                    selectedPost = IdentifiableString(post.id)
-                                    print("🔷 [CommunityView] selectedPost set to: \(post.id)")
+                                    activePresentation = .postDetail(postId: post.id)
+                                    print("🔷 [CommunityView] activePresentation set to postDetail: \(post.id)")
                                 },
                                 onLike: {
                                     if authService.isGuest {

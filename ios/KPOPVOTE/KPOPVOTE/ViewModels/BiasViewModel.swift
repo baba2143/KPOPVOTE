@@ -148,18 +148,18 @@ class BiasViewModel: ObservableObject {
         do {
             debugLog("📱 [BiasViewModel] Loading groups, idols, and bias settings...")
 
-            // Load groups, idols, and bias in parallel
+            // 1. まずマスターデータを並列で取得
             async let groupsTask = GroupService.shared.fetchGroups()
             async let idolsTask = IdolService.shared.fetchIdols()
-            let biasTask = Task { await self.loadCurrentBias() }
 
             allGroups = try await groupsTask
             allIdols = try await idolsTask
 
             debugLog("✅ [BiasViewModel] Loaded \(allGroups.count) groups and \(allIdols.count) idols")
 
-            // Wait for bias loading to complete
-            await biasTask.value
+            // 2. マスターデータ取得完了後に推し設定を取得
+            // loadCurrentBias()はallGroupsに依存するため、必ず後に実行
+            await loadCurrentBias()
         } catch is CancellationError {
             debugLog("⏸️ [BiasViewModel] Data loading cancelled (view transition)")
         } catch let urlError as URLError where urlError.code == .cancelled {
