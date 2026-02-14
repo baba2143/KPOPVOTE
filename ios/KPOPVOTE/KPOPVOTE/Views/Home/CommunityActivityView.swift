@@ -85,6 +85,7 @@ struct CommunityActivityView: View {
             .cornerRadius(16)
             .task {
                 let biasIds = biasViewModel.selectedIdolObjects.map { $0.id }
+                            + biasViewModel.selectedGroupObjects.map { $0.id }
                 await viewModel.loadPosts(biasIds: biasIds)
             }
         }
@@ -130,7 +131,7 @@ struct ActivityPostItem: View {
                 // Content
                 VStack(alignment: .leading, spacing: 6) {
                     // Username
-                    Text(post.user.displayName ?? "Unknown User")
+                    Text(post.user.displayNameSafe)
                         .font(.system(size: Constants.Typography.bodySize, weight: .semibold))
                         .foregroundColor(Constants.Colors.textWhite)
 
