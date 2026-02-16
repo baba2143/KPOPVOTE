@@ -368,22 +368,43 @@ class CollectionViewModel: ObservableObject {
         }
     }
 
-    /// Delete collection
+    /// Delete collection with optimistic UI update
+    @MainActor
     func deleteCollection(collectionId: String) async -> Bool {
+        // Optimistic: Save items for potential rollback
+        let removedFromMy = myCollections.first { $0.id == collectionId }
+        let removedFromSaved = savedCollections.first { $0.id == collectionId }
+        let removedFromLatest = latestCollections.first { $0.id == collectionId }
+        let removedFromTrending = trendingCollections.first { $0.id == collectionId }
+
+        // Optimistic: Remove from local arrays first
+        myCollections.removeAll { $0.id == collectionId }
+        savedCollections.removeAll { $0.id == collectionId }
+        latestCollections.removeAll { $0.id == collectionId }
+        trendingCollections.removeAll { $0.id == collectionId }
+
+        debugLog("🔄 [CollectionViewModel] Optimistically removed collection from local state")
+
         do {
             _ = try await collectionService.deleteCollection(collectionId: collectionId)
-
-            // Remove from local arrays if present
-            myCollections.removeAll { $0.id == collectionId }
-            savedCollections.removeAll { $0.id == collectionId }
-            latestCollections.removeAll { $0.id == collectionId }
-            trendingCollections.removeAll { $0.id == collectionId }
-
-            debugLog("✅ [CollectionViewModel] Collection deleted successfully")
+            debugLog("✅ [CollectionViewModel] Collection deleted successfully on server")
             return true
         } catch {
+            // Rollback on failure
+            if let item = removedFromMy {
+                myCollections.append(item)
+            }
+            if let item = removedFromSaved {
+                savedCollections.append(item)
+            }
+            if let item = removedFromLatest {
+                latestCollections.append(item)
+            }
+            if let item = removedFromTrending {
+                trendingCollections.append(item)
+            }
             errorMessage = NetworkErrorHandler.getUserMessage(for: error)
-            debugLog("❌ [CollectionViewModel] Delete collection failed: \(error.localizedDescription)")
+            debugLog("❌ [CollectionViewModel] Delete failed, rolled back: \(error.localizedDescription)")
             return false
         }
     }

@@ -193,10 +193,12 @@ struct CollectionDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button("キャンセル") {
+                Button {
                     dismiss()
+                } label: {
+                    Image(systemName: "xmark")
+                        .foregroundColor(Constants.Colors.textWhite)
                 }
-                .foregroundColor(Constants.Colors.textWhite)
             }
 
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -304,10 +306,15 @@ struct CollectionDetailView: View {
         }
         .alert("コレクションを削除", isPresented: $showDeleteConfirmation) {
             Button("削除", role: .destructive) {
+                // Optimistic UI - dismiss immediately
+                dismiss()
+
+                // Delete in background
                 Task {
                     let success = await viewModel.deleteCollection(collectionId: collectionId)
-                    if success {
-                        dismiss()
+                    if !success {
+                        // Error is handled by viewModel (errorMessage is set)
+                        debugLog("⚠️ [CollectionDetailView] Collection deletion failed in background")
                     }
                 }
             }
@@ -866,10 +873,12 @@ struct ReportCollectionView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("キャンセル") {
+                    Button {
                         dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .foregroundColor(Constants.Colors.textWhite)
                     }
-                    .foregroundColor(Constants.Colors.textWhite)
                 }
             }
             .alert("報告を送信しました", isPresented: $showSuccessAlert) {
