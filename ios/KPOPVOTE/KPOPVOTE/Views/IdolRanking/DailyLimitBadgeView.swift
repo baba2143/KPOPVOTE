@@ -9,26 +9,7 @@ import SwiftUI
 
 struct DailyLimitBadgeView: View {
     let votesUsed: Int
-    let maxVotes: Int
-
-    var remainingVotes: Int {
-        max(0, maxVotes - votesUsed)
-    }
-
-    var progressValue: Double {
-        guard maxVotes > 0 else { return 0 }
-        return Double(votesUsed) / Double(maxVotes)
-    }
-
-    var badgeColor: Color {
-        if remainingVotes == 0 {
-            return .gray
-        } else if remainingVotes <= 2 {
-            return .orange
-        } else {
-            return .green
-        }
-    }
+    let maxVotes: Int  // 互換性のため保持（使用しない）
 
     var body: some View {
         HStack(spacing: 12) {
@@ -39,16 +20,16 @@ struct DailyLimitBadgeView: View {
 
             // Text info
             VStack(alignment: .leading, spacing: 2) {
-                Text("本日の残り投票数")
+                Text("本日の投票数")
                     .font(.caption)
                     .foregroundColor(Constants.Colors.textGray)
 
                 HStack(spacing: 4) {
-                    Text("\(remainingVotes)")
+                    Text("\(votesUsed)")
                         .font(.title2)
                         .fontWeight(.bold)
-                        .foregroundColor(badgeColor)
-                    Text("/ \(maxVotes)票")
+                        .foregroundColor(Constants.Colors.accentPink)
+                    Text("票")
                         .font(.subheadline)
                         .foregroundColor(Constants.Colors.textGray)
                 }
@@ -56,23 +37,10 @@ struct DailyLimitBadgeView: View {
 
             Spacer()
 
-            // Progress indicator
-            ZStack {
-                Circle()
-                    .stroke(Constants.Colors.textGray.opacity(0.3), lineWidth: 4)
-                    .frame(width: 44, height: 44)
-
-                Circle()
-                    .trim(from: 0, to: 1 - progressValue)
-                    .stroke(badgeColor, style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                    .frame(width: 44, height: 44)
-                    .rotationEffect(.degrees(-90))
-
-                Text("\(remainingVotes)")
-                    .font(.caption)
-                    .fontWeight(.bold)
-                    .foregroundColor(badgeColor)
-            }
+            // Vote count indicator (上限撤廃後はシンプルなアイコン表示)
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundColor(Constants.Colors.accentPink)
+                .font(.system(size: 32))
         }
         .padding()
         .background(Constants.Colors.cardDark)

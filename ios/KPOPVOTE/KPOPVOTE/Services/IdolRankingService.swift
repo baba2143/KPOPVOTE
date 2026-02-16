@@ -27,7 +27,7 @@ enum IdolRankingError: LocalizedError {
         case .decodingError:
             return "データの読み込みに失敗しました"
         case .dailyLimitExceeded:
-            return "本日の投票上限に達しました（1日5票まで）"
+            return "投票処理に失敗しました"
         }
     }
 }
@@ -49,9 +49,19 @@ class IdolRankingService {
 
     // MARK: - Get App Check Token
 
-    private func getAppCheckToken() async throws -> String {
-        let token = try await AppCheck.appCheck().token(forcingRefresh: false)
-        return token.token
+    private func getAppCheckToken() async -> String? {
+        #if DEBUG
+        debugLog("⚠️ [IdolRankingService] App Check skipped in DEBUG mode")
+        return nil
+        #else
+        do {
+            let token = try await AppCheck.appCheck().token(forcingRefresh: false)
+            return token.token
+        } catch {
+            debugLog("❌ [IdolRankingService] App Check token error: \(error)")
+            return nil
+        }
+        #endif
     }
 
     // MARK: - Get Ranking
@@ -147,7 +157,7 @@ class IdolRankingService {
         imageUrl: String? = nil
     ) async throws -> VoteResponse {
         let token = try await getAuthToken()
-        let appCheckToken = try await getAppCheckToken()
+        let appCheckToken = await getAppCheckToken()
 
         guard let url = URL(string: Constants.API.idolRankingVote) else {
             throw IdolRankingError.networkError(URLError(.badURL))
@@ -157,7 +167,9 @@ class IdolRankingService {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.setValue(appCheckToken, forHTTPHeaderField: "X-Firebase-AppCheck")
+        if let appCheckToken = appCheckToken {
+            request.setValue(appCheckToken, forHTTPHeaderField: "X-Firebase-AppCheck")
+        }
 
         let voteRequest = VoteRequest(
             entityId: entityId,

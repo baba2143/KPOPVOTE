@@ -9,12 +9,11 @@ import { ApiResponse } from "../types";
 import { VOTE_WRITE_CONFIG } from "../utils/functionConfig";
 import { applyRateLimit, VOTE_RATE_LIMIT } from "../middleware/rateLimit";
 import { verifyAppCheck } from "../middleware/appCheck";
-import {
-  incrementIdolRankingShardInTransaction,
-  idolRankingShardsExist,
-} from "../utils/shardedCounter";
+import { idolRankingShardsExist } from "../utils/shardedCounter";
+import { handleCors } from "../middleware/cors";
 
-const DAILY_VOTE_LIMIT = 5;
+// 投票上限撤廃: 実質無制限（将来的に復活させる可能性を考慮してコード構造は維持）
+const DAILY_VOTE_LIMIT = 999999;
 
 export interface IdolRankingVoteRequest {
   entityId: string;
@@ -34,17 +33,8 @@ export interface IdolRankingVoteResponse {
 export const idolRankingVote = functions
   .runWith(VOTE_WRITE_CONFIG)
   .https.onRequest(async (req, res) => {
-  // Set CORS headers
-    res.set("Access-Control-Allow-Origin", "*");
-    res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
-    res.set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Firebase-AppCheck");
-    res.set("Access-Control-Max-Age", "3600");
-
-    // Handle CORS preflight
-    if (req.method === "OPTIONS") {
-      res.status(204).send("");
-      return;
-    }
+    // Handle CORS with whitelist
+    if (handleCors(req, res)) return;
 
     if (req.method !== "POST") {
       res.status(405).json({
@@ -103,9 +93,13 @@ export const idolRankingVote = functions
       const db = admin.firestore();
       const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
 
-      // Check daily vote limit
+      // Check daily vote limit and shard existence in parallel (optimization)
       const dailyVotesRef = db.collection("idolRankingDailyVotes").doc(`${uid}_${today}`);
-      const dailyVotesDoc = await dailyVotesRef.get();
+      const [dailyVotesDoc, useShards] = await Promise.all([
+        dailyVotesRef.get(),
+        idolRankingShardsExist(db, entityId),
+      ]);
+
       const currentVoteCount = dailyVotesDoc.exists ?
         (dailyVotesDoc.data()!.voteCount || 0) :
         0;
@@ -121,65 +115,47 @@ export const idolRankingVote = functions
       // Transaction to update ranking and record vote
       const rankingRef = db.collection("idolRankings").doc(entityId);
 
-      // シャードが存在するかチェック（後方互換性）
-      const useShards = await idolRankingShardsExist(db, entityId);
+      // Track totalVotes from transaction to avoid extra read
+      let totalVotes = 0;
 
       await db.runTransaction(async (transaction) => {
         const rankingDoc = await transaction.get(rankingRef);
 
-        if (useShards) {
-        // シャード化されたランキング: ランダムシャードに書き込み（分散書き込み）
-          incrementIdolRankingShardInTransaction(transaction, db, entityId, 1);
-          // 親ドキュメントは定期集計関数で更新されるため、ここでは更新しない
-          // ただし、親ドキュメントが存在しない場合は作成する
-          if (!rankingDoc.exists) {
-            transaction.set(rankingRef, {
-              entityId,
-              entityType,
-              name,
-              groupName: groupName || null,
-              imageUrl: imageUrl || null,
-              weeklyVotes: 0, // 集計関数で更新される
-              totalVotes: 0, // 集計関数で更新される
-              previousRank: null,
-              createdAt: admin.firestore.FieldValue.serverTimestamp(),
-              lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
-            });
-          }
+        // Calculate totalVotes within transaction to avoid post-transaction read
+        const currentTotalVotes = rankingDoc.exists ?
+          (rankingDoc.data()?.totalVotes || 0) : 0;
+        totalVotes = currentTotalVotes + 1;
+
+        // ランキングドキュメントの作成/更新（カウント更新はトリガーで処理）
+        if (rankingDoc.exists) {
+          transaction.update(rankingRef, {
+            lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+          });
         } else {
-        // レガシーランキング: 直接親ドキュメントを更新（後方互換性）
-          if (rankingDoc.exists) {
-          // Update existing ranking
-            transaction.update(rankingRef, {
-              weeklyVotes: admin.firestore.FieldValue.increment(1),
-              totalVotes: admin.firestore.FieldValue.increment(1),
-              lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
-            });
-          } else {
-          // Create new ranking entry
-            transaction.set(rankingRef, {
-              entityId,
-              entityType,
-              name,
-              groupName: groupName || null,
-              imageUrl: imageUrl || null,
-              weeklyVotes: 1,
-              totalVotes: 1,
-              previousRank: null,
-              createdAt: admin.firestore.FieldValue.serverTimestamp(),
-              lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
-            });
-          }
+          // Create new ranking entry (counts will be incremented by trigger)
+          transaction.set(rankingRef, {
+            entityId,
+            entityType,
+            name,
+            groupName: groupName || null,
+            imageUrl: imageUrl || null,
+            weeklyVotes: 0, // トリガーでインクリメントされる
+            totalVotes: 0, // トリガーでインクリメントされる
+            previousRank: null,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+          });
         }
 
-        // Record individual vote
+        // Record individual vote with useShards flag for trigger optimization
         const voteRecordRef = db.collection("idolRankingVotes").doc();
         transaction.set(voteRecordRef, {
-          oderId: uid,
+          userId: uid,
           entityId,
           entityType,
           name,
           groupName: groupName || null,
+          useShards, // トリガーでシャードチェックを省略するためのフラグ
           votedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
 
@@ -196,9 +172,6 @@ export const idolRankingVote = functions
         );
       });
 
-      // Get updated ranking data
-      const updatedRanking = await rankingRef.get();
-      const totalVotes = updatedRanking.data()?.totalVotes || 1;
       const remainingVotes = DAILY_VOTE_LIMIT - (currentVoteCount + 1);
 
       console.log(

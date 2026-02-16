@@ -7,8 +7,10 @@ import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { ApiResponse } from "../types";
 import { STANDARD_CONFIG } from "../utils/functionConfig";
+import { handleCors } from "../middleware/cors";
 
-const DAILY_VOTE_LIMIT = 5;
+// 投票上限撤廃: 実質無制限
+const DAILY_VOTE_LIMIT = 999999;
 
 export interface VoteDetail {
   entityId: string;
@@ -29,17 +31,8 @@ export interface DailyLimitResponse {
 export const idolRankingGetDailyLimit = functions
   .runWith(STANDARD_CONFIG)
   .https.onRequest(async (req, res) => {
-  // Set CORS headers
-    res.set("Access-Control-Allow-Origin", "*");
-    res.set("Access-Control-Allow-Methods", "GET, OPTIONS");
-    res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    res.set("Access-Control-Max-Age", "3600");
-
-    // Handle CORS preflight
-    if (req.method === "OPTIONS") {
-      res.status(204).send("");
-      return;
-    }
+    // Handle CORS with whitelist
+    if (handleCors(req, res)) return;
 
     if (req.method !== "GET") {
       res.status(405).json({

@@ -138,6 +138,12 @@ enum Constants {
         static let getPointHistory = "\(apiBaseURL)/getPointHistory"
         static let dailyLogin = "\(apiBaseURL)/dailyLogin"
 
+        // Points - 新報酬設計
+        static let shareTask = "\(apiBaseURL)/shareTask"
+        static let reportMvWatch = "\(apiBaseURL)/reportMvWatch"
+        static let generateInviteCode = "\(apiBaseURL)/generateInviteCode"
+        static let applyInviteCode = "\(apiBaseURL)/applyInviteCode"
+
         // IAP (In-App Purchase)
         static let verifyPurchase = "\(apiBaseURL)/verifyPurchase"
         static let verifySubscription = "\(apiBaseURL)/verifySubscription"
@@ -179,7 +185,8 @@ enum Constants {
     }
 
     // MARK: - Idol Ranking
-    static let maxDailyVotes = 5
+    // 投票上限撤廃: 実質無制限
+    static let maxDailyVotes = 999999
     static let rankingPageSize = 20
 
     // MARK: - UserDefaults Keys
