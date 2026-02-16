@@ -2,14 +2,15 @@
 //  DualPointsBalanceCard.swift
 //  OSHI Pick
 //
-//  OSHI Pick - Dual Points Balance Card Component
+//  OSHI Pick - Single Points Balance Card Component
+//  単一ポイント制（2024/02 移行）
 //
 
 import SwiftUI
 
-struct DualPointsBalanceCard: View {
-    let premiumPoints: Int
-    let regularPoints: Int
+// MARK: - Single Points Balance Card (単一ポイント制)
+struct SinglePointsBalanceCard: View {
+    let points: Int
 
     var body: some View {
         VStack(spacing: 16) {
@@ -17,141 +18,96 @@ struct DualPointsBalanceCard: View {
             HStack {
                 Text("マイポイント")
                     .font(.headline)
-                    .foregroundColor(.primary)
+                    .foregroundColor(Constants.Colors.textWhite)
                 Spacer()
             }
 
             // Points display
-            HStack(spacing: 0) {
-                // Premium points (left)
-                PointTypeCard(
-                    type: .premium,
-                    points: premiumPoints
-                )
+            VStack(spacing: 8) {
+                // Points value
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text("\(points)")
+                        .font(.system(size: 48, weight: .bold, design: .rounded))
+                        .foregroundColor(Constants.Colors.accentPink)
+                    Text("P")
+                        .font(.system(size: 24, weight: .bold))
+                        .foregroundColor(Constants.Colors.accentPink.opacity(0.7))
+                }
 
-                // Divider
-                Rectangle()
-                    .fill(Color(.systemGray4))
-                    .frame(width: 1)
-                    .padding(.vertical, 8)
-
-                // Regular points (right)
-                PointTypeCard(
-                    type: .regular,
-                    points: regularPoints
-                )
-            }
-
-            // Total votes capacity
-            HStack {
-                Text("合計投票可能数:")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                Spacer()
-                Text("\(totalVotes)票")
+                // Vote capacity (1P = 1票)
+                Text("(\(points)票分)")
                     .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.primary)
+                    .foregroundColor(Constants.Colors.textGray)
             }
-            .padding(.top, 4)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
         }
         .padding()
-        .background(Color(.systemGray6))
+        .background(
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Constants.Colors.gradientPink.opacity(0.15),
+                    Constants.Colors.gradientBlue.opacity(0.15)
+                ]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+        .background(Constants.Colors.cardDark)
         .cornerRadius(12)
-    }
-
-    private var totalVotes: Int {
-        PointType.premium.calculateVotes(from: premiumPoints) +
-        PointType.regular.calculateVotes(from: regularPoints)
     }
 }
 
-// MARK: - Point Type Card
-struct PointTypeCard: View {
-    let type: PointType
+// MARK: - Compact Version (単一ポイント制)
+struct SinglePointsBalanceCompact: View {
     let points: Int
 
     var body: some View {
-        VStack(spacing: 8) {
-            // Icon and label
-            HStack(spacing: 4) {
-                Text(type.icon)
-                Text(type.displayName)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-
-            // Points value
-            Text("\(points)")
-                .font(.system(size: 28, weight: .bold, design: .rounded))
-                .foregroundColor(type.color)
-
-            Text("pt")
-                .font(.caption)
-                .foregroundColor(.secondary)
-
-            // Vote capacity
-            Text("(\(votesFromPoints)票分)")
-                .font(.caption2)
-                .foregroundColor(.secondary)
+        HStack(spacing: 4) {
+            Image(systemName: "star.fill")
+                .foregroundColor(Constants.Colors.accentPink)
+                .font(.system(size: 12))
+            Text("\(points)P")
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundColor(Constants.Colors.accentPink)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
-    }
-
-    private var votesFromPoints: Int {
-        type.calculateVotes(from: points)
     }
 }
 
-// MARK: - Compact Version
-struct DualPointsBalanceCompact: View {
-    let premiumPoints: Int
-    let regularPoints: Int
+// MARK: - Legacy Aliases (後方互換性のため)
+// 既存コードが DualPointsBalanceCard を参照している場合のため
+typealias DualPointsBalanceCard = SinglePointsBalanceCard
+typealias DualPointsBalanceCompact = SinglePointsBalanceCompact
 
-    var body: some View {
-        HStack(spacing: 16) {
-            // Premium
-            HStack(spacing: 4) {
-                Text(PointType.premium.icon)
-                Text("\(premiumPoints)pt")
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundColor(PointType.premium.color)
-            }
+// MARK: - Legacy initializer extension (後方互換性)
+extension SinglePointsBalanceCard {
+    /// 後方互換性: premiumPoints と regularPoints を受け取り、合計を表示
+    init(premiumPoints: Int, regularPoints: Int) {
+        // 単一ポイント制: premiumPoints のみ使用（regularPoints は破棄済み）
+        self.points = premiumPoints
+    }
+}
 
-            // Regular
-            HStack(spacing: 4) {
-                Text(PointType.regular.icon)
-                Text("\(regularPoints)pt")
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundColor(PointType.regular.color)
-            }
-        }
+extension SinglePointsBalanceCompact {
+    /// 後方互換性: premiumPoints と regularPoints を受け取り、合計を表示
+    init(premiumPoints: Int, regularPoints: Int) {
+        // 単一ポイント制: premiumPoints のみ使用（regularPoints は破棄済み）
+        self.points = premiumPoints
     }
 }
 
 // MARK: - Preview
 #Preview {
     VStack(spacing: 20) {
-        DualPointsBalanceCard(
-            premiumPoints: 50,
-            regularPoints: 200
-        )
+        SinglePointsBalanceCard(points: 250)
 
-        DualPointsBalanceCard(
-            premiumPoints: 0,
-            regularPoints: 100
-        )
+        SinglePointsBalanceCard(points: 0)
 
         HStack {
             Text("Compact:")
             Spacer()
-            DualPointsBalanceCompact(
-                premiumPoints: 50,
-                regularPoints: 200
-            )
+            SinglePointsBalanceCompact(points: 250)
         }
         .padding()
         .background(Color(.systemGray6))
