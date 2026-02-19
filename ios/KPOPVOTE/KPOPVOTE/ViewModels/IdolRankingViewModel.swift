@@ -177,10 +177,12 @@ class IdolRankingViewModel: ObservableObject {
             )
 
             // Update daily limit
-            let maxVotes = dailyLimit?.maxVotes ?? Constants.maxDailyVotes
+            // Note: maxVotes（ポイント残高）は維持し、remainingVotesのみ更新
+            // ポイント残高の正確な値はPointsViewModelから取得されるため、ここでは変更しない
+            let currentVotesUsed = (dailyLimit?.votesUsed ?? 0) + 1
             dailyLimit = DailyLimitResponse(
-                votesUsed: maxVotes - response.remainingVotes,
-                maxVotes: maxVotes,
+                votesUsed: currentVotesUsed,  // 今日の投票数（参考）
+                maxVotes: dailyLimit?.maxVotes ?? 0,  // 既存のポイント残高を維持
                 remainingVotes: response.remainingVotes,
                 voteDetails: dailyLimit?.voteDetails ?? []
             )
@@ -221,8 +223,9 @@ class IdolRankingViewModel: ObservableObject {
 
             showVoteSuccess = true
             print("🗳️ [IdolRankingViewModel] Vote succeeded for \(entry.name), local update and re-sort applied")
-            // Note: Server refresh is intentionally NOT performed here (same as VoteDetailViewModel)
-            // Local +1 update provides instant feedback. Server data will be fetched on manual refresh.
+
+            // ポイント残高を再取得して正確な値を表示
+            await loadDailyLimit()
         } catch let error as IdolRankingError {
             errorMessage = error.errorDescription
             showError = true
@@ -256,16 +259,21 @@ class IdolRankingViewModel: ObservableObject {
             )
 
             // Update daily limit
-            let maxVotes = dailyLimit?.maxVotes ?? Constants.maxDailyVotes
+            // Note: maxVotes（ポイント残高）は維持し、remainingVotesのみ更新
+            // ポイント残高の正確な値はPointsViewModelから取得されるため、ここでは変更しない
+            let currentVotesUsed = (dailyLimit?.votesUsed ?? 0) + 1
             dailyLimit = DailyLimitResponse(
-                votesUsed: maxVotes - response.remainingVotes,
-                maxVotes: maxVotes,
+                votesUsed: currentVotesUsed,  // 今日の投票数（参考）
+                maxVotes: dailyLimit?.maxVotes ?? 0,  // 既存のポイント残高を維持
                 remainingVotes: response.remainingVotes,
                 voteDetails: dailyLimit?.voteDetails ?? []
             )
 
             showVoteSuccess = true
             print("🗳️ [IdolRankingViewModel] Vote succeeded for new entity \(name)")
+
+            // ポイント残高を再取得して正確な値を表示
+            await loadDailyLimit()
 
             // For new entities, we need to refresh to show them in the list
             // Wait a moment for Firestore to complete the write
