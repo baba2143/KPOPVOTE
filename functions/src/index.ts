@@ -16,6 +16,7 @@ export { updateUserProfile } from "./user/updateUserProfile";
 export { deleteAccount } from "./user/deleteAccount";
 export { getNotificationSettings } from "./user/getNotificationSettings";
 export { setNotificationSettings } from "./user/setNotificationSettings";
+export { generateInviteCode, applyInviteCode } from "./user/inviteFriend";
 
 // Task functions
 export { registerTask } from "./task/registerTask";
@@ -24,6 +25,7 @@ export { fetchTaskOGP } from "./task/fetchTaskOGP";
 export { updateTaskStatus } from "./task/updateTaskStatus";
 export { updateTask } from "./task/updateTask";
 export { deleteTask } from "./task/deleteTask";
+export { shareTask } from "./task/shareTask";
 
 // Admin functions (Phase 0+)
 export { setAdmin } from "./admin/setAdmin";
@@ -70,8 +72,8 @@ export { seedExternalApps } from "./seedExternalApps";
 export { seedCommunityData } from "./community/seedCommunityData";
 export { fixUserBias } from "./community/fixUserBias";
 export { setTestUserBias } from "./community/setTestUserBias";
-// seedRewardSettings - Phase 1除外（ポイント機能）
-// export { seedRewardSettings } from "./seeds/seedRewardSettings";
+// seedRewardSettings（新報酬設計で有効化）
+export { seedRewardSettings } from "./seeds/seedRewardSettings";
 
 // Community functions (Phase 0+)
 export { getCommunityPosts } from "./community/getCommunityPosts";
@@ -102,6 +104,9 @@ export { createComment } from "./community/createComment";
 export { getComments } from "./community/getComments";
 export { deleteComment } from "./community/deleteComment";
 
+// Community functions (MV Watch Report)
+export { reportMvWatch } from "./community/reportMvWatch";
+
 // Direct Message functions
 export { sendDirectMessage } from "./directMessage/sendDirectMessage";
 export { getConversations } from "./directMessage/getConversations";
@@ -115,9 +120,10 @@ export { getBlockReports } from "./community/getBlockReports";
 // Collection Reports (VOTE reports)
 export { getCollectionReports } from "./admin/getCollectionReports";
 
-// Points functions - Phase 1除外（ポイント機能）
-// export { getPoints } from "./points/getPoints";
-// export { getPointHistory } from "./points/getPointHistory";
+// Points functions（新報酬設計で有効化）
+export { getPoints } from "./points/getPoints";
+export { getPointHistory } from "./points/getPointHistory";
+// dailyLogin - 廃止（新報酬設計）
 // export { dailyLogin } from "./points/dailyLogin";
 
 // IAP functions (Phase 1A - Consumable IAP)
@@ -156,27 +162,42 @@ export {
   aggregateIdolRankings,
   aggregateIdolRankingsManual,
 } from "./scheduled/aggregateIdolRankings";
+export { updateTrendingScores } from "./scheduled/updateTrendingScores";
 
 // Idol Ranking functions
 export { idolRankingVote } from "./idolRanking/idolRankingVote";
 export { idolRankingGetRanking } from "./idolRanking/idolRankingGetRanking";
 export { idolRankingGetDailyLimit } from "./idolRanking/idolRankingGetDailyLimit";
 
-// API Routes (Express)
+// API Routes (Express) - 遅延読み込みで他関数のコールドスタート改善
 import * as functions from "firebase-functions";
-import collectionsRouter from "./api/collections";
-import calendarRouter from "./api/calendar";
 import { EXPRESS_API_CONFIG, STANDARD_CONFIG } from "./utils/functionConfig";
-import express = require("express");
 
-const app = express();
-app.use(express.json());
-app.use("/collections", collectionsRouter);
-app.use("/calendar", calendarRouter);
+// Express アプリをキャッシュ（初回リクエスト時のみ初期化）
+let cachedApp: any = null;
+
+/** Expressアプリを遅延初期化して返す（コールドスタート最適化） */
+function getExpressApp() {
+  if (!cachedApp) {
+    /* eslint-disable @typescript-eslint/no-var-requires */
+    const express = require("express");
+    const collectionsRouter = require("./api/collections").default;
+    const calendarRouter = require("./api/calendar").default;
+    /* eslint-enable @typescript-eslint/no-var-requires */
+
+    cachedApp = express();
+    cachedApp.use(express.json());
+    cachedApp.use("/collections", collectionsRouter);
+    cachedApp.use("/calendar", calendarRouter);
+  }
+  return cachedApp;
+}
 
 export const api = functions
   .runWith(EXPRESS_API_CONFIG)
-  .https.onRequest(app);
+  .https.onRequest((req, res) => {
+    getExpressApp()(req, res);
+  });
 
 // Placeholder function for testing
 export const helloWorld = functions

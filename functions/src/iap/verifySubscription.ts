@@ -5,7 +5,7 @@
 
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
-import fetch from "node-fetch";
+// Node.js 20+ の標準 fetch を使用（node-fetch 不要）
 
 // Type definition for receipt info
 interface ReceiptInfo {

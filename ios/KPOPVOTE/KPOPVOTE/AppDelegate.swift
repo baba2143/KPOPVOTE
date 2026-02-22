@@ -11,6 +11,7 @@ import FirebaseCore
 import FirebaseMessaging
 import FirebaseAuth
 import FirebaseAppCheck
+import FirebaseFirestore
 
 class AppDelegate: NSObject, UIApplicationDelegate {
 
@@ -21,20 +22,38 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
         // App Check を Firebase 初期化前に設定
-        #if DEBUG
-        let providerFactory = AppCheckDebugProviderFactory()
-        #else
+        // DEBUG時はVoteService/IdolRankingServiceでスキップするため初期化不要
+        #if !DEBUG
         let providerFactory = DeviceCheckProviderFactory()
-        #endif
         AppCheck.setAppCheckProviderFactory(providerFactory)
+        debugLog("🔧 [AppCheck] DeviceCheck provider factory configured")
+        #else
+        debugLog("⚠️ [AppCheck] Skipped in DEBUG mode")
+        #endif
 
         // Firebase を最初に初期化（Auth.auth() を使う前に必須）
         FirebaseApp.configure()
+
+        // Firestore キャッシュ設定（オフライン対応・パフォーマンス改善）
+        configureFirestoreCache()
 
         // Set up push notifications
         setupPushNotifications(application: application)
 
         return true
+    }
+
+    // MARK: - Firestore Cache Configuration
+
+    /// Firestoreのキャッシュ設定を最適化
+    /// - オフラインでもデータ閲覧可能
+    /// - ネットワーク遅延時のUX改善
+    private func configureFirestoreCache() {
+        let settings = Firestore.firestore().settings
+        // キャッシュサイズ: 100MB（デフォルトは40MB）
+        settings.cacheSettings = PersistentCacheSettings(sizeBytes: 100 * 1024 * 1024 as NSNumber)
+        Firestore.firestore().settings = settings
+        debugLog("🔧 [Firestore] Cache configured: 100MB persistent cache")
     }
 
     // MARK: - URL Handling for Firebase Phone Auth (reCAPTCHA)

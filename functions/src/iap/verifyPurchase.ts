@@ -7,6 +7,7 @@ import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { ApiResponse } from "../types";
 import { STANDARD_CONFIG } from "../utils/functionConfig";
+import { handleCors } from "../middleware/cors";
 
 interface VerifyPurchaseRequest {
   receiptData: string; // Base64-encoded App Store receipt
@@ -39,14 +40,8 @@ const PRODUCT_POINTS: { [key: string]: number } = {
 export const verifyPurchase = functions
   .runWith(STANDARD_CONFIG)
   .https.onRequest(async (req, res) => {
-    res.set("Access-Control-Allow-Origin", "*");
-    res.set("Access-Control-Allow-Methods", "POST");
-    res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-
-    if (req.method === "OPTIONS") {
-      res.status(204).send("");
-      return;
-    }
+    // Handle CORS with whitelist
+    if (handleCors(req, res)) return;
 
     if (req.method !== "POST") {
       res.status(405).json({ success: false, error: "Method not allowed. Use POST." } as ApiResponse<null>);
@@ -222,7 +217,7 @@ async function verifyReceiptWithAppStore(receiptData: string): Promise<boolean> 
  * @return {Promise<{status: number}>} Verification response from App Store
  */
 async function verifyReceiptWithUrl(url: string, receiptData: string): Promise<{ status: number }> {
-  const fetch = (await import("node-fetch")).default;
+  // Node.js 20+ の標準 fetch を使用
 
   const response = await fetch(url, {
     method: "POST",

@@ -4,9 +4,10 @@
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     "outDir": "lib",
-    "sourceMap": true,
+    "sourceMap": false,
+    "removeComments": true,
     "strict": true,
-    "target": "es2017",
+    "target": "es2020",
     "esModuleInterop": true,
     "skipLibCheck": true,
     "resolveJsonModule": true
