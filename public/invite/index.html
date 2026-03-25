@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSHI Pick - 友達招待</title>
+    <meta name="apple-itunes-app" content="app-id=6755575658">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        .container {
+            text-align: center;
+            padding: 40px 20px;
+            max-width: 400px;
+        }
+        .logo {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 24px;
+            border-radius: 24px;
+            object-fit: cover;
+        }
+        h1 {
+            font-size: 28px;
+            margin-bottom: 12px;
+            background: linear-gradient(90deg, #ff6b9d, #c44dff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        p {
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 32px;
+            line-height: 1.6;
+        }
+        .invite-message {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+        .invite-message h2 {
+            font-size: 18px;
+            margin-bottom: 8px;
+            color: #ff6b9d;
+        }
+        .invite-message p {
+            margin-bottom: 0;
+            font-size: 14px;
+        }
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 24px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #ff6b9d;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .app-store-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: #000;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-size: 16px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .app-store-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 32px rgba(255, 107, 157, 0.3);
+        }
+        .app-store-btn svg {
+            width: 24px;
+            height: 24px;
+        }
+        .invite-code-box {
+            background: rgba(255, 107, 157, 0.15);
+            border: 2px solid rgba(255, 107, 157, 0.5);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .invite-code-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 8px;
+        }
+        .invite-code {
+            font-size: 28px;
+            font-weight: bold;
+            letter-spacing: 4px;
+            color: #ff6b9d;
+            font-family: monospace;
+        }
+        .copied-message {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            color: #4ade80;
+            font-size: 14px;
+            margin-bottom: 16px;
+            animation: fadeIn 0.3s ease;
+        }
+        .copied-message.show {
+            display: flex;
+        }
+        .copied-message svg {
+            width: 18px;
+            height: 18px;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .manual-note {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 16px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="/images/app-icon.png" alt="OSHI Pick" class="logo">
+        <h1>OSHI Pick</h1>
+        <div class="invite-message">
+            <h2>友達からの招待</h2>
+            <p>アプリをインストールして招待コードを入力すると、お互いにポイントがもらえます！</p>
+        </div>
+        <div class="invite-code-box">
+            <div class="invite-code-label">招待コード</div>
+            <div class="invite-code" id="inviteCodeDisplay">--------</div>
+        </div>
+        <div class="copied-message" id="copiedMessage">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+            </svg>
+            <span>コードをコピーしました！</span>
+        </div>
+        <div class="loading">
+            <div class="spinner"></div>
+            <span>アプリを確認中</span>
+        </div>
+        <p class="manual-note">アプリインストール後、プロフィール画面の<br>「招待コードを入力」から登録できます</p>
+        <a href="https://apps.apple.com/jp/app/oshi-pick/id6755575658" class="app-store-btn" id="appStoreLink">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+            </svg>
+            App Storeでダウンロード
+        </a>
+    </div>
+    <script>
+        (function() {
+            // Get invite code from URL path
+            var path = window.location.pathname;
+            var inviteCode = path.replace('/invite/', '').replace('/', '').toUpperCase();
+
+            // Display invite code
+            var codeDisplay = document.getElementById('inviteCodeDisplay');
+            if (inviteCode && inviteCode.length >= 6) {
+                codeDisplay.textContent = inviteCode;
+
+                // Auto-copy to clipboard
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(inviteCode).then(function() {
+                        // Show copied message
+                        document.getElementById('copiedMessage').classList.add('show');
+                    }).catch(function(err) {
+                        console.log('Clipboard copy failed:', err);
+                    });
+                } else {
+                    // Fallback for older browsers
+                    var textArea = document.createElement('textarea');
+                    textArea.value = inviteCode;
+                    textArea.style.position = 'fixed';
+                    textArea.style.left = '-9999px';
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    try {
+                        document.execCommand('copy');
+                        document.getElementById('copiedMessage').classList.add('show');
+                    } catch (err) {
+                        console.log('Fallback copy failed:', err);
+                    }
+                    document.body.removeChild(textArea);
+                }
+            }
+
+            // App Store URL
+            var appStoreUrl = 'https://apps.apple.com/jp/app/oshi-pick/id6755575658';
+
+            // Try to open the app via Universal Link
+            // iOS will automatically handle this if the app is installed
+            // If not installed, this page will be shown
+
+            // After 3 seconds, redirect to App Store (increased for user to see the code)
+            setTimeout(function() {
+                window.location.href = appStoreUrl;
+            }, 3000);
+        })();
+    </script>
+</body>
+</html>

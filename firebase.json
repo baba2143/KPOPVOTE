@@ -1,0 +1,195 @@
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run lint",
+        "npm --prefix \"$RESOURCE_DIR\" run build"
+      ]
+    }
+  ],
+  "hosting": [
+    {
+      "target": "app",
+      "public": "public",
+      "ignore": [
+        "firebase.json",
+        "**/node_modules/**"
+      ],
+      "headers": [
+        {
+          "source": "/.well-known/apple-app-site-association",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      ],
+      "rewrites": [
+        {
+          "source": "/vote/**",
+          "destination": "/vote/index.html"
+        },
+        {
+          "source": "/invite/**",
+          "destination": "/invite/index.html"
+        },
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ]
+    },
+    {
+      "target": "admin",
+      "public": "admin/build",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "/api/getReportedPosts",
+          "function": "getReportedPosts"
+        },
+        {
+          "source": "/api/getCommunityStats",
+          "function": "getCommunityStats"
+        },
+        {
+          "source": "/api/deleteCommunityPost",
+          "function": "deleteCommunityPost"
+        },
+        {
+          "source": "/api/getDMReports",
+          "function": "getDMReports"
+        },
+        {
+          "source": "/api/getBlockReports",
+          "function": "getBlockReports"
+        },
+        {
+          "source": "/api/searchUsers",
+          "function": "searchUsers"
+        },
+        {
+          "source": "/api/getUserDetail",
+          "function": "getUserDetail"
+        },
+        {
+          "source": "/api/setAdmin",
+          "function": "setAdmin"
+        },
+        {
+          "source": "/api/suspendUser",
+          "function": "suspendUser"
+        },
+        {
+          "source": "/api/getAdminLogs",
+          "function": "getAdminLogs"
+        },
+        {
+          "source": "/api/verifyAdminAuth",
+          "function": "verifyAdminAuth"
+        },
+        {
+          "source": "/api/createInAppVote",
+          "function": "createInAppVote"
+        },
+        {
+          "source": "/api/listInAppVotes",
+          "function": "listInAppVotes"
+        },
+        {
+          "source": "/api/getInAppVoteDetail",
+          "function": "getInAppVoteDetail"
+        },
+        {
+          "source": "/api/updateInAppVote",
+          "function": "updateInAppVote"
+        },
+        {
+          "source": "/api/deleteInAppVote",
+          "function": "deleteInAppVote"
+        },
+        {
+          "source": "/api/getRanking",
+          "function": "getRanking"
+        },
+        {
+          "source": "/api/createIdol",
+          "function": "createIdol"
+        },
+        {
+          "source": "/api/listIdols",
+          "function": "listIdols"
+        },
+        {
+          "source": "/api/updateIdol",
+          "function": "updateIdol"
+        },
+        {
+          "source": "/api/deleteIdol",
+          "function": "deleteIdol"
+        },
+        {
+          "source": "/api/createExternalApp",
+          "function": "createExternalApp"
+        },
+        {
+          "source": "/api/listExternalApps",
+          "function": "listExternalApps"
+        },
+        {
+          "source": "/api/updateExternalApp",
+          "function": "updateExternalApp"
+        },
+        {
+          "source": "/api/deleteExternalApp",
+          "function": "deleteExternalApp"
+        },
+        {
+          "source": "/api/createGroup",
+          "function": "createGroup"
+        },
+        {
+          "source": "/api/listGroups",
+          "function": "listGroups"
+        },
+        {
+          "source": "/api/updateGroup",
+          "function": "updateGroup"
+        },
+        {
+          "source": "/api/deleteGroup",
+          "function": "deleteGroup"
+        },
+        {
+          "source": "/api/getCollectionReports",
+          "function": "getCollectionReports"
+        },
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ]
+    }
+  ],
+  "storage": {
+    "rules": "storage.rules"
+  }
+}

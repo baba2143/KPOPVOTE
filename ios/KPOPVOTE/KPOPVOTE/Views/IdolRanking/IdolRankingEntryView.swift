@@ -1,0 +1,196 @@
+//
+//  IdolRankingEntryView.swift
+//  KPOPVOTE
+//
+//  Single ranking entry row component
+//
+
+import SwiftUI
+
+struct IdolRankingEntryView: View {
+    let entry: IdolRankingEntry
+    let canVote: Bool
+    let isVoting: Bool
+    let onVote: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            // Rank
+            rankView
+
+            // Profile image
+            profileImage
+
+            // Name and group
+            VStack(alignment: .leading, spacing: 2) {
+                Text(entry.name)
+                    .font(.headline)
+                    .foregroundColor(Constants.Colors.textWhite)
+                    .lineLimit(1)
+
+                if let groupName = entry.groupName, !groupName.isEmpty {
+                    Text(groupName)
+                        .font(.caption)
+                        .foregroundColor(Constants.Colors.textGray)
+                        .lineLimit(1)
+                }
+            }
+
+            Spacer()
+
+            // Vote count
+            VStack(alignment: .trailing, spacing: 2) {
+                Text("\(entry.votes.formatted())")
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .foregroundColor(Constants.Colors.textWhite)
+                Text("票")
+                    .font(.caption2)
+                    .foregroundColor(Constants.Colors.textGray)
+            }
+
+            // Vote button
+            voteButton
+        }
+        .padding(.vertical, 4)
+    }
+
+    private var rankView: some View {
+        Group {
+            if entry.rank <= 3 {
+                Text(entry.rankMedal)
+                    .font(.title2)
+                    .frame(width: 40)
+            } else {
+                Text("\(entry.rank)")
+                    .font(.headline)
+                    .foregroundColor(Constants.Colors.textGray)
+                    .frame(width: 40)
+            }
+        }
+    }
+
+    private var profileImage: some View {
+        Group {
+            if let imageUrl = entry.imageUrl,
+               let url = URL(string: imageUrl) {
+                #if DEBUG
+                let _ = print("🖼️ [IdolRankingEntryView] Loading image for \(entry.name): \(imageUrl)")
+                #endif
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .empty:
+                        ProgressView()
+                            .frame(width: 50, height: 50)
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 50, height: 50)
+                            .clipShape(Circle())
+                    case .failure(let error):
+                        #if DEBUG
+                        let _ = print("❌ [IdolRankingEntryView] Image load failed for \(entry.name): \(error)")
+                        #endif
+                        placeholderImage
+                    @unknown default:
+                        placeholderImage
+                    }
+                }
+            } else {
+                #if DEBUG
+                let _ = print("⚠️ [IdolRankingEntryView] No imageUrl for \(entry.name)")
+                #endif
+                placeholderImage
+            }
+        }
+    }
+
+    private var placeholderImage: some View {
+        Circle()
+            .fill(Constants.Colors.cardDark)
+            .frame(width: 50, height: 50)
+            .overlay(
+                Image(systemName: entry.entityType == .group ? "person.3.fill" : "person.fill")
+                    .foregroundColor(Constants.Colors.textGray)
+            )
+    }
+
+    private var voteButton: some View {
+        Button(action: onVote) {
+            if isVoting {
+                ProgressView()
+                    .progressViewStyle(.circular)
+                    .frame(width: 44, height: 44)
+            } else {
+                Image(systemName: "heart.fill")
+                    .font(.title2)
+                    .foregroundColor(canVote ? Constants.Colors.accentPink : Constants.Colors.textGray)
+                    .frame(width: 44, height: 44)
+            }
+        }
+        .disabled(!canVote || isVoting)
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Preview
+
+#Preview {
+    VStack {
+        IdolRankingEntryView(
+            entry: IdolRankingEntry(
+                rank: 1,
+                entityId: "1",
+                entityType: .individual,
+                name: "カリナ",
+                groupName: "aespa",
+                imageUrl: nil,
+                weeklyVotes: 1234,
+                totalVotes: 5678,
+                previousRank: 2,
+                rankChange: 1
+            ),
+            canVote: true,
+            isVoting: false,
+            onVote: {}
+        )
+
+        IdolRankingEntryView(
+            entry: IdolRankingEntry(
+                rank: 2,
+                entityId: "2",
+                entityType: .group,
+                name: "NewJeans",
+                groupName: nil,
+                imageUrl: nil,
+                weeklyVotes: 987,
+                totalVotes: 4321,
+                previousRank: 1,
+                rankChange: -1
+            ),
+            canVote: true,
+            isVoting: false,
+            onVote: {}
+        )
+
+        IdolRankingEntryView(
+            entry: IdolRankingEntry(
+                rank: 4,
+                entityId: "4",
+                entityType: .individual,
+                name: "ウィンター",
+                groupName: "aespa",
+                imageUrl: nil,
+                weeklyVotes: 456,
+                totalVotes: 2345,
+                previousRank: nil,
+                rankChange: nil
+            ),
+            canVote: false,
+            isVoting: false,
+            onVote: {}
+        )
+    }
+    .padding()
+}

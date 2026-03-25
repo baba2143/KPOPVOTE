@@ -1,0 +1,538 @@
+//
+//  CollectionViewModel.swift
+//  OSHI Pick
+//
+//  OSHI Pick - Collection ViewModel (Phase 2)
+//
+
+import Foundation
+import Combine
+import FirebaseAuth
+
+@MainActor
+class CollectionViewModel: ObservableObject {
+    // MARK: - Published Properties
+
+    // Discover Tab
+    @Published var trendingCollections: [VoteCollection] = []
+    @Published var latestCollections: [VoteCollection] = []
+    @Published var searchResults: [VoteCollection] = []
+
+    // My Collections
+    @Published var savedCollections: [VoteCollection] = []
+    @Published var myCollections: [VoteCollection] = []
+
+    // Detail View
+    @Published var currentCollection: VoteCollection?
+    @Published var isSaved: Bool = false
+    @Published var isLiked: Bool = false
+    @Published var isOwner: Bool = false
+    @Published var isFollowingCreator: Bool = false
+
+    // Pagination
+    @Published var currentPage: Int = 1
+    @Published var hasNextPage: Bool = false
+    @Published var totalPages: Int = 1
+
+    // UI State
+    @Published var isLoading: Bool = false
+    @Published var errorMessage: String?
+    @Published var searchQuery: String = ""
+    @Published var selectedTags: [String] = []
+    @Published var sortOption: SortOption = .latest
+
+    // MARK: - Private Properties
+    private let collectionService = CollectionService.shared
+    private var cancellables = Set<AnyCancellable>()
+
+    // MARK: - Sorting Options
+    enum SortOption: String, CaseIterable {
+        case latest = "latest"
+        case popular = "popular"
+        case trending = "trending"
+        case relevance = "relevance"
+
+        var displayText: String {
+            switch self {
+            case .latest:
+                return "最新順"
+            case .popular:
+                return "人気順"
+            case .trending:
+                return "トレンド"
+            case .relevance:
+                return "関連度順"
+            }
+        }
+    }
+
+    // MARK: - Initialization
+    init() {
+        setupSearchDebounce()
+    }
+
+    // MARK: - Setup
+
+    /// Setup search query debouncing
+    private func setupSearchDebounce() {
+        $searchQuery
+            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
+            .removeDuplicates()
+            .sink { [weak self] query in
+                if !query.isEmpty {
+                    Task {
+                        await self?.performSearch(query: query)
+                    }
+                }
+            }
+            .store(in: &cancellables)
+    }
+
+    // MARK: - Fetch Methods
+
+    /// Load trending collections for Discover tab
+    func loadTrendingCollections(period: String = "7d", limit: Int = 10) async {
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            trendingCollections = try await collectionService.getTrendingCollections(period: period, limit: limit)
+            filterBlockedUsers()
+            debugLog("✅ [CollectionViewModel] Loaded \(trendingCollections.count) trending collections")
+        } catch is CancellationError {
+            debugLog("⏸️ [CollectionViewModel] Trending loading cancelled (view transition)")
+        } catch let urlError as URLError where urlError.code == .cancelled {
+            debugLog("⏸️ [CollectionViewModel] URLSession cancelled (view transition)")
+        } catch {
+            errorMessage = NetworkErrorHandler.getUserMessage(for: error)
+            debugLog("❌ [CollectionViewModel] Failed to load trending: \(error.localizedDescription)")
+        }
+
+        isLoading = false
+    }
+
+    /// Load latest collections for Discover tab
+    func loadLatestCollections(page: Int = 1, limit: Int = 20) async {
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            let response = try await collectionService.getCollections(
+                page: page,
+                limit: limit,
+                sortBy: sortOption.rawValue,
+                tags: selectedTags.isEmpty ? nil : selectedTags
+            )
+
+            if page == 1 {
+                latestCollections = response.data.collections
+            } else {
+                latestCollections.append(contentsOf: response.data.collections)
+            }
+            filterBlockedUsers()
+
+            currentPage = response.data.pagination.currentPage
+            totalPages = response.data.pagination.totalPages
+            hasNextPage = response.data.pagination.hasNext
+
+            debugLog("✅ [CollectionViewModel] Loaded \(response.data.collections.count) collections (page \(page))")
+        } catch is CancellationError {
+            debugLog("⏸️ [CollectionViewModel] Latest loading cancelled (view transition)")
+        } catch let urlError as URLError where urlError.code == .cancelled {
+            debugLog("⏸️ [CollectionViewModel] URLSession cancelled (view transition)")
+        } catch {
+            errorMessage = NetworkErrorHandler.getUserMessage(for: error)
+            debugLog("❌ [CollectionViewModel] Failed to load latest: \(error.localizedDescription)")
+        }
+
+        isLoading = false
+    }
+
+    /// Load next page of collections
+    func loadNextPage() async {
+        guard hasNextPage && !isLoading else { return }
+        await loadLatestCollections(page: currentPage + 1)
+    }
+
+    /// Perform search with query
+    func performSearch(query: String, page: Int = 1) async {
+        guard !query.isEmpty else {
+            searchResults = []
+            return
+        }
+
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            let response = try await collectionService.searchCollections(
+                query: query,
+                page: page,
+                limit: 20,
+                sortBy: sortOption.rawValue,
+                tags: selectedTags.isEmpty ? nil : selectedTags
+            )
+
+            if page == 1 {
+                searchResults = response.data.collections
+            } else {
+                searchResults.append(contentsOf: response.data.collections)
+            }
+            filterBlockedUsers()
+
+            currentPage = response.data.pagination.currentPage
+            totalPages = response.data.pagination.totalPages
+            hasNextPage = response.data.pagination.hasNext
+
+            debugLog("✅ [CollectionViewModel] Found \(response.data.collections.count) collections for '\(query)'")
+        } catch is CancellationError {
+            debugLog("⏸️ [CollectionViewModel] Search cancelled (view transition)")
+        } catch let urlError as URLError where urlError.code == .cancelled {
+            debugLog("⏸️ [CollectionViewModel] URLSession cancelled (view transition)")
+        } catch {
+            errorMessage = NetworkErrorHandler.getUserMessage(for: error)
+            debugLog("❌ [CollectionViewModel] Search failed: \(error.localizedDescription)")
+        }
+
+        isLoading = false
+    }
+
+    /// Load saved collections
+    func loadSavedCollections(page: Int = 1) async {
+        // ゲストモードの場合はスキップ
+        guard Auth.auth().currentUser != nil else {
+            debugLog("👤 [CollectionViewModel] Guest mode - skipping saved collections")
+            savedCollections = []
+            isLoading = false
+            return
+        }
+
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            let response = try await collectionService.getSavedCollections(page: page, limit: 20)
+
+            if page == 1 {
+                savedCollections = response.data.collections
+            } else {
+                savedCollections.append(contentsOf: response.data.collections)
+            }
+            filterBlockedUsers()
+
+            currentPage = response.data.pagination.currentPage
+            totalPages = response.data.pagination.totalPages
+            hasNextPage = response.data.pagination.hasNext
+
+            debugLog("✅ [CollectionViewModel] Loaded \(response.data.collections.count) saved collections")
+        } catch is CancellationError {
+            debugLog("⏸️ [CollectionViewModel] Saved collections loading cancelled (view transition)")
+        } catch let urlError as URLError where urlError.code == .cancelled {
+            debugLog("⏸️ [CollectionViewModel] URLSession cancelled (view transition)")
+        } catch {
+            errorMessage = NetworkErrorHandler.getUserMessage(for: error)
+            debugLog("❌ [CollectionViewModel] Failed to load saved: \(error.localizedDescription)")
+        }
+
+        isLoading = false
+    }
+
+    /// Load user's created collections
+    func loadMyCollections(page: Int = 1) async {
+        // ゲストモードの場合はスキップ
+        guard Auth.auth().currentUser != nil else {
+            debugLog("👤 [CollectionViewModel] Guest mode - skipping my collections")
+            myCollections = []
+            isLoading = false
+            return
+        }
+
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            let response = try await collectionService.getMyCollections(page: page, limit: 20)
+
+            if page == 1 {
+                myCollections = response.data.collections
+            } else {
+                myCollections.append(contentsOf: response.data.collections)
+            }
+
+            currentPage = response.data.pagination.currentPage
+            totalPages = response.data.pagination.totalPages
+            hasNextPage = response.data.pagination.hasNext
+
+            debugLog("✅ [CollectionViewModel] Loaded \(response.data.collections.count) created collections")
+        } catch is CancellationError {
+            debugLog("⏸️ [CollectionViewModel] My collections loading cancelled (view transition)")
+        } catch let urlError as URLError where urlError.code == .cancelled {
+            debugLog("⏸️ [CollectionViewModel] URLSession cancelled (view transition)")
+        } catch {
+            errorMessage = NetworkErrorHandler.getUserMessage(for: error)
+            debugLog("❌ [CollectionViewModel] Failed to load my collections: \(error.localizedDescription)")
+        }
+
+        isLoading = false
+    }
+
+    /// Load collection detail
+    func loadCollectionDetail(collectionId: String) async {
+        debugLog("🔄 [CollectionViewModel] loadCollectionDetail called with ID: \(collectionId)")
+        isLoading = true
+        errorMessage = nil
+
+        do {
+            debugLog("🌐 [CollectionViewModel] Calling collectionService.getCollectionDetail...")
+            let response = try await collectionService.getCollectionDetail(collectionId: collectionId)
+
+            debugLog("📦 [CollectionViewModel] Received response: \(response)")
+            currentCollection = response.data.collection
+            isSaved = response.data.isSaved
+            isLiked = response.data.isLiked
+            isOwner = response.data.isOwner
+            isFollowingCreator = response.data.isFollowingCreator
+
+            debugLog("✅ [CollectionViewModel] Loaded collection detail: \(response.data.collection.title)")
+        } catch is CancellationError {
+            debugLog("⏸️ [CollectionViewModel] Detail loading cancelled (view transition)")
+        } catch let urlError as URLError where urlError.code == .cancelled {
+            debugLog("⏸️ [CollectionViewModel] URLSession cancelled (view transition)")
+        } catch {
+            let userMessage = NetworkErrorHandler.getUserMessage(for: error)
+            errorMessage = userMessage
+            debugLog("❌ [CollectionViewModel] Failed to load detail")
+            debugLog("   Error: \(error)")
+            debugLog("   LocalizedDescription: \(error.localizedDescription)")
+            debugLog("   User Message: \(userMessage)")
+            if let decodingError = error as? DecodingError {
+                debugLog("   DecodingError details: \(decodingError)")
+            }
+        }
+
+        isLoading = false
+        debugLog("🏁 [CollectionViewModel] loadCollectionDetail finished. currentCollection: \(currentCollection?.title ?? "nil"), error: \(errorMessage ?? "none")")
+    }
+
+    // MARK: - Action Methods
+
+    /// Toggle save/unsave collection
+    func toggleSaveCollection(collectionId: String) async -> Bool {
+        do {
+            let response = try await collectionService.toggleSaveCollection(collectionId: collectionId)
+            isSaved = response.data.saved
+
+            // Update saveCount in current collection
+            if var collection = currentCollection {
+                collection.saveCount = response.data.saveCount
+                currentCollection = collection
+            }
+
+            debugLog("✅ [CollectionViewModel] Save toggled: \(isSaved)")
+            return true
+        } catch {
+            errorMessage = NetworkErrorHandler.getUserMessage(for: error)
+            debugLog("❌ [CollectionViewModel] Save toggle failed: \(error.localizedDescription)")
+            return false
+        }
+    }
+
+    /// Add collection tasks to user's task list
+    func addCollectionToTasks(collectionId: String) async -> AddToTasksData? {
+        do {
+            let response = try await collectionService.addCollectionToTasks(collectionId: collectionId)
+
+            debugLog("✅ [CollectionViewModel] Added \(response.data.addedCount) tasks")
+            return response.data
+        } catch {
+            errorMessage = NetworkErrorHandler.getUserMessage(for: error)
+            debugLog("❌ [CollectionViewModel] Add to tasks failed: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    /// Add single task from collection to user's task list
+    func addSingleTask(collectionId: String, task: VoteTaskInCollection) async -> AddSingleTaskData? {
+        do {
+            let response = try await collectionService.addSingleTaskToTasks(
+                collectionId: collectionId,
+                taskId: task.id
+            )
+
+            debugLog("✅ [CollectionViewModel] Add single task result: \(response.data.message)")
+            return response.data
+        } catch {
+            errorMessage = NetworkErrorHandler.getUserMessage(for: error)
+            debugLog("❌ [CollectionViewModel] Add single task failed: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    /// Delete collection with optimistic UI update
+    @MainActor
+    func deleteCollection(collectionId: String) async -> Bool {
+        // Optimistic: Save items for potential rollback
+        let removedFromMy = myCollections.first { $0.id == collectionId }
+        let removedFromSaved = savedCollections.first { $0.id == collectionId }
+        let removedFromLatest = latestCollections.first { $0.id == collectionId }
+        let removedFromTrending = trendingCollections.first { $0.id == collectionId }
+
+        // Optimistic: Remove from local arrays first
+        myCollections.removeAll { $0.id == collectionId }
+        savedCollections.removeAll { $0.id == collectionId }
+        latestCollections.removeAll { $0.id == collectionId }
+        trendingCollections.removeAll { $0.id == collectionId }
+
+        debugLog("🔄 [CollectionViewModel] Optimistically removed collection from local state")
+
+        do {
+            _ = try await collectionService.deleteCollection(collectionId: collectionId)
+            debugLog("✅ [CollectionViewModel] Collection deleted successfully on server")
+            return true
+        } catch {
+            // Rollback on failure
+            if let item = removedFromMy {
+                myCollections.append(item)
+            }
+            if let item = removedFromSaved {
+                savedCollections.append(item)
+            }
+            if let item = removedFromLatest {
+                latestCollections.append(item)
+            }
+            if let item = removedFromTrending {
+                trendingCollections.append(item)
+            }
+            errorMessage = NetworkErrorHandler.getUserMessage(for: error)
+            debugLog("❌ [CollectionViewModel] Delete failed, rolled back: \(error.localizedDescription)")
+            return false
+        }
+    }
+
+    /// Toggle follow/unfollow collection creator
+    func toggleFollowCreator() async -> Bool {
+        guard let creatorId = currentCollection?.creatorId else {
+            debugLog("❌ [CollectionViewModel] No creator ID")
+            return false
+        }
+
+        do {
+            if isFollowingCreator {
+                try await FollowService.shared.unfollowUser(userId: creatorId)
+                isFollowingCreator = false
+                debugLog("✅ [CollectionViewModel] Unfollowed creator: \(creatorId)")
+            } else {
+                _ = try await FollowService.shared.followUser(userId: creatorId)
+                isFollowingCreator = true
+                debugLog("✅ [CollectionViewModel] Followed creator: \(creatorId)")
+            }
+            return true
+        } catch {
+            errorMessage = NetworkErrorHandler.getUserMessage(for: error)
+            debugLog("❌ [CollectionViewModel] Follow toggle failed: \(error.localizedDescription)")
+            return false
+        }
+    }
+
+    // MARK: - Filter Methods
+
+    /// Apply tag filter
+    func toggleTag(_ tag: String) {
+        if selectedTags.contains(tag) {
+            selectedTags.removeAll { $0 == tag }
+        } else {
+            selectedTags.append(tag)
+        }
+
+        // Reload with new filter
+        Task {
+            if searchQuery.isEmpty {
+                await loadLatestCollections(page: 1)
+            } else {
+                await performSearch(query: searchQuery, page: 1)
+            }
+        }
+    }
+
+    /// Clear all filters
+    func clearFilters() {
+        selectedTags.removeAll()
+        searchQuery = ""
+        sortOption = .latest
+
+        Task {
+            await loadLatestCollections(page: 1)
+        }
+    }
+
+    /// Change sort option
+    func changeSortOption(_ option: SortOption) {
+        sortOption = option
+
+        Task {
+            if searchQuery.isEmpty {
+                await loadLatestCollections(page: 1)
+            } else {
+                await performSearch(query: searchQuery, page: 1)
+            }
+        }
+    }
+
+    // MARK: - Helper Methods
+
+    /// Clear error message
+    func clearError() {
+        errorMessage = nil
+    }
+
+    /// Refresh all data
+    func refresh() async {
+        await loadTrendingCollections()
+        await loadLatestCollections(page: 1)
+    }
+
+    // MARK: - Block User Handling
+
+    /// Remove collections from blocked user (Apple Guideline 1.2 compliance)
+    func onUserBlocked(blockedUserId: String) {
+        debugLog("🚫 [CollectionViewModel] Removing collections from blocked user: \(blockedUserId)")
+
+        let beforeTrending = trendingCollections.count
+        let beforeLatest = latestCollections.count
+        let beforeSearch = searchResults.count
+        let beforeSaved = savedCollections.count
+
+        trendingCollections.removeAll { $0.creatorId == blockedUserId }
+        latestCollections.removeAll { $0.creatorId == blockedUserId }
+        searchResults.removeAll { $0.creatorId == blockedUserId }
+        savedCollections.removeAll { $0.creatorId == blockedUserId }
+        // Note: myCollections は自分のコレクションなのでフィルタ不要
+
+        let removedCount = (beforeTrending - trendingCollections.count) +
+                          (beforeLatest - latestCollections.count) +
+                          (beforeSearch - searchResults.count) +
+                          (beforeSaved - savedCollections.count)
+
+        debugLog("✅ [CollectionViewModel] Removed \(removedCount) collections from blocked user")
+    }
+
+    /// Filter collections from all blocked users (call after data load)
+    func filterBlockedUsers() {
+        let blockedIds = BlockService.shared.blockedUserIds
+        guard !blockedIds.isEmpty else { return }
+
+        debugLog("🔍 [CollectionViewModel] Filtering collections from \(blockedIds.count) blocked users")
+        let beforeCount = trendingCollections.count + latestCollections.count +
+                          searchResults.count + savedCollections.count
+
+        trendingCollections = trendingCollections.filter { !blockedIds.contains($0.creatorId) }
+        latestCollections = latestCollections.filter { !blockedIds.contains($0.creatorId) }
+        searchResults = searchResults.filter { !blockedIds.contains($0.creatorId) }
+        savedCollections = savedCollections.filter { !blockedIds.contains($0.creatorId) }
+        // Note: myCollections は自分のコレクションなのでフィルタ不要
+
+        let afterCount = trendingCollections.count + latestCollections.count +
+                         searchResults.count + savedCollections.count
+        debugLog("✅ [CollectionViewModel] Filtered \(beforeCount - afterCount) collections from blocked users")
+    }
+}

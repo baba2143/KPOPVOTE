@@ -1,0 +1,185 @@
+# K-VOTE COLLECTOR - 管理画面
+
+K-VOTE COLLECTORのバックオフィス管理システム
+
+## 📋 機能概要
+
+### 実装済み機能
+- ✅ **ダッシュボード**: サービス統計とグラフ表示
+- ✅ **独自投票管理**: 投票の作成・編集・削除、リアルタイムランキング
+- ✅ **アイドルマスター管理**: アイドル/メンバー情報の CRUD
+- ✅ **外部アプリマスター管理**: 投票アプリケーション情報の CRUD
+- ✅ **コミュニティ監視**: 報告された投稿の確認と削除
+- ✅ **ユーザー管理**: ユーザー検索・詳細表示・ポイント付与・アカウント停止
+- ✅ **システムログ**: エラーログと管理操作ログの表示
+
+## 🚀 セットアップ
+
+### 前提条件
+- Node.js 18+ がインストール済み
+- Firebase プロジェクトが設定済み
+- 管理者権限を持つ Firebase ユーザーアカウント
+
+### 開発環境の起動
+
+```bash
+# admin ディレクトリに移動
+cd admin
+
+# 依存関係のインストール
+npm install
+
+# 開発サーバー起動
+npm start
+```
+
+ブラウザで http://localhost:3000 を開いて管理画面にアクセス
+
+### 管理者権限の設定
+
+管理画面にアクセスするには、Firebase ユーザーに管理者権限が必要です:
+
+```bash
+# プロジェクトルートで実行
+cd functions
+npm run set-admin -- <USER_EMAIL>
+```
+
+または手動で設定:
+```bash
+firebase functions:shell
+> setAdmin({data: {email: 'admin@example.com'}})
+```
+
+## 📦 ビルドとデプロイ
+
+### ローカルビルド
+
+```bash
+cd admin
+npm run build
+```
+
+ビルド成果物は `admin/build/` に生成されます。
+
+### Firebase Hosting へのデプロイ
+
+```bash
+# プロジェクトルートで実行
+
+# 1. 管理画面をビルド
+cd admin && npm run build && cd ..
+
+# 2. Firebase Hosting にデプロイ
+firebase deploy --only hosting:admin
+```
+
+デプロイ後、以下のURLで管理画面にアクセス可能:
+- **本番環境**: https://kpopvote-admin.web.app
+
+### 初回デプロイ時の設定
+
+Firebase Hosting のターゲットが未設定の場合:
+
+```bash
+# admin ターゲットを設定
+firebase target:apply hosting admin kpopvote-admin
+
+# デプロイ
+firebase deploy --only hosting:admin
+```
+
+## 🛠️ 利用可能なスクリプト
+
+### `npm start`
+開発モードでアプリを起動。
+http://localhost:3000 でアクセス可能。
+
+### `npm test`
+テストランナーを起動。
+
+### `npm run build`
+本番用にアプリをビルド。
+`build/` フォルダに最適化されたファイルが生成されます。
+
+### `npm run lint`
+ESLint でコード品質チェック。
+
+## 📁 プロジェクト構成
+
+```
+admin/
+├── public/              # 静的ファイル
+├── src/
+│   ├── components/      # 再利用可能なコンポーネント
+│   │   ├── dashboard/   # ダッシュボード用コンポーネント
+│   │   ├── externalApp/ # 外部アプリマスター用コンポーネント
+│   │   ├── idol/        # アイドルマスター用コンポーネント
+│   │   ├── layout/      # レイアウトコンポーネント
+│   │   ├── user/        # ユーザー管理用コンポーネント
+│   │   └── vote/        # 投票管理用コンポーネント
+│   ├── config/          # Firebase設定
+│   ├── contexts/        # React Context (認証など)
+│   ├── pages/           # ページコンポーネント
+│   ├── services/        # API通信サービス
+│   ├── types/           # TypeScript型定義
+│   ├── App.tsx          # ルートコンポーネント
+│   └── index.tsx        # エントリーポイント
+├── package.json
+└── tsconfig.json
+```
+
+## 🔐 セキュリティ
+
+### 認証
+- Firebase Authentication を使用
+- 管理者のみアクセス可能（カスタムクレーム `admin: true` が必要）
+
+### CORS設定
+- Cloud Functions で CORS ヘッダーを設定済み
+- 本番環境では適切なオリジンのみ許可することを推奨
+
+## 🐛 トラブルシューティング
+
+### ビルドエラー
+```bash
+# node_modules を削除して再インストール
+rm -rf node_modules package-lock.json
+npm install
+```
+
+### デプロイエラー
+```bash
+# Firebase CLI を最新バージョンに更新
+npm install -g firebase-tools
+
+# Firebase にログイン
+firebase login
+
+# プロジェクト確認
+firebase projects:list
+```
+
+### 認証エラー
+- 管理者権限が正しく設定されているか確認
+- Firebase Console でユーザーの Custom Claims を確認
+
+## 📚 技術スタック
+
+- **React** 18
+- **TypeScript** 4
+- **Material-UI (MUI)** 5
+- **Firebase** (Authentication, Firestore, Functions, Hosting)
+- **React Router** 6
+- **Chart.js** & **react-chartjs-2**
+- **date-fns**
+
+## 📖 参考資料
+
+- [Create React App Documentation](https://facebook.github.io/create-react-app/docs/getting-started)
+- [Material-UI Documentation](https://mui.com/)
+- [Firebase Documentation](https://firebase.google.com/docs)
+
+## 🤝 サポート
+
+問題が発生した場合は、プロジェクトの GitHub Issues で報告してください。

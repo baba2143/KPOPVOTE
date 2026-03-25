@@ -1,0 +1,23 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appIDs": ["ZCXGYTWCLQ.com.kpopvote.collector"],
+        "components": [
+          {
+            "/": "/vote/*",
+            "comment": "Vote detail pages"
+          },
+          {
+            "/": "/invite/*",
+            "comment": "Invite pages"
+          }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["ZCXGYTWCLQ.com.kpopvote.collector"]
+  }
+}

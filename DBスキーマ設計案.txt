@@ -1,0 +1,58 @@
+## ⚙️ Cloud Firestore DBスキーマ設計案（MVPコア）
+
+### 1. `users`（ユーザー情報）
+
+| フィールド名 | データ型 | 説明 | 関連機能 |
+| :--- | :--- | :--- | :--- |
+| `username` | string | ユーザー名（コミュニティで使用） | コミュニティ、プロファイル |
+| `email` | string | 認証情報 | 認証 |
+| `profileImageUrl` | string | プロフィール画像URL（任意） | プロファイル |
+| `registeredAt` | timestamp | 登録日時 | 認証 |
+| `myBias` | array of string | ユーザーが設定した**推しメンバー名**のリスト。例：`["Jimin", "Hyunjin"]` | **タスク/コミュニティのフィルタリング** |
+| `points` | number | アプリ内独自投票で使用する無料ポイント残高 | 独自投票 |
+
+### 2. `tasks`（外部投票タスク管理）
+
+外部投票の情報は、ユーザーごとに管理するサブコレクションとして定義します。
+
+**パス:** `users / [user_uid] / tasks / [task_id]`
+
+| フィールド名 | データ型 | 説明 | 関連機能 |
+| :--- | :--- | :--- | :--- |
+| `originalUrl` | string | ユーザーが登録した外部投票ページのURL | 投票登録、タスク実行 |
+| `voteName` | string | ユーザーが編集した投票名 | タスク一覧 |
+| `externalAppName` | string | 投票元アプリ名（例：`IDOL_CHAMP`） | タスク一覧 |
+| `targetMembers` | array of string | この投票の対象となる推しメンバー名（フィルタリング用） | タスク一覧、フィルタリング |
+| `deadline` | timestamp | **投票締め切り日時**（ソート、通知のトリガー） | スケジュール、プッシュ通知 |
+| `ogpImageUrl` | string | 外部URLから取得したOGP画像URL | ホーム画面、タスク一覧（視認性） |
+| `isCompleted` | boolean | 進捗ステータス：`true`なら「投票済み」 | 進捗管理 |
+| `statusNote` | string | 進捗詳細メモ（例：`"pointShortage"`, `"notVoted"`） | 進捗管理 |
+| `userMemo` | string | ユーザーの自由メモ | タスク詳細 |
+| `createdAt` | timestamp | 登録日時 | タスク一覧 |
+
+### 3. `communityPosts`（コミュニティ投稿）
+
+| フィールド名 | データ型 | 説明 | 関連機能 |
+| :--- | :--- | :--- | :--- |
+| `biasMember` | string | **この投稿が属する推しメンバー名**。例：`"Jimin"`（フィルタリングキー） | コミュニティ画面 |
+| `authorId` | string | 投稿者の`user_uid` | 認証、プロファイル |
+| `content` | string | 投稿本文 | 掲示板 |
+| `imageUrl` | string | 投稿された画像URL（任意） | 掲示板 |
+| `likeCount` | number | いいねの数（カウンター） | 掲示板 |
+| `commentCount` | number | コメントの数（カウンター） | 掲示板 |
+| `createdAt` | timestamp | 投稿日時 | 掲示板 |
+| **サブコレクション: `comments`** | | この投稿に紐づくコメントデータ。 | 掲示板 |
+
+### 4. `inAppVotes`（アプリ内独自投票）
+
+| フィールド名 | データ型 | 説明 | 関連機能 |
+| :--- | :--- | :--- | :--- |
+| `title` | string | 投票テーマ。例：「今週のベストパフォーマンス」 | 独自投票画面 |
+| `status` | string | 投票の状態（`"open"` or `"closed"`） | 独自投票画面 |
+| `endDate` | timestamp | 投票終了日時 | 独自投票画面 |
+| **サブコレクション: `candidates`** | | **候補者リストと現在の総票数**を管理。 | 独自投票画面 |
+| | `memberId` | 候補メンバーのID | |
+| | `voteCount` | 獲得票数（カウンター） | |
+| **サブコレクション: `userVotes`** | | ユーザーの投票履歴（二重投票防止用） | **投票ロジック** |
+| | `userId` | 投票したユーザーの`user_uid` | |
+| | `votedAt` | 投票日時 | |

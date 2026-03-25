@@ -1,0 +1,271 @@
+/**
+ * Get posts list (bias timeline or following timeline)
+ */
+
+import * as functions from "firebase-functions";
+import * as admin from "firebase-admin";
+import { ApiResponse } from "../types";
+import { verifyToken, AuthenticatedRequest } from "../middleware/auth";
+import { READ_HIGH_TRAFFIC_CONFIG } from "../utils/functionConfig";
+import { handleCors } from "../middleware/cors";
+
+export const getPosts = functions
+  .runWith(READ_HIGH_TRAFFIC_CONFIG)
+  .https.onRequest(async (req, res) => {
+    // Handle CORS with whitelist
+    if (handleCors(req, res)) return;
+
+    if (req.method !== "GET") {
+      res.status(405).json({ success: false, error: "Method not allowed. Use GET." } as ApiResponse<null>);
+      return;
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      verifyToken(req as AuthenticatedRequest, res, (error?: unknown) => error ? reject(error) : resolve());
+    });
+
+    const currentUser = (req as AuthenticatedRequest).user;
+    if (!currentUser) {
+      res.status(401).json({ success: false, error: "Unauthorized" } as ApiResponse<null>);
+      return;
+    }
+
+    try {
+      const type = req.query.type as string;
+      const biasId = req.query.biasId as string | undefined;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const lastPostId = req.query.lastPostId as string | undefined;
+
+      if (!type || !["bias", "following", "discover"].includes(type)) {
+        const errMsg = "type must be 'bias', 'following', or 'discover'";
+        res.status(400).json({ success: false, error: errMsg } as ApiResponse<null>);
+        return;
+      }
+
+      if (type === "bias" && !biasId) {
+        res.status(400).json({ success: false, error: "biasId is required for bias timeline" } as ApiResponse<null>);
+        return;
+      }
+
+      const db = admin.firestore();
+
+      // Get blocked users for current user (Apple Guideline 1.2 compliance)
+      // Only fetch document IDs (no field data needed)
+      const blockedUsersSnapshot = await db.collection("users")
+        .doc(currentUser.uid)
+        .collection("blockedUsers")
+        .select()
+        .get();
+      const blockedUserIds = blockedUsersSnapshot.docs.map((doc) => doc.id);
+
+      let query: admin.firestore.Query = db.collection("posts");
+
+      if (type === "bias") {
+      // Bias timeline: posts with matching biasId
+        query = query.where("biasIds", "array-contains", biasId);
+      } else if (type === "discover") {
+      // Discover timeline: all posts (no filter) - just order by createdAt
+      // No additional filtering needed
+      } else {
+      // Following timeline: posts from followed users
+        const followingSnapshot = await db.collection("follows")
+          .where("followerId", "==", currentUser.uid)
+          .get();
+
+        if (followingSnapshot.empty) {
+        // No following users, return empty
+          res.status(200).json({
+            success: true,
+            data: { posts: [], hasMore: false },
+          } as ApiResponse<unknown>);
+          return;
+        }
+
+        const followingIds = followingSnapshot.docs.map((doc) => doc.data().followingId);
+
+        // Firestore 'in' query limited to 10 items - batch queries for >10 followers
+        if (followingIds.length > 10) {
+          // Split into batches of 10 and execute in parallel
+          const batches: string[][] = [];
+          for (let i = 0; i < followingIds.length; i += 10) {
+            batches.push(followingIds.slice(i, i + 10));
+          }
+
+          // Execute all batch queries in parallel
+          const batchPromises = batches.map(async (batchIds) => {
+            let batchQuery: admin.firestore.Query = db.collection("posts")
+              .where("userId", "in", batchIds)
+              .orderBy("createdAt", "desc")
+              .limit(limit + 1);
+
+            if (lastPostId) {
+              const lastPostDoc = await db.collection("posts").doc(lastPostId).get();
+              if (lastPostDoc.exists) {
+                batchQuery = batchQuery.startAfter(lastPostDoc);
+              }
+            }
+
+            return batchQuery.get();
+          });
+
+          const batchSnapshots = await Promise.all(batchPromises);
+
+          // Merge all results and sort by createdAt
+          const allDocs = batchSnapshots.flatMap((s) => s.docs);
+          allDocs.sort((a, b) => {
+            const aTime = a.data().createdAt?.toMillis() || 0;
+            const bTime = b.data().createdAt?.toMillis() || 0;
+            return bTime - aTime;
+          });
+
+          // Take limit + 1 for hasMore check
+          const hasMore = allDocs.length > limit;
+          const posts = allDocs.slice(0, limit);
+
+          // Batch fetch user info (N+1 → 1 query)
+          const userIds = [...new Set(posts.map((p) => p.data().userId))];
+          const userRefs = userIds.map((id) => db.collection("users").doc(id));
+          const userDocs = userRefs.length > 0 ? await db.getAll(...userRefs) : [];
+          const userMap = new Map(
+            userDocs.filter((d) => d.exists).map((d) => [d.id, d.data()])
+          );
+
+          // Batch fetch like status (N+1 → 1 query)
+          const likeRefs = posts.map((doc) =>
+            db.collection("posts").doc(doc.id).collection("likes").doc(currentUser.uid)
+          );
+          const likeDocs = likeRefs.length > 0 ? await db.getAll(...likeRefs) : [];
+          const likeMap = new Map(likeDocs.map((d, i) => [posts[i].id, d.exists]));
+
+          // Build posts data using pre-fetched maps
+          const postsData = posts.map((doc) => {
+            const data = doc.data();
+            const userData = userMap.get(data.userId) || null;
+
+            // Build user object
+            const userObject = {
+              uid: data.userId,
+              email: userData?.email || "",
+              displayName: userData?.displayName || null,
+              photoURL: userData?.photoURL || null,
+              points: userData?.points || 0,
+              biasIds: userData?.biasIds || [],
+              followingCount: userData?.followingCount || 0,
+              followersCount: userData?.followersCount || 0,
+              postsCount: userData?.postsCount || 0,
+              isPrivate: userData?.isPrivate || false,
+              isSuspended: userData?.isSuspended || false,
+              createdAt: userData?.createdAt?.toDate().toISOString() || new Date().toISOString(),
+              updatedAt: userData?.updatedAt?.toDate().toISOString() || new Date().toISOString(),
+            };
+
+            return {
+              id: doc.id,
+              ...data,
+              user: userObject,
+              createdAt: data.createdAt?.toDate().toISOString() || null,
+              updatedAt: data.updatedAt?.toDate().toISOString() || null,
+              isLikedByCurrentUser: likeMap.get(doc.id) || false,
+              userDisplayName: userData?.displayName || null,
+              userPhotoURL: userData?.photoURL || null,
+            };
+          });
+
+          // Filter out blocked users' posts (Apple Guideline 1.2 compliance)
+          const filteredPosts = blockedUserIds.length > 0 ?
+            postsData.filter((post) => !blockedUserIds.includes(post.user.uid)) :
+            postsData;
+
+          res.status(200).json({
+            success: true,
+            data: {
+              posts: filteredPosts,
+              hasMore,
+            },
+          } as ApiResponse<unknown>);
+          return;
+        } else {
+          query = query.where("userId", "in", followingIds);
+        }
+      }
+
+      // Add pagination
+      query = query.orderBy("createdAt", "desc").limit(limit + 1);
+
+      if (lastPostId) {
+        const lastPostDoc = await db.collection("posts").doc(lastPostId).get();
+        if (lastPostDoc.exists) {
+          query = query.startAfter(lastPostDoc);
+        }
+      }
+
+      const snapshot = await query.get();
+      const hasMore = snapshot.size > limit;
+      const posts = snapshot.docs.slice(0, limit);
+
+      // Batch fetch user info (N+1 → 1 query)
+      const userIds = [...new Set(posts.map((p) => p.data().userId))];
+      const userRefs = userIds.map((id) => db.collection("users").doc(id));
+      const userDocs = userRefs.length > 0 ? await db.getAll(...userRefs) : [];
+      const userMap = new Map(
+        userDocs.filter((d) => d.exists).map((d) => [d.id, d.data()])
+      );
+
+      // Batch fetch like status (N+1 → 1 query)
+      const likeRefs = posts.map((doc) =>
+        db.collection("posts").doc(doc.id).collection("likes").doc(currentUser.uid)
+      );
+      const likeDocs = likeRefs.length > 0 ? await db.getAll(...likeRefs) : [];
+      const likeMap = new Map(likeDocs.map((d, i) => [posts[i].id, d.exists]));
+
+      // Build posts data using pre-fetched maps
+      const postsData = posts.map((doc) => {
+        const data = doc.data();
+        const userData = userMap.get(data.userId) || null;
+
+        // Build user object
+        const userObject = {
+          uid: data.userId,
+          email: userData?.email || "",
+          displayName: userData?.displayName || null,
+          photoURL: userData?.photoURL || null,
+          points: userData?.points || 0,
+          biasIds: userData?.biasIds || [],
+          followingCount: userData?.followingCount || 0,
+          followersCount: userData?.followersCount || 0,
+          postsCount: userData?.postsCount || 0,
+          isPrivate: userData?.isPrivate || false,
+          isSuspended: userData?.isSuspended || false,
+          createdAt: userData?.createdAt?.toDate().toISOString() || new Date().toISOString(),
+          updatedAt: userData?.updatedAt?.toDate().toISOString() || new Date().toISOString(),
+        };
+
+        return {
+          id: doc.id,
+          ...data,
+          user: userObject,
+          createdAt: data.createdAt?.toDate().toISOString() || null,
+          updatedAt: data.updatedAt?.toDate().toISOString() || null,
+          isLikedByCurrentUser: likeMap.get(doc.id) || false,
+          userDisplayName: userData?.displayName || null,
+          userPhotoURL: userData?.photoURL || null,
+        };
+      });
+
+      // Filter out blocked users' posts (Apple Guideline 1.2 compliance)
+      const filteredPosts = blockedUserIds.length > 0 ?
+        postsData.filter((post) => !blockedUserIds.includes(post.user.uid)) :
+        postsData;
+
+      res.status(200).json({
+        success: true,
+        data: {
+          posts: filteredPosts,
+          hasMore,
+        },
+      } as ApiResponse<unknown>);
+    } catch (error: unknown) {
+      console.error("Get posts error:", error);
+      res.status(500).json({ success: false, error: "Internal server error" } as ApiResponse<null>);
+    }
+  });

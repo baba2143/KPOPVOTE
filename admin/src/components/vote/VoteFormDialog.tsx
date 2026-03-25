@@ -1,0 +1,1114 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  TextField,
+  Box,
+  IconButton,
+  Typography,
+  Alert,
+  CircularProgress,
+  ToggleButtonGroup,
+  ToggleButton,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Checkbox,
+  Avatar,
+  Chip,
+} from '@mui/material';
+import {
+  Add as AddIcon,
+  Delete as DeleteIcon,
+  Edit as EditIcon,
+  Group as GroupIcon,
+} from '@mui/icons-material';
+import { createVote, updateVote, uploadVoteCoverImage } from '../../services/voteService';
+import { listIdols } from '../../services/idolService';
+import { listGroups } from '../../services/groupService';
+import { InAppVoteCreateRequest, InAppVoteUpdateRequest, InAppVote, VoteRestrictions, VoteChoiceInput } from '../../types/vote';
+import { IdolMaster } from '../../types/idol';
+import { GroupMaster } from '../../types/group';
+
+interface VoteFormDialogProps {
+  open: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+  mode?: 'create' | 'edit';
+  initialVote?: InAppVote;
+  onDraftSuccess?: () => void;
+}
+
+type ChoiceInputMode = 'manual' | 'idol' | 'group';
+
+// ISO形式のUTC日時をローカルタイムゾーン（JST）のdatetime-local形式に変換
+const formatToLocalDateTime = (isoString: string): string => {
+  const date = new Date(isoString);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
+export const VoteFormDialog: React.FC<VoteFormDialogProps> = ({
+  open,
+  onClose,
+  onSuccess,
+  mode = 'create',
+  initialVote,
+  onDraftSuccess,
+}) => {
+  // Basic information
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [requiredPoints, setRequiredPoints] = useState(1);
+  const [isFeatured, setIsFeatured] = useState(false);
+
+  // Vote restrictions
+  const [restrictions, setRestrictions] = useState<VoteRestrictions>({});
+  const [dailyVoteLimitPerUser, setDailyVoteLimitPerUser] = useState<number | ''>('');
+  const [minVoteCount, setMinVoteCount] = useState<number | ''>('');
+  const [maxVoteCount, setMaxVoteCount] = useState<number | ''>('');
+
+  // Cover image
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  // Choice input mode
+  const [inputMode, setInputMode] = useState<ChoiceInputMode>('manual');
+
+  // Manual input mode
+  const [manualChoices, setManualChoices] = useState<string[]>(['', '']);
+
+  // Idol selection mode
+  const [allIdols, setAllIdols] = useState<IdolMaster[]>([]);
+  const [groupFilter, setGroupFilter] = useState<string>('all');
+  const [selectedIdolIds, setSelectedIdolIds] = useState<string[]>([]);
+  const [loadingIdols, setLoadingIdols] = useState(false);
+
+  // Group selection mode
+  const [allGroups, setAllGroups] = useState<GroupMaster[]>([]);
+  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
+  const [loadingGroups, setLoadingGroups] = useState(false);
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Load idols when dialog opens and idol mode is selected
+  useEffect(() => {
+    if (open && inputMode === 'idol' && allIdols.length === 0) {
+      loadIdols();
+    }
+  }, [open, inputMode]);
+
+  // Load groups when dialog opens and group mode is selected
+  useEffect(() => {
+    if (open && inputMode === 'group' && allGroups.length === 0) {
+      loadGroups();
+    }
+  }, [open, inputMode]);
+
+  // Set initial values in edit mode
+  useEffect(() => {
+    if (open && mode === 'edit' && initialVote) {
+      setTitle(initialVote.title);
+      setDescription(initialVote.description);
+      setStartDate(formatToLocalDateTime(initialVote.startDate)); // UTCからローカル時間に変換
+      setEndDate(formatToLocalDateTime(initialVote.endDate));
+      setRequiredPoints(initialVote.requiredPoints);
+      setIsFeatured(initialVote.isFeatured || false);
+      if (initialVote.coverImageUrl) {
+        setPreviewUrl(initialVote.coverImageUrl);
+      }
+      // Load restrictions
+      if (initialVote.restrictions) {
+        setRestrictions(initialVote.restrictions);
+        setDailyVoteLimitPerUser(initialVote.restrictions.dailyVoteLimitPerUser ?? '');
+        setMinVoteCount(initialVote.restrictions.minVoteCount ?? '');
+        setMaxVoteCount(initialVote.restrictions.maxVoteCount ?? '');
+      }
+      // Load existing choices for display (read-only in edit mode)
+      if (initialVote.choices && initialVote.choices.length > 0) {
+        const choiceLabels = initialVote.choices.map((c) => c.label);
+        setManualChoices(choiceLabels);
+      }
+    }
+  }, [open, mode, initialVote]);
+
+  const loadIdols = async () => {
+    try {
+      setLoadingIdols(true);
+      const idols = await listIdols();
+      setAllIdols(idols);
+    } catch (err) {
+      console.error('Error loading idols:', err);
+      setError('アイドル一覧の取得に失敗しました');
+    } finally {
+      setLoadingIdols(false);
+    }
+  };
+
+  const loadGroups = async () => {
+    try {
+      setLoadingGroups(true);
+      const groups = await listGroups();
+      setAllGroups(groups);
+    } catch (err) {
+      console.error('Error loading groups:', err);
+      setError('グループ一覧の取得に失敗しました');
+    } finally {
+      setLoadingGroups(false);
+    }
+  };
+
+  // Get unique group names
+  const groupNames = Array.from(
+    new Set(allIdols.map((idol) => idol.groupName))
+  ).sort();
+
+  // Filtered idols based on group filter
+  const filteredIdols =
+    groupFilter === 'all'
+      ? allIdols
+      : allIdols.filter((idol) => idol.groupName === groupFilter);
+
+  // Selected idol objects
+  const selectedIdols = allIdols.filter((idol) =>
+    selectedIdolIds.includes(idol.idolId)
+  );
+
+  // Selected group objects
+  const selectedGroups = allGroups.filter((group) =>
+    selectedGroupIds.includes(group.groupId)
+  );
+
+  // Manual input mode handlers
+  const handleAddManualChoice = () => {
+    setManualChoices([...manualChoices, '']);
+  };
+
+  const handleRemoveManualChoice = (index: number) => {
+    if (manualChoices.length <= 2) {
+      setError('選択肢は最低2つ必要です');
+      return;
+    }
+    const newChoices = manualChoices.filter((_, i) => i !== index);
+    setManualChoices(newChoices);
+  };
+
+  const handleManualChoiceChange = (index: number, value: string) => {
+    const newChoices = [...manualChoices];
+    newChoices[index] = value;
+    setManualChoices(newChoices);
+  };
+
+  // Idol selection mode handlers
+  const handleToggleIdol = (idolId: string) => {
+    setSelectedIdolIds((prev) =>
+      prev.includes(idolId)
+        ? prev.filter((id) => id !== idolId)
+        : [...prev, idolId]
+    );
+  };
+
+  // Group selection mode handlers
+  const handleToggleGroup = (groupId: string) => {
+    setSelectedGroupIds((prev) =>
+      prev.includes(groupId)
+        ? prev.filter((id) => id !== groupId)
+        : [...prev, groupId]
+    );
+  };
+
+  // Cover image handler
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+      setError(null);
+    }
+  };
+
+  const handleInputModeChange = (
+    _event: React.MouseEvent<HTMLElement>,
+    newMode: ChoiceInputMode | null
+  ) => {
+    if (newMode !== null) {
+      setInputMode(newMode);
+      setError(null);
+    }
+  };
+
+  const validate = (): boolean => {
+    if (!title.trim()) {
+      setError('タイトルを入力してください');
+      return false;
+    }
+
+    if (!description.trim()) {
+      setError('説明を入力してください');
+      return false;
+    }
+
+    if (!startDate) {
+      setError('開始日時を選択してください');
+      return false;
+    }
+
+    if (!endDate) {
+      setError('終了日時を選択してください');
+      return false;
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if (end <= start) {
+      setError('終了日時は開始日時より後である必要があります');
+      return false;
+    }
+
+    if (requiredPoints < 0) {
+      setError('必要ポイント数は0以上である必要があります');
+      return false;
+    }
+
+    // Validate choices
+    if (mode === 'create') {
+      if (inputMode === 'manual') {
+        const validChoices = manualChoices.filter((c) => c.trim() !== '');
+        if (validChoices.length < 2) {
+          setError('選択肢は最低2つ必要です');
+          return false;
+        }
+      } else if (inputMode === 'idol') {
+        if (selectedIdolIds.length < 2) {
+          setError('アイドルを最低2人選択してください');
+          return false;
+        }
+      } else if (inputMode === 'group') {
+        if (selectedGroupIds.length < 2) {
+          setError('グループを最低2つ選択してください');
+          return false;
+        }
+      }
+    }
+
+    // Validate restrictions
+    if (minVoteCount !== '' && maxVoteCount !== '') {
+      if (Number(minVoteCount) > Number(maxVoteCount)) {
+        setError('最小票数は最大票数以下である必要があります');
+        return false;
+      }
+    }
+
+    if (dailyVoteLimitPerUser !== '' && Number(dailyVoteLimitPerUser) < 1) {
+      setError('1日の投票数制限は1以上である必要があります');
+      return false;
+    }
+
+    if (minVoteCount !== '' && Number(minVoteCount) < 1) {
+      setError('最小票数は1以上である必要があります');
+      return false;
+    }
+
+    if (maxVoteCount !== '' && Number(maxVoteCount) < 1) {
+      setError('最大票数は1以上である必要があります');
+      return false;
+    }
+
+    return true;
+  };
+
+  // 下書き保存用のバリデーション（タイトルのみ必須）
+  const validateDraft = (): boolean => {
+    if (!title.trim()) {
+      setError('タイトルを入力してください');
+      return false;
+    }
+    return true;
+  };
+
+  const handleSaveDraft = async () => {
+    if (!validateDraft()) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Upload cover image if selected
+      let coverImageUrl: string | undefined;
+      if (selectedFile) {
+        setUploading(true);
+        try {
+          coverImageUrl = await uploadVoteCoverImage(selectedFile);
+          setUploading(false);
+        } catch (uploadError) {
+          console.error('Cover image upload failed:', uploadError);
+          setUploading(false);
+          throw new Error('画像のアップロードに失敗しました');
+        }
+      } else if (mode === 'edit' && initialVote?.coverImageUrl) {
+        coverImageUrl = initialVote.coverImageUrl;
+      }
+
+      // Build restrictions object
+      const restrictionsData: VoteRestrictions = {};
+      if (dailyVoteLimitPerUser !== '') {
+        restrictionsData.dailyVoteLimitPerUser = Number(dailyVoteLimitPerUser);
+      }
+      if (minVoteCount !== '') {
+        restrictionsData.minVoteCount = Number(minVoteCount);
+      }
+      if (maxVoteCount !== '') {
+        restrictionsData.maxVoteCount = Number(maxVoteCount);
+      }
+
+      const hasRestrictions = Object.keys(restrictionsData).length > 0;
+
+      // Build choices
+      const choices: (string | VoteChoiceInput)[] =
+        inputMode === 'manual'
+          ? manualChoices.filter((c) => c.trim() !== '').map((c) => c.trim())
+          : inputMode === 'idol'
+            ? selectedIdols.map((idol) => ({
+                label: idol.name,
+                idolId: idol.idolId,
+                imageUrl: idol.imageUrl ?? undefined,
+                groupName: idol.groupName,
+                groupId: idol.groupId,
+              }))
+            : selectedGroups.map((group) => ({
+                label: group.name,
+                groupId: group.groupId,
+                imageUrl: group.imageUrl ?? undefined,
+              }));
+
+      // 選択肢がない場合はダミーの選択肢を追加（下書き用）
+      const finalChoices = choices.length >= 2 ? choices : ['選択肢1', '選択肢2'];
+
+      if (mode === 'edit' && initialVote) {
+        // Edit mode: update as draft
+        const updateData: InAppVoteUpdateRequest = {
+          voteId: initialVote.voteId,
+          title: title.trim(),
+          description: description.trim() || '（下書き）',
+          startDate: startDate ? startDate + ":00" : undefined,
+          endDate: endDate ? endDate + ":00" : undefined,
+          requiredPoints: requiredPoints || 0,
+          ...(coverImageUrl && { coverImageUrl }),
+          isFeatured,
+          isDraft: true, // 下書きのまま保存
+          choices: finalChoices,
+          ...(hasRestrictions && { restrictions: restrictionsData }),
+        };
+
+        await updateVote(updateData);
+      } else {
+        // Create mode: create as draft
+        const createData: InAppVoteCreateRequest = {
+          title: title.trim(),
+          description: description.trim() || '（下書き）',
+          choices: finalChoices,
+          startDate: startDate ? startDate + ":00" : new Date(Date.now() + 86400000).toISOString().slice(0, 16) + ":00",
+          endDate: endDate ? endDate + ":00" : new Date(Date.now() + 86400000 * 8).toISOString().slice(0, 16) + ":00",
+          requiredPoints: requiredPoints || 0,
+          ...(coverImageUrl && { coverImageUrl }),
+          isFeatured: false,
+          isDraft: true, // 下書きフラグ
+          ...(hasRestrictions && { restrictions: restrictionsData }),
+        };
+
+        await createVote(createData);
+      }
+
+      handleClose();
+      if (onDraftSuccess) {
+        onDraftSuccess();
+      } else {
+        onSuccess();
+      }
+    } catch (err) {
+      console.error('Error saving draft:', err);
+      setError('下書きの保存に失敗しました');
+    } finally {
+      setLoading(false);
+      setUploading(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!validate()) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Upload cover image if selected
+      let coverImageUrl: string | undefined;
+      if (selectedFile) {
+        console.log('Uploading new cover image...');
+        setUploading(true);
+        try {
+          coverImageUrl = await uploadVoteCoverImage(selectedFile);
+          console.log('Cover image uploaded successfully:', coverImageUrl);
+          setUploading(false);
+        } catch (uploadError) {
+          console.error('Cover image upload failed:', uploadError);
+          setUploading(false);
+          throw new Error('画像のアップロードに失敗しました');
+        }
+      } else if (mode === 'edit' && initialVote?.coverImageUrl) {
+        // Keep existing cover image in edit mode if no new image selected
+        console.log('Keeping existing cover image:', initialVote.coverImageUrl);
+        coverImageUrl = initialVote.coverImageUrl;
+      }
+
+      // Build restrictions object
+      const restrictionsData: VoteRestrictions = {};
+      if (dailyVoteLimitPerUser !== '') {
+        restrictionsData.dailyVoteLimitPerUser = Number(dailyVoteLimitPerUser);
+      }
+      if (minVoteCount !== '') {
+        restrictionsData.minVoteCount = Number(minVoteCount);
+      }
+      if (maxVoteCount !== '') {
+        restrictionsData.maxVoteCount = Number(maxVoteCount);
+      }
+
+      const hasRestrictions = Object.keys(restrictionsData).length > 0;
+
+      if (mode === 'edit' && initialVote) {
+        // Edit mode: update existing vote
+        const isDraftEdit = initialVote.isDraft || initialVote.status === 'draft';
+
+        // Build choices for draft edit
+        let choicesForUpdate: (string | VoteChoiceInput)[] | undefined;
+        if (isDraftEdit) {
+          choicesForUpdate =
+            inputMode === 'manual'
+              ? manualChoices.filter((c) => c.trim() !== '').map((c) => c.trim())
+              : inputMode === 'idol'
+                ? selectedIdols.map((idol) => ({
+                    label: idol.name,
+                    idolId: idol.idolId,
+                    imageUrl: idol.imageUrl ?? undefined,
+                    groupName: idol.groupName,
+                    groupId: idol.groupId,
+                  }))
+                : selectedGroups.map((group) => ({
+                    label: group.name,
+                    groupId: group.groupId,
+                    imageUrl: group.imageUrl ?? undefined,
+                  }));
+        }
+
+        const updateData: InAppVoteUpdateRequest = {
+          voteId: initialVote.voteId,
+          title: title.trim(),
+          description: description.trim(),
+          startDate: startDate + ":00",  // JSTのまま保存（例: "2026-01-25T22:00:00"）
+          endDate: endDate + ":00",
+          requiredPoints,
+          ...(coverImageUrl && { coverImageUrl }),
+          isFeatured,
+          isDraft: false, // 更新時は下書きを解除（公開）
+          ...(choicesForUpdate && choicesForUpdate.length >= 2 && { choices: choicesForUpdate }),
+          ...(hasRestrictions && { restrictions: restrictionsData }),
+        };
+
+        console.log('Updating vote with data:', updateData);
+        await updateVote(updateData);
+      } else {
+        // Create mode: create new vote
+        const choices: (string | VoteChoiceInput)[] =
+          inputMode === 'manual'
+            ? manualChoices.filter((c) => c.trim() !== '').map((c) => c.trim())
+            : inputMode === 'idol'
+              ? selectedIdols.map((idol) => ({
+                  label: idol.name,
+                  idolId: idol.idolId,
+                  imageUrl: idol.imageUrl ?? undefined,
+                  groupName: idol.groupName,
+                  groupId: idol.groupId,
+                }))
+              : selectedGroups.map((group) => ({
+                  label: group.name,
+                  groupId: group.groupId,
+                  imageUrl: group.imageUrl ?? undefined,
+                }));
+
+        const createData: InAppVoteCreateRequest = {
+          title: title.trim(),
+          description: description.trim(),
+          choices,
+          startDate: startDate + ":00",  // JSTのまま保存（例: "2026-01-25T22:00:00"）
+          endDate: endDate + ":00",
+          requiredPoints,
+          ...(coverImageUrl && { coverImageUrl }),
+          isFeatured,
+          ...(hasRestrictions && { restrictions: restrictionsData }),
+        };
+
+        await createVote(createData);
+      }
+
+      handleClose();
+      onSuccess();
+    } catch (err) {
+      console.error(`Error ${mode === 'edit' ? 'updating' : 'creating'} vote:`, err);
+      setError(`投票の${mode === 'edit' ? '更新' : '作成'}に失敗しました`);
+    } finally {
+      setLoading(false);
+      setUploading(false);
+    }
+  };
+
+  const handleClose = () => {
+    setTitle('');
+    setDescription('');
+    setStartDate('');
+    setEndDate('');
+    setRequiredPoints(0);
+    setIsFeatured(false);
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    setInputMode('manual');
+    setManualChoices(['', '']);
+    setSelectedIdolIds([]);
+    setSelectedGroupIds([]);
+    setGroupFilter('all');
+    setDailyVoteLimitPerUser('');
+    setMinVoteCount('');
+    setMaxVoteCount('');
+    setRestrictions({});
+    setError(null);
+    onClose();
+  };
+
+  return (
+    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+      <DialogTitle>{mode === 'edit' ? '投票編集' : '新規投票作成'}</DialogTitle>
+      <DialogContent>
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
+
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+          {/* Basic Information */}
+          <TextField
+            id="vote-title"
+            name="title"
+            label="タイトル"
+            fullWidth
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+          />
+
+          <TextField
+            id="vote-description"
+            name="description"
+            label="説明"
+            fullWidth
+            multiline
+            rows={3}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            required
+          />
+
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <TextField
+              id="vote-start-date"
+              name="startDate"
+              label="開始日時"
+              type="datetime-local"
+              fullWidth
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              required
+            />
+
+            <TextField
+              id="vote-end-date"
+              name="endDate"
+              label="終了日時"
+              type="datetime-local"
+              fullWidth
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              required
+            />
+          </Box>
+
+          <TextField
+            id="vote-required-points"
+            name="requiredPoints"
+            label="必要ポイント数"
+            type="number"
+            fullWidth
+            value={requiredPoints}
+            onChange={(e) => setRequiredPoints(parseInt(e.target.value) || 0)}
+            inputProps={{ min: 0 }}
+            required
+          />
+
+          {/* Cover Image Upload */}
+          <Box>
+            <Typography variant="subtitle1" gutterBottom>
+              カバー画像（16:9推奨、最大5MB）
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Button
+                variant="outlined"
+                component="label"
+                disabled={uploading}
+              >
+                {selectedFile ? '画像を変更' : '画像を選択'}
+                <input
+                  type="file"
+                  hidden
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleFileSelect}
+                />
+              </Button>
+              {previewUrl && (
+                <Box
+                  sx={{
+                    width: '100%',
+                    maxWidth: 400,
+                    border: '1px solid #ddd',
+                    borderRadius: 1,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <img
+                    src={previewUrl}
+                    alt="Cover preview"
+                    style={{
+                      width: '100%',
+                      height: 'auto',
+                      display: 'block',
+                    }}
+                  />
+                </Box>
+              )}
+              {uploading && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CircularProgress size={20} />
+                  <Typography variant="body2">アップロード中...</Typography>
+                </Box>
+              )}
+            </Box>
+          </Box>
+
+          {/* Featured Flag */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Checkbox
+              id="vote-is-featured"
+              checked={isFeatured}
+              onChange={(e) => setIsFeatured(e.target.checked)}
+            />
+            <Typography variant="body1">
+              HOMEに表示（注目の投票として表示されます）
+            </Typography>
+          </Box>
+
+          {/* Vote Restrictions Section */}
+          <Box sx={{ mt: 2, p: 2, border: '1px solid #ddd', borderRadius: 1, bgcolor: '#f9f9f9' }}>
+            <Typography variant="h6" gutterBottom>
+              投票制限設定（オプション）
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              以下の設定は任意です。設定しない場合はデフォルト値が使用されます。
+            </Typography>
+
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {/* Daily Vote Limit */}
+              <TextField
+                id="vote-daily-limit"
+                name="dailyVoteLimitPerUser"
+                label="1日の投票数制限（人/日）"
+                type="number"
+                fullWidth
+                value={dailyVoteLimitPerUser}
+                onChange={(e) => setDailyVoteLimitPerUser(e.target.value === '' ? '' : parseInt(e.target.value))}
+                inputProps={{ min: 1 }}
+                helperText="例: 3 → 1人のユーザーが1日に3回まで投票可能（空欄 = 制限なし）"
+              />
+
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                {/* Min Vote Count */}
+                <TextField
+                  id="vote-min-count"
+                  name="minVoteCount"
+                  label="1回あたりの最小票数"
+                  type="number"
+                  fullWidth
+                  value={minVoteCount}
+                  onChange={(e) => setMinVoteCount(e.target.value === '' ? '' : parseInt(e.target.value))}
+                  inputProps={{ min: 1 }}
+                  helperText="例: 5 → 1回の投票で最低5票（空欄 = 1票から可能）"
+                />
+
+                {/* Max Vote Count */}
+                <TextField
+                  id="vote-max-count"
+                  name="maxVoteCount"
+                  label="1回あたりの最大票数"
+                  type="number"
+                  fullWidth
+                  value={maxVoteCount}
+                  onChange={(e) => setMaxVoteCount(e.target.value === '' ? '' : parseInt(e.target.value))}
+                  inputProps={{ min: 1 }}
+                  helperText="例: 100 → 1回の投票で最大100票（空欄 = 制限なし）"
+                />
+              </Box>
+
+              <Alert severity="info" sx={{ mt: 1 }}>
+                <Typography variant="body2">
+                  <strong>設定例:</strong>
+                  <br />
+                  • 1日3回まで、1回10票以上100票以下の投票を許可する場合
+                  <br />
+                  　→ 1日の投票数制限: 3、最小票数: 10、最大票数: 100
+                </Typography>
+              </Alert>
+            </Box>
+          </Box>
+
+          {/* Choice Input Mode Toggle - Create mode or draft edit mode */}
+          {(mode === 'create' || (mode === 'edit' && (initialVote?.isDraft || initialVote?.status === 'draft'))) && (
+            <Box>
+              <Typography variant="subtitle1" gutterBottom>
+                選択肢の入力方法
+              </Typography>
+              <ToggleButtonGroup
+                value={inputMode}
+                exclusive
+                onChange={handleInputModeChange}
+                fullWidth
+              >
+                <ToggleButton value="manual">
+                  <EditIcon sx={{ mr: 1 }} />
+                  手動入力
+                </ToggleButton>
+                <ToggleButton value="idol">
+                  <GroupIcon sx={{ mr: 1 }} />
+                  メンバー選択
+                </ToggleButton>
+                <ToggleButton value="group">
+                  <GroupIcon sx={{ mr: 1 }} />
+                  グループ選択
+                </ToggleButton>
+              </ToggleButtonGroup>
+            </Box>
+          )}
+
+          {/* Manual Input Mode - Create mode or draft edit mode */}
+          {(mode === 'create' || (mode === 'edit' && (initialVote?.isDraft || initialVote?.status === 'draft'))) && inputMode === 'manual' && (
+            <Box>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  mb: 1,
+                }}
+              >
+                <Typography variant="subtitle1">選択肢（最低2つ）</Typography>
+                <Button
+                  size="small"
+                  startIcon={<AddIcon />}
+                  onClick={handleAddManualChoice}
+                >
+                  追加
+                </Button>
+              </Box>
+
+              {manualChoices.map((choice, index) => (
+                <Box
+                  key={index}
+                  sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center' }}
+                >
+                  <TextField
+                    id={`vote-choice-${index}`}
+                    name={`choices[${index}]`}
+                    label={`選択肢 ${index + 1}`}
+                    fullWidth
+                    value={choice}
+                    onChange={(e) => handleManualChoiceChange(index, e.target.value)}
+                    required
+                  />
+                  <IconButton
+                    color="error"
+                    onClick={() => handleRemoveManualChoice(index)}
+                    disabled={manualChoices.length <= 2}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </Box>
+              ))}
+            </Box>
+          )}
+
+          {/* Idol Selection Mode - Create mode or draft edit mode */}
+          {(mode === 'create' || (mode === 'edit' && (initialVote?.isDraft || initialVote?.status === 'draft'))) && inputMode === 'idol' && (
+            <Box>
+              {loadingIdols ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+                  <CircularProgress />
+                </Box>
+              ) : (
+                <>
+                  <FormControl fullWidth sx={{ mb: 2 }}>
+                    <InputLabel id="group-filter-label">
+                      グループフィルター
+                    </InputLabel>
+                    <Select
+                      labelId="group-filter-label"
+                      id="group-filter"
+                      value={groupFilter}
+                      onChange={(e) => setGroupFilter(e.target.value)}
+                      label="グループフィルター"
+                    >
+                      <MenuItem value="all">すべて</MenuItem>
+                      {groupNames.map((groupName) => (
+                        <MenuItem key={groupName} value={groupName}>
+                          {groupName}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  <Box
+                    sx={{
+                      maxHeight: 300,
+                      overflow: 'auto',
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      borderRadius: 1,
+                      p: 1,
+                    }}
+                  >
+                    {filteredIdols.length === 0 ? (
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        align="center"
+                        sx={{ py: 3 }}
+                      >
+                        アイドルが登録されていません
+                      </Typography>
+                    ) : (
+                      filteredIdols.map((idol) => (
+                        <Box
+                          key={idol.idolId}
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1,
+                            py: 1,
+                            px: 1,
+                            cursor: 'pointer',
+                            '&:hover': { bgcolor: 'action.hover' },
+                            borderRadius: 1,
+                          }}
+                          onClick={() => handleToggleIdol(idol.idolId)}
+                        >
+                          <Checkbox
+                            checked={selectedIdolIds.includes(idol.idolId)}
+                            readOnly
+                          />
+                          <Avatar
+                            src={idol.imageUrl || undefined}
+                            alt={idol.name}
+                            sx={{ width: 40, height: 40 }}
+                          />
+                          <Box sx={{ flexGrow: 1 }}>
+                            <Typography variant="body1">{idol.name}</Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {idol.groupName}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      ))
+                    )}
+                  </Box>
+
+                  {selectedIdols.length > 0 && (
+                    <Box sx={{ mt: 2 }}>
+                      <Typography variant="subtitle2" gutterBottom>
+                        選択済み ({selectedIdols.length})
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                        {selectedIdols.map((idol) => (
+                          <Chip
+                            key={idol.idolId}
+                            avatar={<Avatar src={idol.imageUrl || undefined} />}
+                            label={idol.name}
+                            onDelete={() => handleToggleIdol(idol.idolId)}
+                          />
+                        ))}
+                      </Box>
+                    </Box>
+                  )}
+                </>
+              )}
+            </Box>
+          )}
+
+          {/* Group Selection Mode - Create mode or draft edit mode */}
+          {(mode === 'create' || (mode === 'edit' && (initialVote?.isDraft || initialVote?.status === 'draft'))) && inputMode === 'group' && (
+            <Box>
+              {loadingGroups ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+                  <CircularProgress />
+                </Box>
+              ) : (
+                <>
+                  <Box
+                    sx={{
+                      maxHeight: 300,
+                      overflow: 'auto',
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      borderRadius: 1,
+                      p: 1,
+                    }}
+                  >
+                    {allGroups.length === 0 ? (
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        align="center"
+                        sx={{ py: 3 }}
+                      >
+                        グループが登録されていません
+                      </Typography>
+                    ) : (
+                      allGroups.map((group) => (
+                        <Box
+                          key={group.groupId}
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1,
+                            py: 1,
+                            px: 1,
+                            cursor: 'pointer',
+                            '&:hover': { bgcolor: 'action.hover' },
+                            borderRadius: 1,
+                          }}
+                          onClick={() => handleToggleGroup(group.groupId)}
+                        >
+                          <Checkbox
+                            checked={selectedGroupIds.includes(group.groupId)}
+                            readOnly
+                          />
+                          <Avatar
+                            src={group.imageUrl || undefined}
+                            alt={group.name}
+                            sx={{ width: 40, height: 40 }}
+                          />
+                          <Typography variant="body1">{group.name}</Typography>
+                        </Box>
+                      ))
+                    )}
+                  </Box>
+
+                  {selectedGroups.length > 0 && (
+                    <Box sx={{ mt: 2 }}>
+                      <Typography variant="subtitle2" gutterBottom>
+                        選択済み ({selectedGroups.length})
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                        {selectedGroups.map((group) => (
+                          <Chip
+                            key={group.groupId}
+                            avatar={<Avatar src={group.imageUrl || undefined} />}
+                            label={group.name}
+                            onDelete={() => handleToggleGroup(group.groupId)}
+                          />
+                        ))}
+                      </Box>
+                    </Box>
+                  )}
+                </>
+              )}
+            </Box>
+          )}
+
+          {/* Edit Mode: Read-only choice display (only for non-draft votes) */}
+          {mode === 'edit' && initialVote && initialVote.choices && !initialVote.isDraft && initialVote.status !== 'draft' && (
+            <Box>
+              <Typography variant="subtitle1" gutterBottom>
+                選択肢（編集不可）
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {initialVote.choices.map((choice, index) => (
+                  <Chip
+                    key={choice.choiceId}
+                    label={`${index + 1}. ${choice.label} (${choice.voteCount}票)`}
+                    variant="outlined"
+                  />
+                ))}
+              </Box>
+              <Alert severity="info" sx={{ mt: 1 }}>
+                投票開始後は選択肢を変更できません
+              </Alert>
+            </Box>
+          )}
+        </Box>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={handleClose} disabled={loading}>
+          キャンセル
+        </Button>
+        {(mode === 'create' || (mode === 'edit' && (initialVote?.isDraft || initialVote?.status === 'draft'))) && (
+          <Button
+            onClick={handleSaveDraft}
+            variant="outlined"
+            disabled={loading}
+            startIcon={loading ? <CircularProgress size={20} /> : null}
+          >
+            下書き保存
+          </Button>
+        )}
+        <Button
+          onClick={handleSubmit}
+          variant="contained"
+          disabled={loading}
+          startIcon={loading ? <CircularProgress size={20} /> : null}
+        >
+          {mode === 'edit'
+            ? (initialVote?.isDraft || initialVote?.status === 'draft' ? '公開' : '更新')
+            : '作成'}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};

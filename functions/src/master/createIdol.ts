@@ -1,0 +1,61 @@
+/**
+ * Create idol master
+ */
+
+import * as functions from "firebase-functions";
+import * as admin from "firebase-admin";
+import { IdolCreateRequest, ApiResponse } from "../types";
+import { verifyToken, verifyAdmin, AuthenticatedRequest } from "../middleware/auth";
+import { ADMIN_CONFIG } from "../utils/functionConfig";
+import { handleCors } from "../middleware/cors";
+
+export const createIdol = functions
+  .runWith(ADMIN_CONFIG)
+  .https.onRequest(async (req, res) => {
+    // Handle CORS with whitelist
+    if (handleCors(req, res)) return;
+
+    if (req.method !== "POST") {
+      res.status(405).json({ success: false, error: "Method not allowed. Use POST." } as ApiResponse<null>);
+      return;
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      verifyToken(req as AuthenticatedRequest, res, (error?: unknown) => error ? reject(error) : resolve());
+    });
+
+    await new Promise<void>((resolve, reject) => {
+      verifyAdmin(req as AuthenticatedRequest, res, (error?: unknown) => error ? reject(error) : resolve());
+    });
+
+    try {
+      const { name, groupName, groupId, imageUrl } = req.body as IdolCreateRequest;
+
+      if (!name || !groupName) {
+        res.status(400).json({ success: false, error: "name and groupName are required" } as ApiResponse<null>);
+        return;
+      }
+
+      const idolData: { [key: string]: unknown } = {
+        name: name.trim(),
+        groupName: groupName.trim(),
+        imageUrl: imageUrl || null,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+
+      if (groupId) {
+        idolData.groupId = groupId;
+      }
+
+      const idolRef = await admin.firestore().collection("idolMasters").add(idolData);
+
+      res.status(201).json({
+        success: true,
+        data: { idolId: idolRef.id, ...idolData },
+      } as ApiResponse<unknown>);
+    } catch (error: unknown) {
+      console.error("Create idol error:", error);
+      res.status(500).json({ success: false, error: "Internal server error" } as ApiResponse<null>);
+    }
+  });

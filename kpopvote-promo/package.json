@@ -1,0 +1,26 @@
+{
+  "name": "kpopvote-promo",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "npx remotion studio",
+    "build": "npx remotion render KpopvotePromo out/kpopvote-promo.mp4",
+    "render": "npx remotion render KpopvotePromo out/kpopvote-promo.mp4"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "KPOPVOTE promotional video made with Remotion",
+  "dependencies": {
+    "@remotion/bundler": "^4.0.428",
+    "@remotion/cli": "^4.0.428",
+    "@remotion/compositor-darwin-arm64": "^4.0.428",
+    "@remotion/transitions": "^4.0.428",
+    "@rspack/binding-darwin-arm64": "^1.7.6",
+    "@types/react": "^19.2.14",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "remotion": "^4.0.428",
+    "typescript": "^5.9.3"
+  }
+}

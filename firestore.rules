@@ -1,0 +1,431 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper function: Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function: Check if user is admin
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+
+    // Helper function: Check if user owns the document
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // ========================================
+    // Users Collection
+    // ========================================
+    match /users/{userId} {
+      // Users can read and write their own data
+      allow read, write: if isAuthenticated() && isOwner(userId);
+
+      // Admins can read all user data
+      allow read: if isAdmin();
+
+      // Tasks Subcollection
+      match /tasks/{taskId} {
+        // Users can read and write their own tasks
+        allow read, write: if isAuthenticated() && isOwner(userId);
+      }
+
+      // Blocked Users Subcollection
+      match /blockedUsers/{blockedUserId} {
+        // Users can read and write their own blocked users list
+        allow read, write: if isAuthenticated() && isOwner(userId);
+      }
+    }
+
+    // ========================================
+    // Community Posts Collection
+    // ========================================
+    match /communityPosts/{postId} {
+      // Anyone authenticated can read posts
+      allow read: if isAuthenticated();
+
+      // Anyone authenticated can create posts
+      allow create: if isAuthenticated();
+
+      // Only post author can update or delete
+      allow update, delete: if isAuthenticated() &&
+                               request.auth.uid == resource.data.authorId;
+
+      // Allow authenticated users to update report fields only
+      allow update: if isAuthenticated() &&
+                       request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['isReported', 'reportCount']);
+
+      // Admins can delete any post
+      allow delete: if isAdmin();
+
+      // Comments Subcollection
+      match /comments/{commentId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated();
+        allow update, delete: if isAuthenticated() &&
+                                 request.auth.uid == resource.data.authorId;
+      }
+    }
+
+    // ========================================
+    // In-App Votes Collection
+    // ========================================
+    match /inAppVotes/{voteId} {
+      // Anyone authenticated can read votes
+      allow read: if isAuthenticated();
+
+      // Only admins can create, update, or delete votes
+      allow write: if isAdmin();
+
+      // Candidates Subcollection
+      match /candidates/{candidateId} {
+        allow read: if isAuthenticated();
+        allow write: if isAdmin();
+      }
+
+      // User Votes Subcollection
+      match /userVotes/{userVoteId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated();
+        // Prevent vote modification/deletion
+        allow update, delete: if false;
+      }
+    }
+
+    // ========================================
+    // Admin Collections (Admin only)
+    // ========================================
+    match /adminLogs/{logId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /adminActions/{actionId} {
+      allow read, write: if isAdmin();
+    }
+
+    // ========================================
+    // Vote Records Collection
+    // ========================================
+    match /voteRecords/{recordId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      // Admins can read all records
+      allow read, write: if isAdmin();
+    }
+
+    // ========================================
+    // Idol Masters Collection
+    // ========================================
+    match /idolMaster/{idolId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /idolMasters/{idolId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ========================================
+    // External App Masters Collection
+    // ========================================
+    match /externalAppMaster/{appId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /externalAppMasters/{appId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ========================================
+    // Community Reports Collection
+    // ========================================
+    match /communityReports/{reportId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // ========================================
+    // DM Reports Collection
+    // ========================================
+    match /dmReports/{reportId} {
+      // Anyone authenticated can read (for checking own reports)
+      allow read: if isAuthenticated();
+
+      // Anyone authenticated can create reports
+      allow create: if isAuthenticated() &&
+                       request.auth.uid == request.resource.data.reporterId;
+
+      // Only admins can update/delete reports
+      allow update, delete: if isAdmin();
+    }
+
+    // ========================================
+    // Block Reports Collection (Apple Requirement)
+    // Automatically created when users block other users
+    // ========================================
+    match /blockReports/{reportId} {
+      // Anyone authenticated can read (for checking own reports)
+      allow read: if isAuthenticated();
+
+      // Anyone authenticated can create block reports
+      allow create: if isAuthenticated() &&
+                       request.auth.uid == request.resource.data.reporterId;
+
+      // Only admins can update/delete reports
+      allow update, delete: if isAdmin();
+    }
+
+    // ========================================
+    // Collection Reports Collection (VOTE reports)
+    // ========================================
+    match /collectionReports/{reportId} {
+      // Anyone authenticated can read (for checking own reports)
+      allow read: if isAuthenticated();
+
+      // Anyone authenticated can create reports
+      allow create: if isAuthenticated() &&
+                       request.auth.uid == request.resource.data.reporterId;
+
+      // Only admins can update/delete reports
+      allow update, delete: if isAdmin();
+    }
+
+    // ========================================
+    // Point Transactions Collection
+    // ========================================
+    match /pointTransactions/{transactionId} {
+      allow read: if isAuthenticated() &&
+                     (request.auth.uid == resource.data.userId || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    // ========================================
+    // Deleted Posts Collection (Admin only)
+    // ========================================
+    match /deletedPosts/{postId} {
+      allow read, write: if isAdmin();
+    }
+
+    // ========================================
+    // Posts Collection (Community Posts)
+    // ========================================
+    match /posts/{postId} {
+      // Anyone authenticated can read posts
+      allow read: if isAuthenticated();
+
+      // Anyone authenticated can create posts
+      allow create: if isAuthenticated() &&
+                       request.auth.uid == request.resource.data.userId;
+
+      // Only post author can update or delete
+      allow update, delete: if isAuthenticated() &&
+                               request.auth.uid == resource.data.userId;
+
+      // Admins can delete any post
+      allow delete: if isAdmin();
+
+      // Likes Subcollection
+      match /likes/{likeId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() &&
+                         request.auth.uid == request.resource.data.userId;
+        allow delete: if isAuthenticated() &&
+                         request.auth.uid == resource.data.userId;
+      }
+
+      // Comments Subcollection
+      match /comments/{commentId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() &&
+                         request.auth.uid == request.resource.data.userId;
+        allow update, delete: if isAuthenticated() &&
+                                 request.auth.uid == resource.data.userId;
+      }
+    }
+
+    // ========================================
+    // Follows Collection
+    // ========================================
+    match /follows/{followId} {
+      // Anyone authenticated can read follows
+      allow read: if isAuthenticated();
+
+      // Anyone authenticated can create follows
+      allow create: if isAuthenticated() &&
+                       request.auth.uid == request.resource.data.followerId;
+
+      // Only follower can delete
+      allow delete: if isAuthenticated() &&
+                       request.auth.uid == resource.data.followerId;
+    }
+
+    // ========================================
+    // Notifications Collection
+    // ========================================
+    match /notifications/{notificationId} {
+      // Users can only read their own notifications
+      allow read: if isAuthenticated() &&
+                     request.auth.uid == resource.data.userId;
+
+      // Users can update their own notifications (mark as read)
+      allow update: if isAuthenticated() &&
+                       request.auth.uid == resource.data.userId;
+
+      // System/Cloud Functions can create notifications
+      allow create: if isAuthenticated();
+
+      // Admins can read/delete all notifications
+      allow read, delete: if isAdmin();
+    }
+
+    // ========================================
+    // Vote History Collection
+    // ========================================
+    match /voteHistory/{historyId} {
+      // Users can read their own vote history
+      allow read: if isAuthenticated() &&
+                     request.auth.uid == resource.data.userId;
+
+      // System/Cloud Functions can create vote history
+      allow create: if isAuthenticated();
+
+      // Prevent modification/deletion
+      allow update, delete: if false;
+
+      // Admins can read all vote history
+      allow read: if isAdmin();
+    }
+
+    // ========================================
+    // Vote Collections (Phase 2)
+    // ========================================
+    match /collections/{collectionId} {
+      // Anyone authenticated can read public collections
+      allow read: if isAuthenticated() &&
+                     (resource.data.visibility == 'public' ||
+                      resource.data.creatorId == request.auth.uid);
+
+      // Anyone authenticated can create collections
+      allow create: if isAuthenticated() &&
+                       request.auth.uid == request.resource.data.creatorId;
+
+      // Only creator can update or delete
+      allow update, delete: if isAuthenticated() &&
+                               request.auth.uid == resource.data.creatorId;
+
+      // Admins can read/delete any collection
+      allow read, delete: if isAdmin();
+    }
+
+    // ========================================
+    // User Collection Saves (Phase 2)
+    // ========================================
+    match /userCollectionSaves/{saveId} {
+      // Users can read their own saves
+      allow read: if isAuthenticated() &&
+                     request.auth.uid == resource.data.userId;
+
+      // Users can create their own saves
+      allow create: if isAuthenticated() &&
+                       request.auth.uid == request.resource.data.userId;
+
+      // Users can update/delete their own saves
+      allow update, delete: if isAuthenticated() &&
+                               request.auth.uid == resource.data.userId;
+
+      // Admins can read all saves
+      allow read: if isAdmin();
+    }
+
+    // ========================================
+    // Collection Likes (Phase 2)
+    // ========================================
+    match /collectionLikes/{likeId} {
+      // Anyone authenticated can read likes
+      allow read: if isAuthenticated();
+
+      // Users can create their own likes
+      allow create: if isAuthenticated() &&
+                       request.auth.uid == request.resource.data.userId;
+
+      // Users can delete their own likes
+      allow delete: if isAuthenticated() &&
+                       request.auth.uid == resource.data.userId;
+    }
+
+    // ========================================
+    // Collection Comments (Phase 2 - Future)
+    // ========================================
+    match /collectionComments/{commentId} {
+      // Anyone authenticated can read comments
+      allow read: if isAuthenticated();
+
+      // Anyone authenticated can create comments
+      allow create: if isAuthenticated() &&
+                       request.auth.uid == request.resource.data.userId;
+
+      // Only comment author can update or delete
+      allow update, delete: if isAuthenticated() &&
+                               request.auth.uid == resource.data.userId;
+
+      // Admins can delete any comment
+      allow delete: if isAdmin();
+    }
+
+    // ========================================
+    // User Follows (Phase 2 - Future)
+    // ========================================
+    match /userFollows/{followId} {
+      // Anyone authenticated can read follows
+      allow read: if isAuthenticated();
+
+      // Users can create their own follows
+      allow create: if isAuthenticated() &&
+                       request.auth.uid == request.resource.data.followerId;
+
+      // Users can delete their own follows
+      allow delete: if isAuthenticated() &&
+                       request.auth.uid == resource.data.followerId;
+    }
+
+    // ========================================
+    // Tasks Collection (Updated for Phase 2)
+    // ========================================
+    match /tasks/{taskId} {
+      // Users can read their own tasks
+      allow read: if isAuthenticated() &&
+                     request.auth.uid == resource.data.userId;
+
+      // Users can create their own tasks
+      allow create: if isAuthenticated() &&
+                       request.auth.uid == request.resource.data.userId;
+
+      // Users can update/delete their own tasks
+      allow update, delete: if isAuthenticated() &&
+                               request.auth.uid == resource.data.userId;
+
+      // Admins can read all tasks
+      allow read: if isAdmin();
+    }
+
+    // ========================================
+    // Subscriptions Collection (Phase 1A)
+    // ========================================
+    match /subscriptions/{subscriptionId} {
+      // Users can read their own subscriptions
+      allow read: if isAuthenticated() &&
+                     request.auth.uid == resource.data.userId;
+
+      // System/Cloud Functions can write subscriptions
+      allow write: if isAdmin();
+    }
+  }
+}

@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="OSHI Pick - K-POPファン向け投票タスク管理アプリ。推しの投票を効率的に管理して、応援をもっと楽しく！">
+  <meta name="keywords" content="K-POP, 投票, VOTE, アイドル, 応援, ファン, BTS, SEVENTEEN, BLACKPINK, OSHI Pick">
+  <meta property="og:title" content="OSHI Pick - 推し活をもっと楽しく">
+  <meta property="og:description" content="K-POPファン向け投票タスク管理アプリ">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://kpopvote-9de2b.web.app/images/hero.png">
+  <title>OSHI Pick - K-POP推し活サポートアプリ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0a0a1a;
+      --accent-pink: #ff4d8d;
+      --accent-purple: #9b59b6;
+      --text-white: #ffffff;
+      --text-gray: rgba(255,255,255,0.7);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-white);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Hero Section */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      background: radial-gradient(ellipse at 20% 50%, rgba(102, 126, 234, 0.15) 0%, transparent 50%),
+                  radial-gradient(ellipse at 80% 50%, rgba(240, 147, 251, 0.15) 0%, transparent 50%),
+                  var(--bg-dark);
+    }
+
+    .hero-image {
+      max-width: 100%;
+      max-height: 90vh;
+      border-radius: 20px;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+    }
+
+    /* Section */
+    .section {
+      padding: 4rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .section-image {
+      max-width: 100%;
+      max-height: 90vh;
+      border-radius: 20px;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+    }
+
+    /* App Store CTA */
+    .cta-section {
+      padding: 6rem 2rem;
+      text-align: center;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(240, 147, 251, 0.2) 100%);
+    }
+
+    .cta-section h2 {
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 900;
+      margin-bottom: 1rem;
+    }
+
+    .cta-section p {
+      color: var(--text-gray);
+      font-size: 1.2rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1.25rem 2.5rem;
+      border-radius: 50px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: #000;
+      color: #fff;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      border: 2px solid #333;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+      background: #111;
+    }
+
+    .btn-primary svg {
+      width: 28px;
+      height: 28px;
+    }
+
+    /* Footer */
+    footer {
+      background: #050510;
+      color: var(--text-gray);
+      padding: 3rem 2rem;
+      text-align: center;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 2rem;
+      justify-content: center;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .footer-links a {
+      color: var(--text-gray);
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+
+    .footer-links a:hover {
+      color: var(--accent-pink);
+    }
+
+    .copyright {
+      font-size: 0.9rem;
+    }
+
+    /* Animations */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(40px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .animate-in {
+      animation: fadeInUp 0.8s ease forwards;
+    }
+
+    /* Scroll indicator */
+    .scroll-indicator {
+      position: absolute;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      animation: bounce 2s infinite;
+    }
+
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
+      40% { transform: translateX(-50%) translateY(-10px); }
+      60% { transform: translateX(-50%) translateY(-5px); }
+    }
+
+    .scroll-indicator svg {
+      width: 30px;
+      height: 30px;
+      color: rgba(255,255,255,0.5);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .section {
+        padding: 2rem 1rem;
+        min-height: auto;
+      }
+
+      .hero {
+        min-height: auto;
+        padding: 4rem 1rem;
+      }
+
+      .hero-image, .section-image {
+        max-height: 70vh;
+      }
+
+      .cta-section {
+        padding: 4rem 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Hero Section -->
+  <section class="hero">
+    <img src="images/hero.png" alt="OSHI Pick - K-POP推し活サポートアプリ" class="hero-image animate-in">
+    <div class="scroll-indicator">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M7 13l5 5 5-5M7 6l5 5 5-5"/>
+      </svg>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="section">
+    <img src="images/features.png" alt="アプリの機能一覧" class="section-image">
+  </section>
+
+  <!-- Tasks Section -->
+  <section class="section">
+    <img src="images/tasks.png" alt="投票イベント管理" class="section-image">
+  </section>
+
+  <!-- Collection Section -->
+  <section class="section">
+    <img src="images/collection.png" alt="みんなで投票に参加" class="section-image">
+  </section>
+
+  <!-- Vote Detail Section -->
+  <section class="section">
+    <img src="images/vote-detail.png" alt="OSHI Pick Awards" class="section-image">
+  </section>
+
+  <!-- App Store CTA -->
+  <section class="cta-section">
+    <h2>今すぐダウンロード</h2>
+    <p>無料で始められます</p>
+    <a href="https://apps.apple.com/jp/app/oshi-pick/id6755575658" class="btn btn-primary" target="_blank">
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
+      </svg>
+      App Storeでダウンロード
+    </a>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-links">
+      <a href="/privacy">プライバシーポリシー</a>
+      <a href="/support">お問い合わせ</a>
+    </div>
+    <p class="copyright">&copy; 2024 OSHI Pick. All rights reserved.</p>
+  </footer>
+
+  <script>
+    // Animation on scroll
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('animate-in');
+        }
+      });
+    }, observerOptions);
+
+    document.querySelectorAll('.section-image').forEach(el => {
+      observer.observe(el);
+    });
+  </script>
+</body>
+</html>

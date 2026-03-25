@@ -1,0 +1,1012 @@
+//
+//  CommunityService.swift
+//  OSHI Pick
+//
+//  OSHI Pick - Community Service (Posts)
+//
+
+import Foundation
+import FirebaseAuth
+
+class CommunityService {
+    static let shared = CommunityService()
+
+    private init() {}
+
+    // MARK: - Create Post
+    /// Create a new post
+    /// - Parameters:
+    ///   - type: Post type (vote_share, image, my_votes)
+    ///   - content: Post content
+    ///   - biasIds: Array of bias IDs
+    /// - Returns: Created post data
+    func createPost(type: PostType, content: PostContent, biasIds: [String]) async throws -> CommunityPost {
+        let token = try await FirebaseTokenHelper.shared.getToken()
+
+        guard let url = URL(string: Constants.API.createPost) else {
+            throw CommunityError.invalidResponse
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.timeoutInterval = NetworkConfig.defaultTimeout
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let requestBody: [String: Any] = [
+            "type": type.rawValue,
+            "content": content.toDictionary(),
+            "biasIds": biasIds
+        ]
+
+        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+
+        debugLog("📤 [CommunityService] Creating post: type=\(type.rawValue), biasIds=\(biasIds.count)")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw CommunityError.invalidResponse
+        }
+
+        debugLog("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
+
+        guard httpResponse.statusCode == 201 else {
+            if let errorString = String(data: data, encoding: .utf8) {
+                debugLog("❌ [CommunityService] Error: \(errorString)")
+            }
+            throw CommunityError.createFailed
+        }
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let result = try decoder.decode(PostResponse.self, from: data)
+        debugLog("✅ [CommunityService] Post created successfully")
+
+        return result.data
+    }
+
+    // MARK: - Update Post
+    /// Update an existing post
+    /// - Parameters:
+    ///   - postId: Post ID to update
+    ///   - content: Updated post content (optional)
+    ///   - biasIds: Updated bias IDs (optional)
+    /// - Returns: Updated post data
+    func updatePost(postId: String, content: PostContent? = nil, biasIds: [String]? = nil) async throws -> CommunityPost {
+        let token = try await FirebaseTokenHelper.shared.getToken()
+
+        guard let url = URL(string: Constants.API.updatePost) else {
+            throw CommunityError.invalidResponse
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.timeoutInterval = NetworkConfig.defaultTimeout
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        var requestBody: [String: Any] = ["postId": postId]
+        if let content = content {
+            requestBody["content"] = content.toDictionary()
+        }
+        if let biasIds = biasIds {
+            requestBody["biasIds"] = biasIds
+        }
+
+        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+
+        debugLog("📤 [CommunityService] Updating post: \(postId)")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw CommunityError.invalidResponse
+        }
+
+        debugLog("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
+
+        guard httpResponse.statusCode == 200 else {
+            if let errorString = String(data: data, encoding: .utf8) {
+                debugLog("❌ [CommunityService] Error: \(errorString)")
+            }
+            throw CommunityError.updateFailed
+        }
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let result = try decoder.decode(PostResponse.self, from: data)
+        debugLog("✅ [CommunityService] Post updated successfully")
+
+        return result.data
+    }
+
+    // MARK: - Get Post
+    /// Fetch post detail
+    /// - Parameter postId: Post ID
+    /// - Returns: Post with full details
+    func fetchPost(postId: String) async throws -> CommunityPost {
+        let token = try await FirebaseTokenHelper.shared.getToken()
+
+        var urlComponents = URLComponents(string: Constants.API.getPost)!
+        urlComponents.queryItems = [URLQueryItem(name: "postId", value: postId)]
+
+        var request = URLRequest(url: urlComponents.url!)
+        request.httpMethod = "GET"
+        request.timeoutInterval = NetworkConfig.defaultTimeout
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        debugLog("🔍 [CommunityService] Fetching post: \(postId)")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw CommunityError.invalidResponse
+        }
+
+        debugLog("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
+
+        guard httpResponse.statusCode == 200 else {
+            if let errorString = String(data: data, encoding: .utf8) {
+                debugLog("❌ [CommunityService] Error: \(errorString)")
+            }
+            throw CommunityError.fetchFailed
+        }
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let result = try decoder.decode(PostResponse.self, from: data)
+        debugLog("✅ [CommunityService] Post fetched successfully")
+
+        return result.data
+    }
+
+    // MARK: - Get Posts
+    /// Fetch posts list (timeline)
+    /// - Parameters:
+    ///   - type: Timeline type (bias or following)
+    ///   - biasId: Bias ID (required for bias timeline)
+    ///   - limit: Number of posts to fetch
+    ///   - lastPostId: Last post ID for pagination
+    /// - Returns: Array of posts and hasMore flag
+    func fetchPosts(type: String, biasId: String? = nil, limit: Int = 20, lastPostId: String? = nil) async throws -> (posts: [CommunityPost], hasMore: Bool) {
+        let token = try await FirebaseTokenHelper.shared.getToken()
+
+        var urlComponents = URLComponents(string: Constants.API.getPosts)!
+        var queryItems = [
+            URLQueryItem(name: "type", value: type),
+            URLQueryItem(name: "limit", value: "\(limit)")
+        ]
+
+        if let biasId = biasId {
+            queryItems.append(URLQueryItem(name: "biasId", value: biasId))
+        }
+
+        if let lastPostId = lastPostId {
+            queryItems.append(URLQueryItem(name: "lastPostId", value: lastPostId))
+        }
+
+        urlComponents.queryItems = queryItems
+
+        var request = URLRequest(url: urlComponents.url!)
+        request.httpMethod = "GET"
+        request.timeoutInterval = NetworkConfig.defaultTimeout
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        debugLog("🔍 [CommunityService] Fetching posts: type=\(type), biasId=\(biasId ?? "nil")")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw CommunityError.invalidResponse
+        }
+
+        debugLog("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
+
+        guard httpResponse.statusCode == 200 else {
+            if let errorString = String(data: data, encoding: .utf8) {
+                debugLog("❌ [CommunityService] Error: \(errorString)")
+            }
+            throw CommunityError.fetchFailed
+        }
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let result = try decoder.decode(PostListResponse.self, from: data)
+        debugLog("✅ [CommunityService] Fetched \(result.data.posts.count) posts")
+
+        return (result.data.posts, result.data.hasMore)
+    }
+
+    // MARK: - Like Post
+    /// Like or unlike a post (toggle)
+    /// - Parameter postId: Post ID
+    /// - Returns: Action result (liked or unliked)
+    func likePost(postId: String) async throws -> PostActionResult {
+        let token = try await FirebaseTokenHelper.shared.getToken()
+
+        guard let url = URL(string: Constants.API.likePost) else {
+            throw CommunityError.invalidResponse
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.timeoutInterval = NetworkConfig.defaultTimeout
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let requestBody = ["postId": postId]
+        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+
+        debugLog("💗 [CommunityService] Toggling like for post: \(postId)")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw CommunityError.invalidResponse
+        }
+
+        debugLog("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
+
+        guard httpResponse.statusCode == 200 else {
+            if let errorString = String(data: data, encoding: .utf8) {
+                debugLog("❌ [CommunityService] Error: \(errorString)")
+            }
+            throw CommunityError.updateFailed
+        }
+
+        let result = try JSONDecoder().decode(PostActionResponse.self, from: data)
+        debugLog("✅ [CommunityService] Like toggled: \(result.data.action)")
+
+        return result.data
+    }
+
+    // MARK: - Fetch Liked Posts
+    /// Fetch posts that the user has liked
+    /// - Parameters:
+    ///   - limit: Number of posts to fetch
+    ///   - lastPostId: Last post ID for pagination
+    /// - Returns: Tuple of posts array and hasMore flag
+    func fetchLikedPosts(limit: Int = 20, lastPostId: String? = nil) async throws -> (posts: [CommunityPost], hasMore: Bool) {
+        let token = try await FirebaseTokenHelper.shared.getToken()
+
+        var urlComponents = URLComponents(string: Constants.API.getLikedPosts)!
+        var queryItems = [
+            URLQueryItem(name: "limit", value: "\(limit)")
+        ]
+
+        if let lastPostId = lastPostId {
+            queryItems.append(URLQueryItem(name: "lastPostId", value: lastPostId))
+        }
+
+        urlComponents.queryItems = queryItems
+
+        var request = URLRequest(url: urlComponents.url!)
+        request.httpMethod = "GET"
+        request.timeoutInterval = NetworkConfig.defaultTimeout
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        debugLog("💗 [CommunityService] Fetching liked posts")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw CommunityError.invalidResponse
+        }
+
+        debugLog("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
+
+        guard httpResponse.statusCode == 200 else {
+            if let errorString = String(data: data, encoding: .utf8) {
+                debugLog("❌ [CommunityService] Error: \(errorString)")
+            }
+            throw CommunityError.fetchFailed
+        }
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let result = try decoder.decode(PostListResponse.self, from: data)
+
+        debugLog("✅ [CommunityService] Fetched \(result.data.posts.count) liked posts")
+
+        return (result.data.posts, result.data.hasMore)
+    }
+
+    // MARK: - Get My Votes
+    /// Fetch user's vote history
+    /// - Returns: Array of user's votes
+    func fetchMyVotes() async throws -> [MyVoteItem] {
+        let token = try await FirebaseTokenHelper.shared.getToken()
+
+        guard let url = URL(string: Constants.API.getMyVotes) else {
+            throw CommunityError.invalidResponse
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.timeoutInterval = NetworkConfig.defaultTimeout
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        debugLog("🔍 [CommunityService] Fetching my votes")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw CommunityError.invalidResponse
+        }
+
+        debugLog("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
+
+        guard httpResponse.statusCode == 200 else {
+            if let errorString = String(data: data, encoding: .utf8) {
+                debugLog("❌ [CommunityService] Error: \(errorString)")
+            }
+            throw CommunityError.fetchFailed
+        }
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let result = try decoder.decode(CommunityMyVotesResponse.self, from: data)
+        debugLog("✅ [CommunityService] Fetched \(result.data.voteHistory.count) votes")
+
+        return result.data.voteHistory
+    }
+
+    // MARK: - Delete Post
+    /// Delete a post
+    /// - Parameter postId: Post ID
+    func deletePost(postId: String) async throws {
+        let token = try await FirebaseTokenHelper.shared.getToken()
+
+        guard let url = URL(string: Constants.API.deletePost) else {
+            throw CommunityError.invalidResponse
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.timeoutInterval = NetworkConfig.defaultTimeout
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let requestBody = ["postId": postId]
+        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+
+        debugLog("🗑️ [CommunityService] Deleting post: \(postId)")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw CommunityError.invalidResponse
+        }
+
+        debugLog("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
+
+        guard httpResponse.statusCode == 200 else {
+            if let errorString = String(data: data, encoding: .utf8) {
+                debugLog("❌ [CommunityService] Error: \(errorString)")
+            }
+            throw CommunityError.deleteFailed
+        }
+
+        debugLog("✅ [CommunityService] Post deleted successfully")
+    }
+
+    // MARK: - Create Comment
+    /// Create a comment on a post
+    /// - Parameters:
+    ///   - postId: Post ID
+    ///   - text: Comment text
+    /// - Returns: Comment ID and updated comments count
+    func createComment(postId: String, text: String) async throws -> (commentId: String, commentsCount: Int) {
+        let token = try await FirebaseTokenHelper.shared.getToken()
+
+        guard let url = URL(string: Constants.API.createComment) else {
+            throw CommunityError.invalidResponse
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.timeoutInterval = NetworkConfig.defaultTimeout
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let requestBody: [String: Any] = [
+            "postId": postId,
+            "text": text
+        ]
+        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+
+        debugLog("💬 [CommunityService] Creating comment on post: \(postId)")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw CommunityError.invalidResponse
+        }
+
+        debugLog("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
+
+        guard httpResponse.statusCode == 201 else {
+            if let errorString = String(data: data, encoding: .utf8) {
+                debugLog("❌ [CommunityService] Error: \(errorString)")
+
+                // Check if it's a 403 "must follow" error
+                if httpResponse.statusCode == 403 && errorString.contains("follow") {
+                    throw CommunityError.mustFollowToComment
+                }
+            }
+            throw CommunityError.commentFailed
+        }
+
+        struct CreateCommentResponse: Codable {
+            let success: Bool
+            let data: CommentData
+
+            struct CommentData: Codable {
+                let commentId: String
+                let commentsCount: Int
+            }
+        }
+
+        let result = try JSONDecoder().decode(CreateCommentResponse.self, from: data)
+        debugLog("✅ [CommunityService] Comment created: \(result.data.commentId)")
+
+        return (result.data.commentId, result.data.commentsCount)
+    }
+
+    // MARK: - Get Comments
+    /// Fetch comments for a post
+    /// - Parameters:
+    ///   - postId: Post ID
+    ///   - limit: Number of comments to fetch
+    ///   - lastCommentId: Last comment ID for pagination
+    /// - Returns: Comments array and hasMore flag
+    func fetchComments(postId: String, limit: Int = 20, lastCommentId: String? = nil) async throws -> (comments: [Comment], hasMore: Bool) {
+        let token = try await FirebaseTokenHelper.shared.getToken()
+
+        var urlComponents = URLComponents(string: Constants.API.getComments)!
+        urlComponents.queryItems = [
+            URLQueryItem(name: "postId", value: postId),
+            URLQueryItem(name: "limit", value: String(limit))
+        ]
+
+        if let lastCommentId = lastCommentId {
+            urlComponents.queryItems?.append(URLQueryItem(name: "lastCommentId", value: lastCommentId))
+        }
+
+        guard let url = urlComponents.url else {
+            throw CommunityError.invalidResponse
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.timeoutInterval = NetworkConfig.defaultTimeout
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        debugLog("📥 [CommunityService] Fetching comments for post: \(postId)")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw CommunityError.invalidResponse
+        }
+
+        debugLog("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
+
+        guard httpResponse.statusCode == 200 else {
+            if let errorString = String(data: data, encoding: .utf8) {
+                debugLog("❌ [CommunityService] Error: \(errorString)")
+            }
+            throw CommunityError.fetchFailed
+        }
+
+        struct GetCommentsResponse: Codable {
+            let success: Bool
+            let data: CommentsResponse
+        }
+
+        let result = try JSONDecoder().decode(GetCommentsResponse.self, from: data)
+        debugLog("✅ [CommunityService] Fetched \(result.data.comments.count) comments")
+
+        return (result.data.comments, result.data.hasMore)
+    }
+
+    // MARK: - Delete Comment
+    /// Delete a comment
+    /// - Parameter commentId: Comment ID
+    func deleteComment(commentId: String) async throws {
+        let token = try await FirebaseTokenHelper.shared.getToken()
+
+        var urlComponents = URLComponents(string: Constants.API.deleteComment)!
+        urlComponents.queryItems = [
+            URLQueryItem(name: "commentId", value: commentId)
+        ]
+
+        guard let url = urlComponents.url else {
+            throw CommunityError.invalidResponse
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.timeoutInterval = NetworkConfig.defaultTimeout
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        debugLog("🗑️ [CommunityService] Deleting comment: \(commentId)")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw CommunityError.invalidResponse
+        }
+
+        debugLog("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
+
+        guard httpResponse.statusCode == 200 else {
+            if let errorString = String(data: data, encoding: .utf8) {
+                debugLog("❌ [CommunityService] Error: \(errorString)")
+            }
+            throw CommunityError.deleteFailed
+        }
+
+        debugLog("✅ [CommunityService] Comment deleted successfully")
+    }
+
+    // MARK: - Follow User
+    /// Follow a user
+    /// - Parameter userId: User ID to follow
+    func followUser(userId: String) async throws {
+        let token = try await FirebaseTokenHelper.shared.getToken()
+
+        guard let url = URL(string: Constants.API.followUser) else {
+            throw CommunityError.invalidResponse
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.timeoutInterval = NetworkConfig.defaultTimeout
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let requestBody = ["userId": userId]
+        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+
+        debugLog("👥 [CommunityService] Following user: \(userId)")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw CommunityError.invalidResponse
+        }
+
+        debugLog("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
+
+        guard (200...201).contains(httpResponse.statusCode) else {
+            if let errorString = String(data: data, encoding: .utf8) {
+                debugLog("❌ [CommunityService] Error: \(errorString)")
+            }
+            throw CommunityError.updateFailed
+        }
+
+        debugLog("✅ [CommunityService] User followed successfully")
+    }
+
+    // MARK: - Get Recommended Users
+    /// Get recommended users based on shared bias
+    /// - Parameter limit: Maximum number of users to return
+    /// - Returns: Array of recommended users
+    func getRecommendedUsers(limit: Int = 10) async throws -> [CommunityRecommendedUser] {
+        let token = try await FirebaseTokenHelper.shared.getToken()
+
+        var urlComponents = URLComponents(string: Constants.API.getRecommendedUsers)!
+        urlComponents.queryItems = [
+            URLQueryItem(name: "limit", value: "\(limit)")
+        ]
+
+        guard let url = urlComponents.url else {
+            throw CommunityError.invalidResponse
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.timeoutInterval = NetworkConfig.defaultTimeout
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        debugLog("📱 [CommunityService] Getting recommended users: limit=\(limit)")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw CommunityError.invalidResponse
+        }
+
+        guard httpResponse.statusCode == 200 else {
+            throw CommunityError.fetchFailed
+        }
+
+        struct RecommendedUsersResponse: Codable {
+            let success: Bool
+            let data: RecommendedUsersData
+        }
+
+        struct RecommendedUsersData: Codable {
+            let users: [CommunityRecommendedUser]
+        }
+
+        let result = try JSONDecoder().decode(RecommendedUsersResponse.self, from: data)
+        debugLog("✅ [CommunityService] Got \(result.data.users.count) recommended users")
+
+        return result.data.users
+    }
+
+    // MARK: - Get Following Activity
+    /// Get following users sorted by activity
+    /// - Parameter limit: Maximum number of users to return
+    /// - Returns: Array of user activities
+    func getFollowingActivity(limit: Int = 20) async throws -> [UserActivity] {
+        let token = try await FirebaseTokenHelper.shared.getToken()
+
+        var urlComponents = URLComponents(string: Constants.API.getFollowingActivity)!
+        urlComponents.queryItems = [
+            URLQueryItem(name: "limit", value: "\(limit)")
+        ]
+
+        guard let url = urlComponents.url else {
+            throw CommunityError.invalidResponse
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.timeoutInterval = NetworkConfig.defaultTimeout
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        debugLog("📱 [CommunityService] Getting following activity: limit=\(limit)")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw CommunityError.invalidResponse
+        }
+
+        guard httpResponse.statusCode == 200 else {
+            throw CommunityError.fetchFailed
+        }
+
+        struct FollowingActivityResponse: Codable {
+            let success: Bool
+            let data: FollowingActivityData
+        }
+
+        struct FollowingActivityData: Codable {
+            let users: [UserActivity]
+        }
+
+        let result = try JSONDecoder().decode(FollowingActivityResponse.self, from: data)
+        debugLog("✅ [CommunityService] Got \(result.data.users.count) following activities")
+
+        return result.data.users
+    }
+
+    // MARK: - Search Users
+    /// Search users by name
+    /// - Parameters:
+    ///   - query: Search query
+    ///   - biasId: Optional bias ID filter
+    ///   - limit: Maximum number of results
+    /// - Returns: Array of recommended users
+    func searchUsers(query: String, biasId: String? = nil, limit: Int = 20) async throws -> [CommunityRecommendedUser] {
+        let token = try await FirebaseTokenHelper.shared.getToken()
+
+        var urlComponents = URLComponents(string: Constants.API.searchUsers)!
+        var queryItems = [
+            URLQueryItem(name: "query", value: query),
+            URLQueryItem(name: "limit", value: "\(limit)")
+        ]
+
+        if let biasId = biasId {
+            queryItems.append(URLQueryItem(name: "biasId", value: biasId))
+        }
+
+        urlComponents.queryItems = queryItems
+
+        guard let url = urlComponents.url else {
+            throw CommunityError.invalidResponse
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.timeoutInterval = NetworkConfig.defaultTimeout
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        debugLog("📱 [CommunityService] Searching users: query=\(query)")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw CommunityError.invalidResponse
+        }
+
+        guard httpResponse.statusCode == 200 else {
+            throw CommunityError.fetchFailed
+        }
+
+        struct SearchUsersResponse: Codable {
+            let success: Bool
+            let data: SearchUsersData
+        }
+
+        struct SearchUsersData: Codable {
+            let users: [CommunityRecommendedUser]
+        }
+
+        let result = try JSONDecoder().decode(SearchUsersResponse.self, from: data)
+        debugLog("✅ [CommunityService] Found \(result.data.users.count) users")
+
+        return result.data.users
+    }
+
+    // MARK: - Search Posts
+    /// Search posts by text content
+    /// - Parameters:
+    ///   - query: Search query
+    ///   - biasId: Optional bias ID filter
+    ///   - limit: Maximum number of results
+    /// - Returns: Array of community posts
+    func searchPosts(query: String, biasId: String? = nil, limit: Int = 20) async throws -> [CommunityPost] {
+        let token = try await FirebaseTokenHelper.shared.getToken()
+
+        var urlComponents = URLComponents(string: Constants.API.searchPosts)!
+        var queryItems = [
+            URLQueryItem(name: "query", value: query),
+            URLQueryItem(name: "limit", value: "\(limit)")
+        ]
+
+        if let biasId = biasId {
+            queryItems.append(URLQueryItem(name: "biasId", value: biasId))
+        }
+
+        urlComponents.queryItems = queryItems
+
+        guard let url = urlComponents.url else {
+            throw CommunityError.invalidResponse
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.timeoutInterval = NetworkConfig.defaultTimeout
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        debugLog("📱 [CommunityService] Searching posts: query=\(query)")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw CommunityError.invalidResponse
+        }
+
+        guard httpResponse.statusCode == 200 else {
+            throw CommunityError.fetchFailed
+        }
+
+        struct SearchPostsResponse: Codable {
+            let success: Bool
+            let data: SearchPostsData
+        }
+
+        struct SearchPostsData: Codable {
+            let posts: [CommunityPost]
+        }
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let result = try decoder.decode(SearchPostsResponse.self, from: data)
+        debugLog("✅ [CommunityService] Found \(result.data.posts.count) posts")
+
+        return result.data.posts
+    }
+
+    // MARK: - Get User Profile
+    /// Get user profile information
+    /// - Parameter userId: User ID to get profile for
+    /// - Returns: User profile with posts and statistics
+    func getUserProfile(userId: String) async throws -> UserProfile {
+        let token = try await FirebaseTokenHelper.shared.getToken()
+
+        guard var urlComponents = URLComponents(string: Constants.API.getUserProfile) else {
+            throw CommunityError.invalidResponse
+        }
+
+        urlComponents.queryItems = [
+            URLQueryItem(name: "userId", value: userId)
+        ]
+
+        guard let url = urlComponents.url else {
+            throw CommunityError.invalidResponse
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.timeoutInterval = NetworkConfig.defaultTimeout
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        debugLog("📤 [CommunityService] Getting profile for user: \(userId)")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw CommunityError.invalidResponse
+        }
+
+        debugLog("📥 [CommunityService] HTTP Status: \(httpResponse.statusCode)")
+
+        guard httpResponse.statusCode == 200 else {
+            if let errorString = String(data: data, encoding: .utf8) {
+                debugLog("❌ [CommunityService] Error: \(errorString)")
+            }
+            throw CommunityError.fetchFailed
+        }
+
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let result = try decoder.decode(UserProfileResponse.self, from: data)
+        debugLog("✅ [CommunityService] Got profile for: \(result.data.displayName)")
+
+        return result.data
+    }
+}
+
+// MARK: - Response Models
+struct PostResponse: Codable {
+    let success: Bool
+    let data: CommunityPost
+}
+
+struct PostListResponse: Codable {
+    let success: Bool
+    let data: PostListData
+}
+
+struct PostListData: Codable {
+    let posts: [CommunityPost]
+    let hasMore: Bool
+}
+
+struct PostActionResponse: Codable {
+    let success: Bool
+    let data: PostActionResult
+}
+
+struct PostActionResult: Codable {
+    let postId: String
+    let action: String
+    let likesCount: Int
+}
+
+struct CommunityMyVotesResponse: Codable {
+    let success: Bool
+    let data: CommunityMyVotesData
+}
+
+struct CommunityMyVotesData: Codable {
+    let voteHistory: [MyVoteItem]
+    let hasMore: Bool
+    let summary: CommunityMyVotesSummary
+}
+
+struct CommunityMyVotesSummary: Codable {
+    let totalVotes: Int
+    let totalPointsUsed: Int
+}
+
+// MARK: - Helper Extension
+extension PostContent {
+    func toDictionary() -> [String: Any] {
+        var dict: [String: Any] = [:]
+
+        if let text = text {
+            dict["text"] = text
+        }
+
+        if let images = images {
+            dict["images"] = images
+        }
+
+        if let voteIds = voteIds {
+            dict["voteIds"] = voteIds
+        }
+
+        if let voteSnapshots = voteSnapshots {
+            // Convert InAppVote array to dictionary array
+            dict["voteSnapshots"] = voteSnapshots.map { $0.toDictionary() }
+        }
+
+        if let myVotes = myVotes {
+            dict["myVotes"] = myVotes.map { $0.toDictionary() }
+        }
+
+        if let goodsTrade = goodsTrade {
+            var goodsDict: [String: Any] = [
+                "idolId": goodsTrade.idolId,
+                "idolName": goodsTrade.idolName,
+                "groupName": goodsTrade.groupName,
+                "goodsImageUrl": goodsTrade.goodsImageUrl,
+                "goodsTags": goodsTrade.goodsTags,
+                "goodsName": goodsTrade.goodsName,
+                "tradeType": goodsTrade.tradeType,
+                "status": goodsTrade.status
+            ]
+
+            if let condition = goodsTrade.condition {
+                goodsDict["condition"] = condition
+            }
+
+            if let description = goodsTrade.description {
+                goodsDict["description"] = description
+            }
+
+            dict["goodsTrade"] = goodsDict
+        }
+
+        if let musicVideo = musicVideo {
+            var mvDict: [String: Any] = [
+                "youtubeVideoId": musicVideo.youtubeVideoId,
+                "youtubeUrl": musicVideo.youtubeUrl,
+                "title": musicVideo.title,
+                "thumbnailUrl": musicVideo.thumbnailUrl
+            ]
+            if let channelName = musicVideo.channelName {
+                mvDict["channelName"] = channelName
+            }
+            dict["musicVideo"] = mvDict
+        }
+
+        return dict
+    }
+}
+
+extension InAppVote {
+    private static let iso8601Formatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        return formatter
+    }()
+
+    func toDictionary() -> [String: Any] {
+        var dict: [String: Any] = [:]
+        dict["voteId"] = id
+        dict["title"] = title
+        dict["description"] = description
+        dict["choices"] = choices.map { ["choiceId": $0.id, "label": $0.label, "voteCount": $0.voteCount] }
+        dict["startDate"] = Self.iso8601Formatter.string(from: startDate)
+        dict["endDate"] = Self.iso8601Formatter.string(from: endDate)
+        dict["requiredPoints"] = requiredPoints
+        dict["status"] = status.rawValue
+        dict["totalVotes"] = totalVotes
+        if let coverImageUrl = coverImageUrl {
+            dict["coverImageUrl"] = coverImageUrl
+        }
+        dict["isFeatured"] = isFeatured
+        return dict
+    }
+}
+
+extension MyVoteItem {
+    private static let iso8601Formatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        return formatter
+    }()
+
+    func toDictionary() -> [String: Any] {
+        var dict: [String: Any] = [:]
+        dict["id"] = id
+        dict["voteId"] = voteId
+        dict["title"] = title
+        if let selectedChoiceId = selectedChoiceId {
+            dict["selectedChoiceId"] = selectedChoiceId
+        }
+        if let selectedChoiceLabel = selectedChoiceLabel {
+            dict["selectedChoiceLabel"] = selectedChoiceLabel
+        }
+        dict["pointsUsed"] = pointsUsed
+        dict["votedAt"] = Self.iso8601Formatter.string(from: votedAt)
+        return dict
+    }
+}
