@@ -147,7 +147,7 @@ class FanCardViewModel: ObservableObject {
             }
 
             if let image = headerImage {
-                headerUrl = try await ImageUploadService.shared.uploadImage(image, path: "fancard/headers")
+                headerUrl = try await ImageUploadService.shared.uploadGoodsImage(image)
             }
 
             let request = FanCardCreateRequest(
@@ -194,7 +194,7 @@ class FanCardViewModel: ObservableObject {
             }
 
             if let image = headerImage {
-                headerUrl = try await ImageUploadService.shared.uploadImage(image, path: "fancard/headers")
+                headerUrl = try await ImageUploadService.shared.uploadGoodsImage(image)
             }
 
             let request = FanCardUpdateRequest(
