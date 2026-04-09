@@ -69,7 +69,7 @@ struct FanCardEditorView: View {
             }
             .sheet(isPresented: $showShareSheet) {
                 if let url = viewModel.shareURL {
-                    ShareSheet(items: [url])
+                    ShareSheet(activityItems: [url])
                 }
             }
             .sheet(isPresented: $showBlockPicker) {
@@ -101,7 +101,7 @@ struct FanCardEditorView: View {
                         TextField("例: jimin-love", text: $viewModel.odDisplayName)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
-                            .onChange(of: viewModel.odDisplayName) { _, _ in
+                            .onChange(of: viewModel.odDisplayName) { _ in
                                 viewModel.checkOdDisplayName()
                             }
 
@@ -433,17 +433,6 @@ struct BlockPickerView: View {
 
         viewModel.addBlock(block)
     }
-}
-
-// MARK: - Share Sheet
-struct ShareSheet: UIViewControllerRepresentable {
-    let items: [Any]
-
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: items, applicationActivities: nil)
-    }
-
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 // MARK: - Color Extension for toHex
