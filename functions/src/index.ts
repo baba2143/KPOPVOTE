@@ -189,6 +189,15 @@ export { processScheduledNotifications } from "./scheduled/processScheduledNotif
 // Same Bias Users API
 export { getSameBiasUsers } from "./api/getSameBiasUsers";
 
+// FanCard functions
+export { createFanCard } from "./fancard/createFanCard";
+export { getFanCard } from "./fancard/getFanCard";
+export { getFanCardByOdDisplayName } from "./fancard/getFanCardByOdDisplayName";
+export { updateFanCard } from "./fancard/updateFanCard";
+export { deleteFanCard } from "./fancard/deleteFanCard";
+export { checkOdDisplayName } from "./fancard/checkOdDisplayName";
+export { incrementFanCardViewCount } from "./fancard/incrementViewCount";
+
 // Idol Ranking functions
 export { idolRankingVote } from "./idolRanking/idolRankingVote";
 export { idolRankingGetRanking } from "./idolRanking/idolRankingGetRanking";

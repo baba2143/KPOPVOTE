@@ -2,6 +2,9 @@
  * Type definitions for K-VOTE COLLECTOR
  */
 
+// FanCard types
+export * from "./fancard";
+
 // User related types
 export interface UserProfile {
   uid: string;
