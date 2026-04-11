@@ -6,8 +6,22 @@ interface LinkBlockProps {
   primaryColor: string;
 }
 
+function getDisplayTitle(data: LinkBlockData): string {
+  if (data.title && data.title.trim()) {
+    return data.title;
+  }
+  // URLからドメイン名を抽出
+  try {
+    const url = new URL(data.url);
+    return url.hostname.replace(/^www\./, "");
+  } catch {
+    return data.url;
+  }
+}
+
 export default function LinkBlock({ data, primaryColor }: LinkBlockProps) {
   const bgColor = data.backgroundColor || primaryColor;
+  const displayTitle = getDisplayTitle(data);
 
   return (
     <a
@@ -28,7 +42,7 @@ export default function LinkBlock({ data, primaryColor }: LinkBlockProps) {
             />
           </div>
         )}
-        <span>{data.title}</span>
+        <span>{displayTitle}</span>
       </div>
     </a>
   );

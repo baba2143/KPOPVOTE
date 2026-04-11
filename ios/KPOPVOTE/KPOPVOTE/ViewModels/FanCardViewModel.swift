@@ -98,10 +98,10 @@ class FanCardViewModel: ObservableObject {
             return
         }
 
-        // Only allow alphanumeric, underscore, hyphen
-        let allowedCharacters = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "_-"))
+        // Only allow alphanumeric, underscore, hyphen, ampersand
+        let allowedCharacters = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "_-&"))
         if name.unicodeScalars.contains(where: { !allowedCharacters.contains($0) }) {
-            odDisplayNameError = "英数字、アンダースコア、ハイフンのみ使用可能です"
+            odDisplayNameError = "英数字、アンダースコア、ハイフン、&のみ使用可能です"
             odDisplayNameAvailable = false
             return
         }
@@ -122,7 +122,8 @@ class FanCardViewModel: ObservableObject {
                 }
             } catch {
                 if !Task.isCancelled {
-                    odDisplayNameError = "確認できませんでした"
+                    debugLog("❌ [FanCardViewModel] checkOdDisplayName error: \(error)")
+                    odDisplayNameError = "確認できませんでした: \(error.localizedDescription)"
                 }
             }
 
@@ -150,6 +151,9 @@ class FanCardViewModel: ObservableObject {
                 headerUrl = try await ImageUploadService.shared.uploadGoodsImage(image)
             }
 
+            // Filter out incomplete blocks
+            let validBlocks = blocks.filter { isBlockValid($0) }
+
             let request = FanCardCreateRequest(
                 odDisplayName: odDisplayName,
                 displayName: displayName,
@@ -157,7 +161,7 @@ class FanCardViewModel: ObservableObject {
                 profileImageUrl: profileUrl.isEmpty ? nil : profileUrl,
                 headerImageUrl: headerUrl.isEmpty ? nil : headerUrl,
                 theme: theme,
-                blocks: blocks.isEmpty ? nil : blocks,
+                blocks: validBlocks.isEmpty ? nil : validBlocks,
                 isPublic: isPublic
             )
 
@@ -197,13 +201,16 @@ class FanCardViewModel: ObservableObject {
                 headerUrl = try await ImageUploadService.shared.uploadGoodsImage(image)
             }
 
+            // Filter out incomplete blocks
+            let validBlocks = blocks.filter { isBlockValid($0) }
+
             let request = FanCardUpdateRequest(
                 displayName: displayName,
                 bio: bio,
                 profileImageUrl: profileUrl,
                 headerImageUrl: headerUrl,
                 theme: theme,
-                blocks: blocks,
+                blocks: validBlocks,
                 isPublic: isPublic
             )
 
@@ -219,6 +226,24 @@ class FanCardViewModel: ObservableObject {
             debugLog("❌ [FanCardViewModel] Update error: \(error)")
             isSaving = false
             return false
+        }
+    }
+
+    // MARK: - Block Validation
+    private func isBlockValid(_ block: FanCardBlock) -> Bool {
+        switch block.data {
+        case .bias:
+            return true // bias block is always valid
+        case .link(let data):
+            return !data.url.isEmpty
+        case .mvLink(let data):
+            return !data.youtubeUrl.isEmpty
+        case .sns(let data):
+            return !data.username.isEmpty
+        case .text(let data):
+            return !data.content.isEmpty
+        case .image(let data):
+            return !data.imageUrl.isEmpty
         }
     }
 

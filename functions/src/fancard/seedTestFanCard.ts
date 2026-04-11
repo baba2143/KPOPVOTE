@@ -17,6 +17,9 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
+/**
+ * Seed test FanCard data for development
+ */
 async function seedTestFanCard() {
   const testFanCard = {
     odDisplayName: "jimin-love",

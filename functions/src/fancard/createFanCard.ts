@@ -36,11 +36,11 @@ function validateOdDisplayName(name: string): { valid: boolean; error?: string }
     };
   }
 
-  // Check format (lowercase alphanumeric + hyphen)
+  // Check format (lowercase alphanumeric + hyphen, underscore, ampersand)
   if (!OD_DISPLAY_NAME_REGEX.test(name)) {
     return {
       valid: false,
-      error: "URL name must contain only lowercase letters, numbers, and hyphens",
+      error: "URL name must contain only lowercase letters, numbers, hyphens, underscores, and &",
     };
   }
 

@@ -138,7 +138,7 @@ export type FanCardBlock =
 
 export interface FanCard {
   // Identifiers
-  odDisplayName: string; // URL slug (unique, lowercase alphanumeric + hyphen)
+  odDisplayName: string; // URL slug (unique, lowercase alphanumeric + hyphen, underscore, &)
   userId: string; // Owner's UID
 
   // Profile
@@ -225,11 +225,15 @@ export interface FanCardGetResponse {
 
 export interface FanCardCheckOdDisplayNameResponse {
   available: boolean;
+  normalizedName: string; // Lowercase normalized version
   suggestion?: string; // Alternative suggestion if not available
 }
 
+// Public FanCard response type (userId excluded for security)
+export type FanCardPublicData = Omit<FanCardResponse, "userId">;
+
 export interface FanCardPublicResponse {
-  fanCard: FanCardResponse;
+  fanCard: FanCardPublicData;
   // Additional data for public view
   userDisplayName?: string;
   userPhotoURL?: string;
@@ -256,8 +260,8 @@ export const FANCARD_LIMITS = {
   IMAGE_MAX_SIZE_MB: 5,
 } as const;
 
-// Regex for odDisplayName validation (lowercase alphanumeric + hyphen)
-export const OD_DISPLAY_NAME_REGEX = /^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/;
+// Regex for odDisplayName validation (lowercase alphanumeric + hyphen, underscore, ampersand)
+export const OD_DISPLAY_NAME_REGEX = /^[a-z0-9&][a-z0-9_\-&]*[a-z0-9&]$|^[a-z0-9&]$/;
 
 // Reserved names that cannot be used
 export const RESERVED_OD_DISPLAY_NAMES = [

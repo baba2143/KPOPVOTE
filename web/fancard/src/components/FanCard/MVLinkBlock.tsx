@@ -10,6 +10,7 @@ export default function MVLinkBlock({ data }: MVLinkBlockProps) {
   const videoId = extractYoutubeVideoId(data.youtubeUrl);
   const thumbnailUrl =
     data.thumbnailUrl || (videoId ? getYoutubeThumbnail(videoId) : null);
+  const displayTitle = data.title && data.title.trim() ? data.title : "YouTube";
 
   return (
     <a
@@ -23,7 +24,7 @@ export default function MVLinkBlock({ data }: MVLinkBlockProps) {
         {thumbnailUrl ? (
           <Image
             src={thumbnailUrl}
-            alt={data.title}
+            alt={displayTitle}
             fill
             className="object-cover"
           />
@@ -53,7 +54,7 @@ export default function MVLinkBlock({ data }: MVLinkBlockProps) {
       </div>
       {/* Title */}
       <div className="p-3">
-        <p className="font-medium text-gray-900 line-clamp-2">{data.title}</p>
+        <p className="font-medium text-gray-900 line-clamp-2">{displayTitle}</p>
         {data.artistName && (
           <p className="text-sm text-gray-500 mt-1">{data.artistName}</p>
         )}

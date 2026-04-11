@@ -17,6 +17,31 @@ import { STANDARD_CONFIG } from "../utils/functionConfig";
 import { handleCors } from "../middleware/cors";
 
 /**
+ * Validate URL format and protocol
+ */
+function isValidUrl(urlString: string): boolean {
+  try {
+    const url = new URL(urlString);
+    return ["http:", "https:"].includes(url.protocol);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Validate YouTube URL specifically
+ */
+function isValidYouTubeUrl(urlString: string): boolean {
+  try {
+    const url = new URL(urlString);
+    const validHosts = ["youtube.com", "www.youtube.com", "youtu.be", "m.youtube.com"];
+    return ["http:", "https:"].includes(url.protocol) && validHosts.includes(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Validate blocks array
  */
 function validateBlocks(blocks: FanCardBlock[]): { valid: boolean; error?: string } {
@@ -39,10 +64,13 @@ function validateBlocks(blocks: FanCardBlock[]): { valid: boolean; error?: strin
     // Validate block-specific data
     switch (block.type) {
     case "link":
-      if (!block.data.title || !block.data.url) {
-        return { valid: false, error: "Link block requires title and url" };
+      if (!block.data.url) {
+        return { valid: false, error: "Link block requires url" };
       }
-      if (block.data.title.length > FANCARD_LIMITS.LINK_TITLE_MAX) {
+      if (!isValidUrl(block.data.url)) {
+        return { valid: false, error: "Link block requires valid HTTP/HTTPS URL" };
+      }
+      if (block.data.title && block.data.title.length > FANCARD_LIMITS.LINK_TITLE_MAX) {
         return {
           valid: false,
           error: `Link title must be at most ${FANCARD_LIMITS.LINK_TITLE_MAX} characters`,
@@ -51,21 +79,17 @@ function validateBlocks(blocks: FanCardBlock[]): { valid: boolean; error?: strin
       break;
 
     case "mvLink":
-      if (!block.data.title || !block.data.youtubeUrl) {
-        return { valid: false, error: "MV Link block requires title and youtubeUrl" };
+      if (!block.data.youtubeUrl) {
+        return { valid: false, error: "MV Link block requires youtubeUrl" };
       }
-      // Basic YouTube URL validation
-      if (
-        !block.data.youtubeUrl.includes("youtube.com") &&
-          !block.data.youtubeUrl.includes("youtu.be")
-      ) {
-        return { valid: false, error: "Invalid YouTube URL" };
+      if (!isValidYouTubeUrl(block.data.youtubeUrl)) {
+        return { valid: false, error: "MV Link requires valid YouTube URL (youtube.com or youtu.be)" };
       }
       break;
 
     case "sns":
-      if (!block.data.platform || !block.data.url) {
-        return { valid: false, error: "SNS block requires platform and url" };
+      if (!block.data.platform || !block.data.username) {
+        return { valid: false, error: "SNS block requires platform and username" };
       }
       break;
 
@@ -84,6 +108,9 @@ function validateBlocks(blocks: FanCardBlock[]): { valid: boolean; error?: strin
     case "image":
       if (!block.data.imageUrl) {
         return { valid: false, error: "Image block requires imageUrl" };
+      }
+      if (!isValidUrl(block.data.imageUrl)) {
+        return { valid: false, error: "Image block requires valid HTTP/HTTPS URL" };
       }
       break;
 

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 enum Constants {
     // MARK: - API Base URL
@@ -225,5 +226,17 @@ extension Color {
             blue: Double(b) / 255,
             opacity: Double(a) / 255
         )
+    }
+
+    func toHex() -> String {
+        guard let components = UIColor(self).cgColor.components, components.count >= 3 else {
+            return "#8b5cf6"
+        }
+
+        let r = Int(components[0] * 255)
+        let g = Int(components[1] * 255)
+        let b = Int(components[2] * 255)
+
+        return String(format: "#%02x%02x%02x", r, g, b)
     }
 }

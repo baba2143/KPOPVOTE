@@ -14,7 +14,8 @@ interface PageProps {
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
-  const { username } = await params;
+  const resolvedParams = await params;
+  const username = decodeURIComponent(resolvedParams.username);
   const data = await getFanCardByOdDisplayName(username);
 
   if (!data) {
@@ -41,7 +42,7 @@ export async function generateMetadata({
   }
 
   const baseUrl =
-    process.env.NEXT_PUBLIC_BASE_URL || "https://kpopvote-fancard.vercel.app";
+    process.env.NEXT_PUBLIC_BASE_URL || "https://fancard-two.vercel.app";
 
   return {
     title: `${fanCard.displayName}のFanCard`,
@@ -74,7 +75,9 @@ export async function generateMetadata({
  * FanCard Public Page
  */
 export default async function FanCardPage({ params }: PageProps) {
-  const { username } = await params;
+  const resolvedParams = await params;
+  const username = decodeURIComponent(resolvedParams.username);
+
   const data = await getFanCardByOdDisplayName(username);
 
   if (!data) {

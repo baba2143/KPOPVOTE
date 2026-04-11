@@ -427,5 +427,17 @@ service cloud.firestore {
       // System/Cloud Functions can write subscriptions
       allow write: if isAdmin();
     }
+
+    // ========================================
+    // FanCards Collection
+    // ========================================
+    match /fanCards/{odDisplayName} {
+      // Anyone can read public FanCards (for public profile viewing)
+      allow read: if true;
+
+      // Writing is only allowed via Cloud Functions (Admin SDK)
+      // This prevents direct client-side manipulation of FanCards
+      allow write: if false;
+    }
   }
 }

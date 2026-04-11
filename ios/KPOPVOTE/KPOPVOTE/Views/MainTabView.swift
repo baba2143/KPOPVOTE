@@ -661,6 +661,7 @@ struct ProfileView: View {
     @State private var showNotifications = false
     @State private var showFavorites = false
     @State private var showAbout = false
+    @State private var showFanCard = false
     @State private var showFollowingList = false
     @State private var showFollowersList = false
     @State private var showMessages = false
@@ -873,6 +874,18 @@ struct ProfileView: View {
                             }
                             .buttonStyle(.plain)
                             Divider().padding(.leading, 60).background(Constants.Colors.textGray.opacity(0.3))
+
+                            // FanCard Button
+                            if authService.isAuthenticated {
+                                Button {
+                                    showFanCard = true
+                                } label: {
+                                    SettingsRow(icon: "person.text.rectangle", title: "FanCard", color: Constants.Colors.accentPink)
+                                }
+                                .buttonStyle(.plain)
+                                Divider().padding(.leading, 60).background(Constants.Colors.textGray.opacity(0.3))
+                            }
+
                             Button {
                                 showNotifications = true
                             } label: {
@@ -1141,6 +1154,9 @@ struct ProfileView: View {
             .fullScreenCover(isPresented: $showLinkedAccounts) {
                 LinkedAccountsView(authService: authService)
                     .environmentObject(authService)
+            }
+            .fullScreenCover(isPresented: $showFanCard) {
+                FanCardEditorView()
             }
             .sheet(isPresented: $showInviteCode) {
                 InviteCodeSheet(

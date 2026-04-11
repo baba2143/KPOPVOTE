@@ -736,20 +736,7 @@ struct StatItemView: View {
     }
 }
 
-// MARK: - Share Sheet (UIKit Wrapper)
-struct ShareSheet: UIViewControllerRepresentable {
-    let activityItems: [Any]
-
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        let controller = UIActivityViewController(
-            activityItems: activityItems,
-            applicationActivities: nil
-        )
-        return controller
-    }
-
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
-}
+// ShareSheet moved to Utilities/ShareSheet.swift
 
 // MARK: - Report Collection View
 struct ReportCollectionView: View {

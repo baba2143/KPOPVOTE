@@ -20,21 +20,18 @@ interface ApiResponse<T> {
 export async function getFanCardByOdDisplayName(
   odDisplayName: string
 ): Promise<FanCardPublicData | null> {
+  const url = `${API_BASE_URL}/getFanCardByOdDisplayName?odDisplayName=${encodeURIComponent(
+    odDisplayName
+  )}`;
+
   try {
-    const response = await fetch(
-      `${API_BASE_URL}/getFanCardByOdDisplayName?odDisplayName=${encodeURIComponent(
-        odDisplayName
-      )}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        next: {
-          revalidate: 60, // Revalidate every 60 seconds
-        },
-      }
-    );
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      cache: "no-store", // Always fetch fresh data
+    });
 
     if (!response.ok) {
       if (response.status === 404) {

@@ -16,13 +16,14 @@ import { STANDARD_CONFIG } from "../utils/functionConfig";
 import { handleCors } from "../middleware/cors";
 
 /**
- * Convert Firestore document to API response format
+ * Convert Firestore document to API response format for public view
+ * Note: userId is intentionally excluded from public responses for security
  */
-function toFanCardResponse(doc: FirebaseFirestore.DocumentSnapshot): FanCardResponse {
+function toPublicFanCardResponse(doc: FirebaseFirestore.DocumentSnapshot): Omit<FanCardResponse, "userId"> {
   const data = doc.data()!;
   return {
     odDisplayName: data.odDisplayName,
-    userId: data.userId,
+    // userId is intentionally excluded from public API response
     displayName: data.displayName,
     bio: data.bio || "",
     profileImageUrl: data.profileImageUrl || "",
@@ -88,7 +89,7 @@ export const getFanCardByOdDisplayName = functions
         return;
       }
 
-      const fanCard = toFanCardResponse(doc);
+      const fanCard = toPublicFanCardResponse(doc);
 
       // Fetch additional user data for public view
       let userDisplayName: string | undefined;

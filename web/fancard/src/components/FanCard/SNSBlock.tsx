@@ -37,12 +37,31 @@ const SNS_ICONS: Record<SNSPlatform, { icon: string; color: string; name: string
   },
 };
 
+function generateSNSUrl(platform: SNSPlatform, username: string): string {
+  const cleanUsername = username.replace(/^@/, "");
+  switch (platform) {
+    case "x":
+      return `https://twitter.com/${cleanUsername}`;
+    case "instagram":
+      return `https://instagram.com/${cleanUsername}`;
+    case "tiktok":
+      return `https://tiktok.com/@${cleanUsername}`;
+    case "youtube":
+      return `https://youtube.com/@${cleanUsername}`;
+    case "threads":
+      return `https://threads.net/@${cleanUsername}`;
+    default:
+      return "";
+  }
+}
+
 export default function SNSBlock({ data }: SNSBlockProps) {
   const snsInfo = SNS_ICONS[data.platform] || SNS_ICONS.other;
+  const url = data.url || generateSNSUrl(data.platform, data.username);
 
   return (
     <a
-      href={data.url}
+      href={url}
       target="_blank"
       rel="noopener noreferrer"
       className="flex items-center gap-4 p-4 rounded-xl bg-white shadow-sm hover:shadow-md transition-shadow"

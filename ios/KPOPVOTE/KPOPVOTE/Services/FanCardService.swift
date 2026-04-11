@@ -50,7 +50,13 @@ class FanCardService {
 
     // MARK: - Check odDisplayName Availability
     func checkOdDisplayName(_ name: String) async throws -> (available: Bool, normalized: String) {
-        let url = URL(string: "\(baseURL)/checkOdDisplayName?odDisplayName=\(name.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? name)")!
+        // Custom encoding that also encodes & character
+        var allowedCharacters = CharacterSet.urlQueryAllowed
+        allowedCharacters.remove(charactersIn: "&")
+        let encodedName = name.addingPercentEncoding(withAllowedCharacters: allowedCharacters) ?? name
+        let urlString = "\(baseURL)/checkOdDisplayName?odDisplayName=\(encodedName)"
+        debugLog("🔍 [FanCardService] checkOdDisplayName URL: \(urlString)")
+        let url = URL(string: urlString)!
 
         var request = URLRequest.withTimeout(url: url)
         request.httpMethod = "GET"
@@ -60,6 +66,11 @@ class FanCardService {
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw FanCardError.invalidResponse
+        }
+
+        debugLog("🔍 [FanCardService] checkOdDisplayName status: \(httpResponse.statusCode)")
+        if let responseString = String(data: data, encoding: .utf8) {
+            debugLog("🔍 [FanCardService] checkOdDisplayName response: \(responseString)")
         }
 
         let decoded = try JSONDecoder().decode(FanCardAPIResponse<CheckNameDataResponse>.self, from: data)
@@ -92,8 +103,9 @@ class FanCardService {
 
         if httpResponse.statusCode == 201 || httpResponse.statusCode == 200,
            decoded.success,
-           let responseData = decoded.data {
-            return responseData.fanCard
+           let responseData = decoded.data,
+           let fanCard = responseData.fanCard {
+            return fanCard
         } else if httpResponse.statusCode == 409 {
             throw FanCardError.odDisplayNameTaken
         } else {
@@ -123,8 +135,11 @@ class FanCardService {
 
         let decoded = try JSONDecoder().decode(FanCardAPIResponse<FanCardDataResponse>.self, from: data)
 
-        if decoded.success, let responseData = decoded.data {
-            return responseData.fanCard
+        if decoded.success, let responseData = decoded.data, let fanCard = responseData.fanCard {
+            return fanCard
+        } else if decoded.success {
+            // FanCard doesn't exist yet
+            throw FanCardError.fanCardNotFound
         } else {
             throw FanCardError.serverError(decoded.error ?? "Unknown error")
         }
@@ -149,8 +164,8 @@ class FanCardService {
 
         let decoded = try JSONDecoder().decode(FanCardAPIResponse<FanCardDataResponse>.self, from: data)
 
-        if httpResponse.statusCode == 200, decoded.success, let responseData = decoded.data {
-            return responseData.fanCard
+        if httpResponse.statusCode == 200, decoded.success, let responseData = decoded.data, let fanCard = responseData.fanCard {
+            return fanCard
         } else {
             throw FanCardError.serverError(decoded.error ?? "Unknown error")
         }
@@ -181,6 +196,6 @@ class FanCardService {
     // MARK: - Get FanCard Share URL
     func getFanCardShareURL(odDisplayName: String) -> URL {
         // Vercel deployment URL
-        URL(string: "https://kpopvote-fancard.vercel.app/\(odDisplayName)")!
+        URL(string: "https://fancard-two.vercel.app/\(odDisplayName)")!
     }
 }

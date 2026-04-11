@@ -52,7 +52,7 @@ export interface BiasBlock extends BaseBlock {
 }
 
 export interface LinkBlockData {
-  title: string;
+  title?: string;
   url: string;
   iconUrl?: string;
   backgroundColor?: string;
@@ -64,7 +64,7 @@ export interface LinkBlock extends BaseBlock {
 }
 
 export interface MVLinkBlockData {
-  title: string;
+  title?: string;
   youtubeUrl: string;
   thumbnailUrl?: string;
   artistName?: string;
@@ -78,7 +78,7 @@ export interface MVLinkBlock extends BaseBlock {
 export interface SNSBlockData {
   platform: SNSPlatform;
   username: string;
-  url: string;
+  url?: string;
 }
 
 export interface SNSBlock extends BaseBlock {

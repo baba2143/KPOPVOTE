@@ -140,14 +140,14 @@ export default function FanCardView({ data }: FanCardViewProps) {
           {/* Footer */}
           <footer className="mt-12 pt-6 border-t text-center" style={{ borderColor: colors.border }}>
             <a
-              href="https://apps.apple.com/app/k-vote-collector"
+              href="https://apps.apple.com/jp/app/oshi-pick/id6755575658"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-sm hover:opacity-80 transition-opacity"
               style={{ color: colors.muted }}
             >
               <span>🎤</span>
-              <span>K-VOTE COLLECTOR でFanCardを作る</span>
+              <span>OSHI Pick でFanCardを作る</span>
             </a>
           </footer>
         </div>

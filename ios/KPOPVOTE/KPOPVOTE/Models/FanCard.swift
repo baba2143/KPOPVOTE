@@ -128,7 +128,7 @@ struct MVLinkBlockData: Codable {
 struct SNSBlockData: Codable {
     var platform: SNSPlatform
     var username: String
-    var url: String
+    var url: String?
 }
 
 struct TextBlockData: Codable {
@@ -165,13 +165,13 @@ struct FanCardBlock: Codable, Identifiable {
                biasData.showFromMyBias != nil || biasData.customBias != nil {
                 self = .bias(biasData)
             } else if let linkData = try? container.decode(LinkBlockData.self),
-                      !linkData.title.isEmpty && !linkData.url.isEmpty {
+                      !linkData.url.isEmpty {
                 self = .link(linkData)
             } else if let mvLinkData = try? container.decode(MVLinkBlockData.self),
-                      !mvLinkData.title.isEmpty && !mvLinkData.youtubeUrl.isEmpty {
+                      !mvLinkData.youtubeUrl.isEmpty {
                 self = .mvLink(mvLinkData)
             } else if let snsData = try? container.decode(SNSBlockData.self),
-                      !snsData.url.isEmpty {
+                      !snsData.username.isEmpty {
                 self = .sns(snsData)
             } else if let textData = try? container.decode(TextBlockData.self),
                       !textData.content.isEmpty {
@@ -250,7 +250,7 @@ struct FanCardAPIResponse<T: Codable>: Codable {
 }
 
 struct FanCardDataResponse: Codable {
-    var fanCard: FanCard
+    var fanCard: FanCard?
 }
 
 struct CheckNameDataResponse: Codable {

@@ -40,31 +40,22 @@ export const checkOdDisplayName = functions
     // Handle CORS
     if (handleCors(req, res)) return;
 
-    // Only accept POST
-    if (req.method !== "POST") {
+    // Accept GET or POST
+    if (req.method !== "GET" && req.method !== "POST") {
       res.status(405).json({
         success: false,
-        error: "Method not allowed. Use POST.",
+        error: "Method not allowed. Use GET or POST.",
       } as ApiResponse<null>);
       return;
     }
 
     try {
-      // Verify authentication
-      const authHeader = req.headers.authorization;
-      if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        res.status(401).json({
-          success: false,
-          error: "Unauthorized: No token provided",
-        } as ApiResponse<null>);
-        return;
-      }
+      // No authentication required for checking name availability
 
-      const token = authHeader.split("Bearer ")[1];
-      await admin.auth().verifyIdToken(token);
-
-      // Parse request body
-      const { odDisplayName } = req.body as FanCardCheckOdDisplayNameRequest;
+      // Parse request - support both GET (query) and POST (body)
+      const odDisplayName = req.method === "GET" ?
+        (req.query.odDisplayName as string) :
+        (req.body as FanCardCheckOdDisplayNameRequest).odDisplayName;
 
       if (!odDisplayName) {
         res.status(400).json({
@@ -82,6 +73,7 @@ export const checkOdDisplayName = functions
           success: true,
           data: {
             available: false,
+            normalizedName,
             suggestion: `Name must be at least ${FANCARD_LIMITS.OD_DISPLAY_NAME_MIN} characters`,
           },
         } as ApiResponse<FanCardCheckOdDisplayNameResponse>);
@@ -93,6 +85,7 @@ export const checkOdDisplayName = functions
           success: true,
           data: {
             available: false,
+            normalizedName,
             suggestion: `Name must be at most ${FANCARD_LIMITS.OD_DISPLAY_NAME_MAX} characters`,
           },
         } as ApiResponse<FanCardCheckOdDisplayNameResponse>);
@@ -105,7 +98,8 @@ export const checkOdDisplayName = functions
           success: true,
           data: {
             available: false,
-            suggestion: "Use only lowercase letters, numbers, and hyphens",
+            normalizedName,
+            suggestion: "Use only letters, numbers, hyphens, underscores, and &",
           },
         } as ApiResponse<FanCardCheckOdDisplayNameResponse>);
         return;
@@ -118,6 +112,7 @@ export const checkOdDisplayName = functions
           success: true,
           data: {
             available: false,
+            normalizedName,
             suggestion: suggestions[0],
           },
         } as ApiResponse<FanCardCheckOdDisplayNameResponse>);
@@ -145,6 +140,7 @@ export const checkOdDisplayName = functions
           success: true,
           data: {
             available: false,
+            normalizedName,
             suggestion: availableSuggestion,
           },
         } as ApiResponse<FanCardCheckOdDisplayNameResponse>);
@@ -156,23 +152,11 @@ export const checkOdDisplayName = functions
         success: true,
         data: {
           available: true,
+          normalizedName,
         },
       } as ApiResponse<FanCardCheckOdDisplayNameResponse>);
     } catch (error: unknown) {
       console.error("Check odDisplayName error:", error);
-
-      if (
-        typeof error === "object" &&
-        error !== null &&
-        "code" in error &&
-        error.code === "auth/id-token-expired"
-      ) {
-        res.status(401).json({
-          success: false,
-          error: "Token expired",
-        } as ApiResponse<null>);
-        return;
-      }
 
       res.status(500).json({
         success: false,

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import PhotosUI
 
 struct FanCardEditorView: View {
     @StateObject private var viewModel = FanCardViewModel()
@@ -14,6 +15,12 @@ struct FanCardEditorView: View {
     @State private var showDeleteConfirmation = false
     @State private var showShareSheet = false
     @State private var showBlockPicker = false
+    @State private var editingBlockIndex: Int?
+    @State private var pendingEditBlockIndex: Int?
+
+    // Image picker states
+    @State private var selectedProfileItem: PhotosPickerItem?
+    @State private var selectedHeaderItem: PhotosPickerItem?
 
     var body: some View {
         NavigationStack {
@@ -72,8 +79,26 @@ struct FanCardEditorView: View {
                     ShareSheet(activityItems: [url])
                 }
             }
-            .sheet(isPresented: $showBlockPicker) {
-                BlockPickerView(viewModel: viewModel)
+            .sheet(isPresented: $showBlockPicker, onDismiss: {
+                // Open editor for newly added block after picker is dismissed
+                if let pendingIndex = pendingEditBlockIndex {
+                    pendingEditBlockIndex = nil
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        editingBlockIndex = pendingIndex
+                    }
+                }
+            }) {
+                BlockPickerView(viewModel: viewModel) { newIndex in
+                    pendingEditBlockIndex = newIndex
+                }
+            }
+            .sheet(item: Binding(
+                get: { editingBlockIndex.map { BlockEditItem(index: $0) } },
+                set: { editingBlockIndex = $0?.index }
+            )) { item in
+                if item.index < viewModel.blocks.count {
+                    BlockEditorView(block: $viewModel.blocks[item.index])
+                }
             }
             .alert("エラー", isPresented: .constant(viewModel.errorMessage != nil)) {
                 Button("OK") {
@@ -82,6 +107,20 @@ struct FanCardEditorView: View {
             } message: {
                 Text(viewModel.errorMessage ?? "")
             }
+            .overlay {
+                if viewModel.showSuccess {
+                    SuccessToast()
+                        .transition(.opacity.combined(with: .scale))
+                        .onAppear {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                withAnimation {
+                                    viewModel.showSuccess = false
+                                }
+                            }
+                        }
+                }
+            }
+            .animation(.easeInOut(duration: 0.3), value: viewModel.showSuccess)
         }
         .task {
             await viewModel.loadFanCard()
@@ -155,6 +194,8 @@ struct FanCardEditorView: View {
                 .disabled(viewModel.isSaving || viewModel.odDisplayNameAvailable != true)
             }
         }
+        .scrollDismissesKeyboard(.interactively)
+        .keyboardDoneButton()
     }
 
     // MARK: - Edit FanCard Form
@@ -207,11 +248,98 @@ struct FanCardEditorView: View {
                 .disabled(viewModel.isSaving)
             }
         }
+        .scrollDismissesKeyboard(.interactively)
+        .keyboardDoneButton()
     }
 
     // MARK: - Profile Section
     private var profileSection: some View {
         Section {
+            // Profile Image Picker - 行全体をタップ可能に
+            PhotosPicker(selection: $selectedProfileItem, matching: .images) {
+                HStack {
+                    Text("プロフィール画像")
+                        .foregroundColor(.primary)
+                    Spacer()
+                    if let image = viewModel.profileImage {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 60, height: 60)
+                            .clipShape(Circle())
+                    } else if !viewModel.profileImageUrl.isEmpty,
+                              let url = URL(string: viewModel.profileImageUrl) {
+                        AsyncImage(url: url) { image in
+                            image
+                                .resizable()
+                                .scaledToFill()
+                        } placeholder: {
+                            ProgressView()
+                        }
+                        .frame(width: 60, height: 60)
+                        .clipShape(Circle())
+                    } else {
+                        Image(systemName: "person.circle.fill")
+                            .font(.system(size: 50))
+                            .foregroundColor(.gray)
+                    }
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .onChange(of: selectedProfileItem) { item in
+                Task {
+                    if let data = try? await item?.loadTransferable(type: Data.self),
+                       let image = UIImage(data: data) {
+                        viewModel.profileImage = image
+                    }
+                }
+            }
+
+            // Header Image Picker - 行全体をタップ可能に
+            PhotosPicker(selection: $selectedHeaderItem, matching: .images) {
+                HStack {
+                    Text("ヘッダー画像")
+                        .foregroundColor(.primary)
+                    Spacer()
+                    if let image = viewModel.headerImage {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 100, height: 50)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                    } else if !viewModel.headerImageUrl.isEmpty,
+                              let url = URL(string: viewModel.headerImageUrl) {
+                        AsyncImage(url: url) { image in
+                            image
+                                .resizable()
+                                .scaledToFill()
+                        } placeholder: {
+                            ProgressView()
+                        }
+                        .frame(width: 100, height: 50)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                    } else {
+                        Image(systemName: "photo.fill")
+                            .font(.system(size: 30))
+                            .foregroundColor(.gray)
+                            .frame(width: 100, height: 50)
+                            .background(Color.gray.opacity(0.2))
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .onChange(of: selectedHeaderItem) { item in
+                Task {
+                    if let data = try? await item?.loadTransferable(type: Data.self),
+                       let image = UIImage(data: data) {
+                        viewModel.headerImage = image
+                    }
+                }
+            }
+
             TextField("表示名", text: $viewModel.displayName)
 
             VStack(alignment: .leading) {
@@ -229,8 +357,15 @@ struct FanCardEditorView: View {
     // MARK: - Blocks Section
     private var blocksSection: some View {
         Section {
-            ForEach(viewModel.blocks) { block in
-                BlockRowView(block: block)
+            ForEach(Array(viewModel.blocks.enumerated()), id: \.element.id) { index, block in
+                Button {
+                    editingBlockIndex = index
+                } label: {
+                    BlockRowView(block: block)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(PlainButtonStyle())
+                .contentShape(Rectangle())
             }
             .onDelete { indexSet in
                 for index in indexSet {
@@ -245,7 +380,11 @@ struct FanCardEditorView: View {
                 showBlockPicker = true
             } label: {
                 Label("ブロックを追加", systemImage: "plus.circle")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(PlainButtonStyle())
+            .contentShape(Rectangle())
         } header: {
             Text("コンテンツブロック")
         }
@@ -259,6 +398,11 @@ struct FanCardEditorView: View {
                     Text(template.displayName).tag(template)
                 }
             }
+
+            ColorPicker("背景色", selection: Binding(
+                get: { Color(hex: viewModel.theme.backgroundColor) },
+                set: { viewModel.theme.backgroundColor = $0.toHex() }
+            ))
 
             ColorPicker("メインカラー", selection: Binding(
                 get: { Color(hex: viewModel.theme.primaryColor) },
@@ -300,6 +444,7 @@ struct BlockRowView: View {
             VStack(alignment: .leading) {
                 Text(title)
                     .font(.subheadline)
+                    .foregroundColor(.primary)
                 Text(subtitle)
                     .font(.caption)
                     .foregroundColor(.secondary)
@@ -312,7 +457,12 @@ struct BlockRowView: View {
                 Image(systemName: "eye.slash")
                     .foregroundColor(.secondary)
             }
+
+            Image(systemName: "chevron.right")
+                .font(.caption)
+                .foregroundColor(.secondary)
         }
+        .padding(.vertical, 4)
     }
 
     private var iconName: String {
@@ -359,6 +509,7 @@ struct BlockRowView: View {
 struct BlockPickerView: View {
     @ObservedObject var viewModel: FanCardViewModel
     @Environment(\.dismiss) private var dismiss
+    var onBlockAdded: ((Int) -> Void)?
 
     var body: some View {
         NavigationStack {
@@ -382,6 +533,7 @@ struct BlockPickerView: View {
                 }
             }
         }
+        .presentationDragIndicator(.hidden)
     }
 
     private func blockButton(type: FanCardBlockType, icon: String, title: String, description: String) -> some View {
@@ -422,7 +574,7 @@ struct BlockPickerView: View {
                                  data: .mvLink(MVLinkBlockData(title: "", youtubeUrl: "")))
         case .sns:
             block = FanCardBlock(id: id, type: .sns, order: order, isVisible: true,
-                                 data: .sns(SNSBlockData(platform: .x, username: "", url: "")))
+                                 data: .sns(SNSBlockData(platform: .x, username: "", url: nil)))
         case .text:
             block = FanCardBlock(id: id, type: .text, order: order, isVisible: true,
                                  data: .text(TextBlockData(content: "", alignment: "center")))
@@ -431,22 +583,36 @@ struct BlockPickerView: View {
                                  data: .image(ImageBlockData(imageUrl: "")))
         }
 
+        let newIndex = viewModel.blocks.count
         viewModel.addBlock(block)
+        onBlockAdded?(newIndex)
     }
 }
 
-// MARK: - Color Extension for toHex
-extension Color {
-    func toHex() -> String {
-        guard let components = UIColor(self).cgColor.components, components.count >= 3 else {
-            return "#8b5cf6"
+// MARK: - Helper for Block Editing
+struct BlockEditItem: Identifiable {
+    let index: Int
+    var id: Int { index }
+}
+
+// MARK: - Success Toast
+struct SuccessToast: View {
+    var body: some View {
+        VStack {
+            Spacer()
+            HStack {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundColor(.green)
+                Text("保存しました")
+                    .fontWeight(.medium)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+            .background(.ultraThinMaterial)
+            .clipShape(Capsule())
+            .shadow(radius: 4)
+            .padding(.bottom, 100)
         }
-
-        let r = Int(components[0] * 255)
-        let g = Int(components[1] * 255)
-        let b = Int(components[2] * 255)
-
-        return String(format: "#%02x%02x%02x", r, g, b)
     }
 }
 
