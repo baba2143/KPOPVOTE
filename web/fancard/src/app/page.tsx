@@ -1,5 +1,5 @@
-import OshiPickLP from "@/components/LP/OshiPickLP";
+import { redirect } from "next/navigation";
 
 export default function Home() {
-  return <OshiPickLP />;
+  redirect("/oshipick/");
 }
