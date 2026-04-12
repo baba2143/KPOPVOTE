@@ -195,7 +195,7 @@ class FanCardService {
 
     // MARK: - Get FanCard Share URL
     func getFanCardShareURL(odDisplayName: String) -> URL {
-        // Vercel deployment URL
-        URL(string: "https://fancard-two.vercel.app/\(odDisplayName)")!
+        // Custom domain URL
+        URL(string: "https://oshipick.com/\(odDisplayName)")!
     }
 }

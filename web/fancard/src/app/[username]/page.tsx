@@ -42,7 +42,7 @@ export async function generateMetadata({
   }
 
   const baseUrl =
-    process.env.NEXT_PUBLIC_BASE_URL || "https://fancard-two.vercel.app";
+    process.env.NEXT_PUBLIC_BASE_URL || "https://oshipick.com";
 
   return {
     title: `${fanCard.displayName}のFanCard`,
