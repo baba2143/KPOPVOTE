@@ -15,6 +15,7 @@ struct FanCardEditorView: View {
     @State private var showDeleteConfirmation = false
     @State private var showShareSheet = false
     @State private var showBlockPicker = false
+    @State private var showPreview = false
     @State private var editingBlockIndex: Int?
     @State private var pendingEditBlockIndex: Int?
 
@@ -45,6 +46,12 @@ struct FanCardEditorView: View {
                 if viewModel.hasFanCard {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Menu {
+                            Button {
+                                showPreview = true
+                            } label: {
+                                Label("プレビュー", systemImage: "eye")
+                            }
+
                             Button {
                                 showShareSheet = true
                             } label: {
@@ -78,6 +85,9 @@ struct FanCardEditorView: View {
                 if let url = viewModel.shareURL {
                     ShareSheet(activityItems: [url])
                 }
+            }
+            .sheet(isPresented: $showPreview) {
+                FanCardPreviewView(viewModel: viewModel)
             }
             .sheet(isPresented: $showBlockPicker, onDismiss: {
                 // Open editor for newly added block after picker is dismissed
