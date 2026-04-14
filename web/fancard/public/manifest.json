@@ -1,0 +1,35 @@
+{
+  "name": "OSHI Pick",
+  "short_name": "OSHI Pick",
+  "description": "K-POPファン向け投票支援アプリ。推し活がそのままポイントになる。",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0f",
+  "theme_color": "#ff3c78",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["entertainment", "social"],
+  "lang": "ja",
+  "dir": "ltr",
+  "related_applications": [
+    {
+      "platform": "itunes",
+      "url": "https://apps.apple.com/jp/app/oshi-pick/id6755575658",
+      "id": "6755575658"
+    }
+  ],
+  "prefer_related_applications": true
+}

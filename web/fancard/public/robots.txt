@@ -1,0 +1,16 @@
+# robots.txt for OSHI Pick
+# https://oshipick.com
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://oshipick.com/sitemap.xml
+
+# Disallow admin/api paths
+Disallow: /api/
+Disallow: /_next/
+Disallow: /preview
+
+# Crawl-delay for polite crawling
+Crawl-delay: 1
