@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { ImageBlockData } from "@/types/fancard";
+import { normalizeImageUrl } from "@/lib/imageUrl";
 
 interface ImageBlockProps {
   data: ImageBlockData;
@@ -22,10 +23,11 @@ export default function ImageBlock({ data }: ImageBlockProps) {
     >
       <div className="relative aspect-square bg-gray-100">
         <Image
-          src={data.imageUrl}
+          src={normalizeImageUrl(data.imageUrl) || ""}
           alt={data.caption || "Image"}
           fill
           className="object-cover"
+          unoptimized
         />
       </div>
       {data.caption && (

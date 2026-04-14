@@ -73,6 +73,7 @@ struct FanCardPreviewView: View {
                 }
             }
         }
+        .preferredColorScheme(.dark)
     }
 
     /// Generate preview URL with Base64-encoded FanCard data
@@ -93,10 +94,12 @@ struct FanCardPreviewView: View {
             let encoder = JSONEncoder()
             let jsonData = try encoder.encode(previewData)
 
-            // Base64 encode
+            // Base64 URL-safe encode (replace + with -, / with _, remove =)
             let base64String = jsonData.base64EncodedString()
+                .replacingOccurrences(of: "+", with: "-")
+                .replacingOccurrences(of: "/", with: "_")
+                .replacingOccurrences(of: "=", with: "")
 
-            // URL encode the base64 string for safety
             guard let encodedData = base64String.addingPercentEncoding(withAllowedCharacters: CharacterSet.urlQueryAllowed) else {
                 debugLog("❌ [FanCardPreview] Failed to URL encode base64 data")
                 return nil
@@ -104,6 +107,7 @@ struct FanCardPreviewView: View {
 
             let urlString = "https://oshipick.com/preview?data=\(encodedData)"
             debugLog("ℹ️ [FanCardPreview] URL length: \(urlString.count)")
+            debugLog("ℹ️ [FanCardPreview] URL: \(urlString.prefix(500))...")
 
             return URL(string: urlString)
         } catch {
@@ -170,15 +174,15 @@ struct FanCardWebView: UIViewRepresentable {
         // Allow pull to refresh
         webView.scrollView.bounces = true
 
+        // Load URL immediately on creation
+        let request = URLRequest(url: url)
+        webView.load(request)
+
         return webView
     }
 
     func updateUIView(_ webView: WKWebView, context: Context) {
-        // Only load if URL changed or not loaded yet
-        if webView.url != url {
-            let request = URLRequest(url: url)
-            webView.load(request)
-        }
+        // Do not reload - URL is loaded once in makeUIView
     }
 
     // MARK: - Coordinator

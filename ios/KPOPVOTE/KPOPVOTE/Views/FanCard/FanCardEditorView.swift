@@ -8,6 +8,15 @@
 import SwiftUI
 import PhotosUI
 
+// MARK: - FanCard Limits
+private enum FanCardLimits {
+    static let maxBlocks = 20
+    static let displayNameMax = 30
+    static let bioMax = 200
+    static let linkTitleMax = 50
+    static let textContentMax = 500
+}
+
 struct FanCardEditorView: View {
     @StateObject private var viewModel = FanCardViewModel()
     @Environment(\.dismiss) private var dismiss
@@ -23,6 +32,10 @@ struct FanCardEditorView: View {
     @State private var selectedProfileItem: PhotosPickerItem?
     @State private var selectedHeaderItem: PhotosPickerItem?
 
+    // Local state for TextField/TextEditor (workaround for SwiftUI Form bug)
+    @State private var localDisplayName: String = ""
+    @State private var localBio: String = ""
+
     var body: some View {
         NavigationStack {
             Group {
@@ -30,6 +43,7 @@ struct FanCardEditorView: View {
                     ProgressView("読み込み中...")
                 } else if viewModel.hasFanCard {
                     editFanCardForm
+                        .id("edit-\(viewModel.odDisplayName)")
                 } else {
                     createFanCardForm
                 }
@@ -46,12 +60,6 @@ struct FanCardEditorView: View {
                 if viewModel.hasFanCard {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Menu {
-                            Button {
-                                showPreview = true
-                            } label: {
-                                Label("プレビュー", systemImage: "eye")
-                            }
-
                             Button {
                                 showShareSheet = true
                             } label: {
@@ -135,6 +143,7 @@ struct FanCardEditorView: View {
         .task {
             await viewModel.loadFanCard()
         }
+        .preferredColorScheme(.dark)
     }
 
     // MARK: - Create FanCard Form
@@ -181,6 +190,20 @@ struct FanCardEditorView: View {
 
             profileSection
             themeSection
+
+            Section {
+                Button {
+                    showPreview = true
+                } label: {
+                    HStack {
+                        Spacer()
+                        Image(systemName: "eye")
+                        Text("プレビュー")
+                            .fontWeight(.semibold)
+                        Spacer()
+                    }
+                }
+            }
 
             Section {
                 Button {
@@ -240,6 +263,20 @@ struct FanCardEditorView: View {
 
             Section {
                 Button {
+                    showPreview = true
+                } label: {
+                    HStack {
+                        Spacer()
+                        Image(systemName: "eye")
+                        Text("プレビュー")
+                            .fontWeight(.semibold)
+                        Spacer()
+                    }
+                }
+            }
+
+            Section {
+                Button {
                     Task {
                         await viewModel.updateFanCard()
                     }
@@ -260,6 +297,12 @@ struct FanCardEditorView: View {
         }
         .scrollDismissesKeyboard(.interactively)
         .keyboardDoneButton()
+        .task(id: viewModel.fanCard?.odDisplayName) {
+            // Initialize local state when fanCard data is loaded
+            localDisplayName = viewModel.displayName
+            localBio = viewModel.bio
+            debugLog("📝 [FanCardEditorView] Local state initialized: displayName='\(localDisplayName)', bio='\(localBio.prefix(20))...'")
+        }
     }
 
     // MARK: - Profile Section
@@ -350,17 +393,48 @@ struct FanCardEditorView: View {
                 }
             }
 
-            TextField("表示名", text: $viewModel.displayName)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text("表示名")
+                    Spacer()
+                    Text("\(localDisplayName.count)/\(FanCardLimits.displayNameMax)")
+                        .font(.caption)
+                        .foregroundColor(localDisplayName.count > FanCardLimits.displayNameMax ? .red : .secondary)
+                }
+                TextField("名前を入力", text: $localDisplayName)
+                    .multilineTextAlignment(.leading)
+                    .foregroundColor(.primary)
+                    .onChange(of: localDisplayName) { newValue in
+                        // 文字数制限
+                        if newValue.count > FanCardLimits.displayNameMax {
+                            localDisplayName = String(newValue.prefix(FanCardLimits.displayNameMax))
+                        }
+                        viewModel.displayName = localDisplayName
+                    }
+            }
 
-            VStack(alignment: .leading) {
-                Text("自己紹介")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                TextEditor(text: $viewModel.bio)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text("自己紹介")
+                    Spacer()
+                    Text("\(localBio.count)/\(FanCardLimits.bioMax)")
+                        .font(.caption)
+                        .foregroundColor(localBio.count > FanCardLimits.bioMax ? .red : .secondary)
+                }
+                TextEditor(text: $localBio)
                     .frame(minHeight: 80)
+                    .onChange(of: localBio) { newValue in
+                        // 文字数制限
+                        if newValue.count > FanCardLimits.bioMax {
+                            localBio = String(newValue.prefix(FanCardLimits.bioMax))
+                        }
+                        viewModel.bio = localBio
+                    }
             }
         } header: {
             Text("プロフィール")
+        } footer: {
+            Text("画像は最大5MBまでアップロードできます。")
         }
     }
 
@@ -386,17 +460,33 @@ struct FanCardEditorView: View {
                 viewModel.moveBlock(from: source, to: destination)
             }
 
-            Button {
-                showBlockPicker = true
-            } label: {
-                Label("ブロックを追加", systemImage: "plus.circle")
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
+            if viewModel.blocks.count < FanCardLimits.maxBlocks {
+                Button {
+                    showBlockPicker = true
+                } label: {
+                    Label("ブロックを追加", systemImage: "plus.circle")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(PlainButtonStyle())
+                .contentShape(Rectangle())
             }
-            .buttonStyle(PlainButtonStyle())
-            .contentShape(Rectangle())
         } header: {
-            Text("コンテンツブロック")
+            HStack {
+                Text("コンテンツブロック")
+                Spacer()
+                Text("\(viewModel.blocks.count)/\(FanCardLimits.maxBlocks)")
+                    .font(.caption)
+                    .foregroundColor(viewModel.blocks.count >= FanCardLimits.maxBlocks ? .red : .secondary)
+            }
+        } footer: {
+            VStack(alignment: .leading, spacing: 4) {
+                if viewModel.blocks.count >= FanCardLimits.maxBlocks {
+                    Text("⚠️ ブロック数が上限に達しました")
+                        .foregroundColor(.red)
+                }
+                Text("ブロックは最大\(FanCardLimits.maxBlocks)個まで追加できます。")
+            }
         }
     }
 
@@ -544,6 +634,7 @@ struct BlockPickerView: View {
             }
         }
         .presentationDragIndicator(.hidden)
+        .preferredColorScheme(.dark)
     }
 
     private func blockButton(type: FanCardBlockType, icon: String, title: String, description: String) -> some View {

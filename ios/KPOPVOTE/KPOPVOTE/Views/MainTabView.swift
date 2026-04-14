@@ -17,6 +17,7 @@ struct MainTabView: View {
     @State private var showCreateCollection = false
     @State private var showCreatePost = false
     @State private var showIdolVote = false
+    @State private var showFanCardCreate = false
 
     var body: some View {
         ZStack {
@@ -116,6 +117,9 @@ struct MainTabView: View {
                 },
                 onIdolVote: {
                     showIdolVote = true
+                },
+                onFanCardCreate: {
+                    showFanCardCreate = true
                 }
             )
             .background(BackgroundClearView())
@@ -133,6 +137,9 @@ struct MainTabView: View {
         }
         .fullScreenCover(isPresented: $showIdolVote) {
             NewIdolVoteView(viewModel: idolRankingViewModel)
+        }
+        .fullScreenCover(isPresented: $showFanCardCreate) {
+            FanCardEditorView()
         }
     }
 }

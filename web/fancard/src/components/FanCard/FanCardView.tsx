@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { FanCardPublicData, FanCardBlock } from "@/types/fancard";
 import { getThemeColors, getFontClass } from "@/lib/theme";
+import { normalizeImageUrl } from "@/lib/imageUrl";
 import BiasBlock from "./BiasBlock";
 import LinkBlock from "./LinkBlock";
 import MVLinkBlock from "./MVLinkBlock";
@@ -65,11 +66,12 @@ export default function FanCardView({ data }: FanCardViewProps) {
       <div className="relative w-full h-48 md:h-64">
         {fanCard.headerImageUrl ? (
           <Image
-            src={fanCard.headerImageUrl}
+            src={normalizeImageUrl(fanCard.headerImageUrl) || ""}
             alt="Header"
             fill
             className="object-cover"
             priority
+            unoptimized
           />
         ) : (
           <div
@@ -99,11 +101,12 @@ export default function FanCardView({ data }: FanCardViewProps) {
             >
               {fanCard.profileImageUrl ? (
                 <Image
-                  src={fanCard.profileImageUrl}
+                  src={normalizeImageUrl(fanCard.profileImageUrl) || ""}
                   alt={fanCard.displayName}
                   fill
                   className="object-cover"
                   priority
+                  unoptimized
                 />
               ) : (
                 <div

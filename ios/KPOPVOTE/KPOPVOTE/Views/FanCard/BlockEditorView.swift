@@ -8,6 +8,12 @@
 import SwiftUI
 import PhotosUI
 
+// MARK: - Block Limits
+private enum BlockLimits {
+    static let linkTitleMax = 50
+    static let textContentMax = 500
+}
+
 // MARK: - Block Editor Router
 struct BlockEditorView: View {
     @Binding var block: FanCardBlock
@@ -48,6 +54,7 @@ struct BlockEditorView: View {
         }
         .presentationDragIndicator(.hidden)
         .interactiveDismissDisabled()
+        .preferredColorScheme(.dark)
     }
 }
 
@@ -194,10 +201,24 @@ struct LinkBlockEditorView: View {
     var body: some View {
         Form {
             Section {
-                TextField("タイトル", text: $title)
-                    .onChange(of: title) { newValue in
-                        updateBlock()
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text("タイトル")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Text("\(title.count)/\(BlockLimits.linkTitleMax)")
+                            .font(.caption)
+                            .foregroundColor(title.count > BlockLimits.linkTitleMax ? .red : .secondary)
                     }
+                    TextField("タイトルを入力", text: $title)
+                        .onChange(of: title) { newValue in
+                            if newValue.count > BlockLimits.linkTitleMax {
+                                title = String(newValue.prefix(BlockLimits.linkTitleMax))
+                            }
+                            updateBlock()
+                        }
+                }
 
                 TextField("URL", text: $url)
                     .textInputAutocapitalization(.never)
@@ -276,10 +297,24 @@ struct MVLinkBlockEditorView: View {
     var body: some View {
         Form {
             Section {
-                TextField("タイトル", text: $title)
-                    .onChange(of: title) { newValue in
-                        updateBlock()
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text("タイトル")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Text("\(title.count)/\(BlockLimits.linkTitleMax)")
+                            .font(.caption)
+                            .foregroundColor(title.count > BlockLimits.linkTitleMax ? .red : .secondary)
                     }
+                    TextField("MV名を入力", text: $title)
+                        .onChange(of: title) { newValue in
+                            if newValue.count > BlockLimits.linkTitleMax {
+                                title = String(newValue.prefix(BlockLimits.linkTitleMax))
+                            }
+                            updateBlock()
+                        }
+                }
 
                 TextField("YouTube URL", text: $youtubeUrl)
                     .textInputAutocapitalization(.never)
@@ -453,11 +488,22 @@ struct TextBlockEditorView: View {
             Section {
                 TextEditor(text: $content)
                     .frame(minHeight: 120)
-                    .onChange(of: content) { _ in
+                    .onChange(of: content) { newValue in
+                        if newValue.count > BlockLimits.textContentMax {
+                            content = String(newValue.prefix(BlockLimits.textContentMax))
+                        }
                         updateBlock()
                     }
             } header: {
-                Text("テキスト")
+                HStack {
+                    Text("テキスト")
+                    Spacer()
+                    Text("\(content.count)/\(BlockLimits.textContentMax)")
+                        .font(.caption)
+                        .foregroundColor(content.count > BlockLimits.textContentMax ? .red : .secondary)
+                }
+            } footer: {
+                Text("最大\(BlockLimits.textContentMax)文字まで入力できます。")
             }
 
             Section {

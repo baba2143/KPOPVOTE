@@ -1,0 +1,5 @@
+1:"$Sreact.fragment"
+2:I[89650,["/fancard/_next/static/chunks/0ocxm98t8tm36.js","/fancard/_next/static/chunks/106nz788.axqs.js"],"ViewportBoundary"]
+3:I[89650,["/fancard/_next/static/chunks/0ocxm98t8tm36.js","/fancard/_next/static/chunks/106nz788.axqs.js"],"MetadataBoundary"]
+4:"$Sreact.suspense"
+0:{"rsc":["$","$1","h",{"children":[["$","meta",null,{"name":"robots","content":"noindex"}],["$","$L2",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]}],["$","div",null,{"hidden":true,"children":["$","$L3",null,{"children":["$","$4",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"FanCard - K-VOTE COLLECTOR"}],["$","meta","1",{"name":"description","content":"K-POPファンのための推し活名刺"}]]}]}]}],["$","meta",null,{"name":"next-size-adjust","content":""}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"Wj1-yvsEg60XyeWV7P5wV"}

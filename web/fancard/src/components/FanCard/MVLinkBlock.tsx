@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { MVLinkBlockData } from "@/types/fancard";
 import { extractYoutubeVideoId, getYoutubeThumbnail } from "@/lib/api";
+import { normalizeImageUrl } from "@/lib/imageUrl";
 
 interface MVLinkBlockProps {
   data: MVLinkBlockData;
@@ -23,10 +24,11 @@ export default function MVLinkBlock({ data }: MVLinkBlockProps) {
       <div className="relative aspect-video bg-gray-100">
         {thumbnailUrl ? (
           <Image
-            src={thumbnailUrl}
+            src={normalizeImageUrl(thumbnailUrl) || ""}
             alt={displayTitle}
             fill
             className="object-cover"
+            unoptimized
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-400">

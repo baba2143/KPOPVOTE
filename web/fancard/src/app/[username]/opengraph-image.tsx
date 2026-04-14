@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import { getFanCardByOdDisplayName } from "@/lib/api";
+import { normalizeImageUrl } from "@/lib/imageUrl";
 
 export const runtime = "edge";
 
@@ -122,7 +123,7 @@ export default async function Image({
             {fanCard.profileImageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={fanCard.profileImageUrl}
+                src={normalizeImageUrl(fanCard.profileImageUrl) || ""}
                 alt=""
                 width={160}
                 height={160}

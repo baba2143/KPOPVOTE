@@ -13,6 +13,7 @@ struct CreateMenuView: View {
     let onCollectionCreate: () -> Void
     let onPostCreate: () -> Void
     let onIdolVote: () -> Void
+    let onFanCardCreate: () -> Void
 
     var body: some View {
         ZStack {
@@ -89,6 +90,20 @@ struct CreateMenuView: View {
                             dismiss()
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                                 onIdolVote()
+                            }
+                        }
+
+                        CreateMenuButton(
+                            icon: "person.crop.rectangle.fill",
+                            title: "FanCard作成",
+                            gradientColors: [
+                                Constants.Colors.gradientPurple,
+                                Constants.Colors.accentPink
+                            ]
+                        ) {
+                            dismiss()
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                onFanCardCreate()
                             }
                         }
                     }
@@ -204,6 +219,7 @@ struct CreateMenuButton: View {
         onTaskCreate: {},
         onCollectionCreate: {},
         onPostCreate: {},
-        onIdolVote: {}
+        onIdolVote: {},
+        onFanCardCreate: {}
     )
 }

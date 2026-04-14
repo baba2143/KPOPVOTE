@@ -1,0 +1,24 @@
+{
+  "rewrites": [
+    {
+      "source": "/fancard",
+      "destination": "/fancard/index.html"
+    },
+    {
+      "source": "/fancard/",
+      "destination": "/fancard/index.html"
+    },
+    {
+      "source": "/vote/:path*",
+      "destination": "/vote/index.html"
+    },
+    {
+      "source": "/invite/:path*",
+      "destination": "/invite/index.html"
+    },
+    {
+      "source": "/:path*",
+      "destination": "/oshipick/index.html"
+    }
+  ]
+}

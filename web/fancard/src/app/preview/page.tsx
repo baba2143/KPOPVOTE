@@ -33,8 +33,23 @@ function PreviewContent() {
     if (!data) return null;
 
     try {
-      // Base64 decode → JSON parse
-      const decoded = atob(data);
+      // URL-safe Base64 decode → JSON parse
+      // Convert URL-safe Base64 back to standard Base64
+      let base64 = data
+        .replace(/-/g, '+')
+        .replace(/_/g, '/');
+      // Add padding if needed
+      const padding = base64.length % 4;
+      if (padding) {
+        base64 += '='.repeat(4 - padding);
+      }
+      // Decode Base64 with UTF-8 support
+      const binaryString = atob(base64);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const decoded = new TextDecoder('utf-8').decode(bytes);
       const preview = JSON.parse(decoded) as PreviewFanCard;
 
       // Transform to FanCardPublicData format

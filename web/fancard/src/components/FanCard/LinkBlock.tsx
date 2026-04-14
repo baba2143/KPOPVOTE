@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { LinkBlockData } from "@/types/fancard";
+import { normalizeImageUrl } from "@/lib/imageUrl";
 
 interface LinkBlockProps {
   data: LinkBlockData;
@@ -35,10 +36,11 @@ export default function LinkBlock({ data, primaryColor }: LinkBlockProps) {
         {data.iconUrl && (
           <div className="relative w-6 h-6 flex-shrink-0">
             <Image
-              src={data.iconUrl}
+              src={normalizeImageUrl(data.iconUrl) || ""}
               alt=""
               fill
               className="object-contain rounded"
+              unoptimized
             />
           </div>
         )}

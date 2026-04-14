@@ -55,8 +55,14 @@ class FanCardViewModel: ObservableObject {
             hasFanCard = false
             debugLog("ℹ️ [FanCardViewModel] No FanCard found")
         } catch {
-            errorMessage = error.localizedDescription
-            debugLog("❌ [FanCardViewModel] Load error: \(error)")
+            // Ignore cancelled errors (NSURLErrorCancelled = -999)
+            let nsError = error as NSError
+            if nsError.domain == NSURLErrorDomain && nsError.code == NSURLErrorCancelled {
+                debugLog("ℹ️ [FanCardViewModel] Request cancelled, ignoring")
+            } else {
+                errorMessage = error.localizedDescription
+                debugLog("❌ [FanCardViewModel] Load error: \(error)")
+            }
         }
 
         isLoading = false
@@ -71,6 +77,7 @@ class FanCardViewModel: ObservableObject {
         blocks = card.blocks
         profileImageUrl = card.profileImageUrl
         headerImageUrl = card.headerImageUrl
+        debugLog("📝 [FanCardViewModel] loadFromFanCard: displayName='\(displayName)', bio='\(bio.prefix(20))...'")
     }
 
     // MARK: - Check odDisplayName
@@ -168,6 +175,12 @@ class FanCardViewModel: ObservableObject {
             let card = try await FanCardService.shared.createFanCard(request: request)
             fanCard = card
             hasFanCard = true
+
+            // Clear local images and update URLs from server response
+            profileImage = nil
+            headerImage = nil
+            loadFromFanCard(card)
+
             showSuccess = true
 
             debugLog("✅ [FanCardViewModel] Created FanCard: \(card.odDisplayName)")
@@ -216,6 +229,12 @@ class FanCardViewModel: ObservableObject {
 
             let card = try await FanCardService.shared.updateFanCard(request: request)
             fanCard = card
+
+            // Clear local images and update URLs from server response
+            profileImage = nil
+            headerImage = nil
+            loadFromFanCard(card)
+
             showSuccess = true
 
             debugLog("✅ [FanCardViewModel] Updated FanCard")

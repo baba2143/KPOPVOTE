@@ -48,6 +48,18 @@
           "destination": "/invite/index.html"
         },
         {
+          "source": "/fancard",
+          "destination": "/fancard/index.html"
+        },
+        {
+          "source": "/fancard/",
+          "destination": "/fancard/index.html"
+        },
+        {
+          "source": "/fancard/**",
+          "destination": "/fancard/index.html"
+        },
+        {
           "source": "**",
           "destination": "/index.html"
         }
