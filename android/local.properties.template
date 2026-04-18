@@ -1,0 +1,8 @@
+# Copy this file to local.properties (gitignored) and fill in values.
+#
+# Android SDK location — Android Studio fills this automatically.
+sdk.dir=/Users/YOUR_USERNAME/Library/Android/sdk
+
+# Google Sign-In Web Client ID (Firebase console → Authentication → Google → Web SDK configuration)
+# Also settable via CI env var GOOGLE_WEB_CLIENT_ID.
+GOOGLE_WEB_CLIENT_ID=000000000000-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com
