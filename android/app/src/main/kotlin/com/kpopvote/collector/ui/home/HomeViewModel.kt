@@ -4,10 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kpopvote.collector.core.common.AppError
 import com.kpopvote.collector.data.model.BiasSettings
+import com.kpopvote.collector.data.model.InAppVote
 import com.kpopvote.collector.data.model.VoteTask
 import com.kpopvote.collector.data.repository.BiasRepository
 import com.kpopvote.collector.data.repository.TaskRepository
+import com.kpopvote.collector.data.repository.VoteRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,6 +21,7 @@ import javax.inject.Inject
 data class HomeUiState(
     val activeTasks: List<VoteTask> = emptyList(),
     val bias: List<BiasSettings> = emptyList(),
+    val featuredVotes: List<InAppVote> = emptyList(),
     val isLoading: Boolean = false,
     val error: AppError? = null,
     val completingTaskIds: Set<String> = emptySet(),
@@ -27,6 +31,7 @@ data class HomeUiState(
 class HomeViewModel @Inject constructor(
     private val taskRepository: TaskRepository,
     private val biasRepository: BiasRepository,
+    private val voteRepository: VoteRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(HomeUiState())
@@ -39,15 +44,25 @@ class HomeViewModel @Inject constructor(
     fun refresh() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-            val tasks = taskRepository.getActiveTasks()
-            val bias = biasRepository.getBias()
+
+            // Parallel fetch: tasks + bias + featured votes. Featured failures are swallowed
+            // into an empty list so they can't block the active-tasks strip (spec R12).
+            val tasksDeferred = async { taskRepository.getActiveTasks() }
+            val biasDeferred = async { biasRepository.getBias() }
+            val featuredDeferred = async { voteRepository.fetchFeaturedVotes() }
+
+            val tasksResult = tasksDeferred.await()
+            val biasResult = biasDeferred.await()
+            val featuredResult = featuredDeferred.await()
+
             _state.update {
                 it.copy(
                     isLoading = false,
-                    activeTasks = tasks.getOrElse { emptyList() },
-                    bias = bias.getOrElse { emptyList() },
-                    error = tasks.exceptionOrNull()?.let { e -> e as? AppError }
-                        ?: bias.exceptionOrNull()?.let { e -> e as? AppError },
+                    activeTasks = tasksResult.getOrElse { emptyList() },
+                    bias = biasResult.getOrElse { emptyList() },
+                    featuredVotes = featuredResult.getOrElse { emptyList() },
+                    error = tasksResult.exceptionOrNull()?.let { e -> e as? AppError }
+                        ?: biasResult.exceptionOrNull()?.let { e -> e as? AppError },
                 )
             }
         }

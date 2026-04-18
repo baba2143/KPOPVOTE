@@ -21,6 +21,11 @@ import com.kpopvote.collector.ui.auth.login.LoginScreen
 import com.kpopvote.collector.ui.auth.register.RegisterScreen
 import com.kpopvote.collector.ui.main.MainTabScreen
 import com.kpopvote.collector.ui.tasks.AddEditTaskScreen
+import com.kpopvote.collector.ui.vote.VoteDetailScreen
+import com.kpopvote.collector.ui.vote.VoteListScreen
+import com.kpopvote.collector.ui.vote.VoteRankingScreen
+import com.kpopvote.collector.ui.votestab.detail.CollectionDetailScreen
+import com.kpopvote.collector.ui.votestab.edit.CreateCollectionScreen
 
 @Composable
 fun KpopvoteNavHost(
@@ -75,6 +80,45 @@ fun KpopvoteNavHost(
             // taskId is passed through Route.AddTask and surfaced via SavedStateHandle
             // for AddEditTaskViewModel (see `savedStateHandle.get<String>("taskId")`).
             AddEditTaskScreen(
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable<Route.VoteList> {
+            VoteListScreen(
+                onBack = { navController.popBackStack() },
+                onOpenVote = { voteId -> navController.navigate(Route.VoteDetail(voteId)) },
+            )
+        }
+
+        composable<Route.VoteDetail> {
+            VoteDetailScreen(
+                onBack = { navController.popBackStack() },
+                onOpenRanking = { voteId -> navController.navigate(Route.VoteRanking(voteId)) },
+            )
+        }
+
+        composable<Route.VoteRanking> {
+            VoteRankingScreen(
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable<Route.CollectionDetail> {
+            CollectionDetailScreen(
+                onBack = { navController.popBackStack() },
+                onEditCollection = { id -> navController.navigate(Route.CollectionEdit(id)) },
+            )
+        }
+
+        composable<Route.CollectionCreate> {
+            CreateCollectionScreen(
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable<Route.CollectionEdit> {
+            CreateCollectionScreen(
                 onBack = { navController.popBackStack() },
             )
         }

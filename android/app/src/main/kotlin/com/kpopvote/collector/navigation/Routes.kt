@@ -25,4 +25,16 @@ sealed interface Route {
 
     // Top-level screens reachable from any tab
     @Serializable data class AddTask(val taskId: String? = null) : Route
+
+    // Vote screens (Sprint 4)
+    @Serializable data object VoteList : Route
+    @Serializable data class VoteDetail(val voteId: String) : Route
+    @Serializable data class VoteRanking(val voteId: String) : Route
+
+    // Collection screens (Sprint 4 Phase 4)
+    @Serializable data class CollectionDetail(val collectionId: String) : Route
+
+    // Collection authoring screens (Sprint 4 Phase 5)
+    @Serializable data object CollectionCreate : Route
+    @Serializable data class CollectionEdit(val collectionId: String) : Route
 }
