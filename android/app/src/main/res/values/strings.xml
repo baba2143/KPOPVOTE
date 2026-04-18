@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">KPOPVOTE</string>
+
+    <!-- Auth -->
+    <string name="auth_welcome_title">KPOPVOTE へようこそ</string>
+    <string name="auth_welcome_subtitle">推しへの愛を、もっと届けよう</string>
+    <string name="auth_email_label">メールアドレス</string>
+    <string name="auth_password_label">パスワード</string>
+    <string name="auth_password_hint">8文字以上</string>
+    <string name="auth_login_button">ログイン</string>
+    <string name="auth_register_button">新規登録</string>
+    <string name="auth_google_button">Google でサインイン</string>
+    <string name="auth_or_divider">または</string>
+    <string name="auth_switch_to_register">アカウントをお持ちでない方はこちら</string>
+    <string name="auth_switch_to_login">すでにアカウントをお持ちの方</string>
+    <string name="auth_logout">ログアウト</string>
+
+    <!-- Auth errors -->
+    <string name="auth_error_empty_email">メールアドレスを入力してください</string>
+    <string name="auth_error_invalid_email">メールアドレスの形式が正しくありません</string>
+    <string name="auth_error_empty_password">パスワードを入力してください</string>
+    <string name="auth_error_password_too_short">パスワードは8文字以上で入力してください</string>
+    <string name="auth_error_wrong_credentials">メールアドレスまたはパスワードが正しくありません</string>
+    <string name="auth_error_user_not_found">このアカウントは存在しません</string>
+    <string name="auth_error_email_in_use">このメールアドレスは既に使用されています</string>
+    <string name="auth_error_network">ネットワークエラーが発生しました。接続を確認してください</string>
+    <string name="auth_error_unknown">認証に失敗しました。時間をおいて再度お試しください</string>
+    <string name="auth_error_google_cancelled">Google サインインがキャンセルされました</string>
+    <string name="auth_error_google_failed">Google サインインに失敗しました</string>
+
+    <!-- Common -->
+    <string name="common_ok">OK</string>
+    <string name="common_cancel">キャンセル</string>
+    <string name="common_retry">再試行</string>
+    <string name="common_loading">読み込み中…</string>
+    <string name="common_error">エラー</string>
+
+    <!-- Placeholder for Home (Sprint 3) -->
+    <string name="home_placeholder">Home — Sprint 3 で実装予定</string>
+
+    <!-- Accessibility -->
+    <string name="cd_app_logo">KPOPVOTE ロゴ</string>
+    <string name="cd_hide_password">パスワードを非表示</string>
+    <string name="cd_show_password">パスワードを表示</string>
+</resources>

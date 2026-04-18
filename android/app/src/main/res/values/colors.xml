@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand palette extracted from iOS Constants.swift -->
+    <color name="primary_blue">#FF1976D2</color>
+    <color name="primary_pink">#FFE91E63</color>
+    <color name="background_dark">#FF0A1628</color>
+    <color name="card_dark">#FF1A2744</color>
+    <color name="accent_pink">#FFFF1F8F</color>
+    <color name="accent_blue">#FF00D4FF</color>
+    <color name="background_light">#FFF5F5F5</color>
+    <color name="text_gray">#FF9CA3AF</color>
+    <color name="gradient_purple">#FF7C3AED</color>
+    <color name="status_urgent">#FFEF4444</color>
+
+    <!-- Splash -->
+    <color name="splash_background">#FF0A1628</color>
+</resources>
