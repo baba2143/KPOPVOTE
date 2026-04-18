@@ -32,6 +32,7 @@ import com.kpopvote.collector.ui.votestab.edit.CreateCollectionScreen
 
 @Composable
 fun KpopvoteNavHost(
+    initialDeepLink: DeepLinkIntent? = null,
     authGateViewModel: AuthGateViewModel = hiltViewModel(),
 ) {
     val navController = rememberNavController()
@@ -42,6 +43,15 @@ fun KpopvoteNavHost(
             is AuthState.Authenticated -> navController.navigateToMain()
             AuthState.Unauthenticated -> navController.navigateToAuth()
             AuthState.Loading -> Unit
+        }
+    }
+
+    LaunchedEffect(authState, initialDeepLink) {
+        if (initialDeepLink == null) return@LaunchedEffect
+        if (authState !is AuthState.Authenticated) return@LaunchedEffect
+        when (initialDeepLink) {
+            DeepLinkIntent.OpenHome -> Unit // Main graph already lands on Home.
+            is DeepLinkIntent.OpenVote -> navController.navigate(Route.VoteDetail(initialDeepLink.voteId))
         }
     }
 

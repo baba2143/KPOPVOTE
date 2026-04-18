@@ -88,6 +88,7 @@ class AddEditTaskViewModelTest {
         biasRepository = biasRepository,
         masterDataRepository = masterDataRepository,
         coverImageRepository = coverImageRepository,
+        analyticsLogger = io.mockk.mockk(relaxed = true),
     )
 
     @Test

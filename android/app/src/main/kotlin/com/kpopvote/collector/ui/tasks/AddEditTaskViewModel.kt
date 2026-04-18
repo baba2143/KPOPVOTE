@@ -3,6 +3,9 @@ package com.kpopvote.collector.ui.tasks
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.kpopvote.collector.core.analytics.AnalyticsLogger
+import com.kpopvote.collector.core.analytics.EventParams
+import com.kpopvote.collector.core.analytics.Events
 import com.kpopvote.collector.core.common.AppError
 import com.kpopvote.collector.core.util.IsoDate
 import com.kpopvote.collector.data.model.CoverImageSource
@@ -122,6 +125,7 @@ class AddEditTaskViewModel @Inject constructor(
     private val biasRepository: BiasRepository,
     private val masterDataRepository: MasterDataRepository,
     private val coverImageRepository: TaskCoverImageRepository,
+    private val analyticsLogger: AnalyticsLogger,
 ) : ViewModel() {
 
     private val taskId: String? = savedStateHandle.get<String>("taskId")
@@ -281,7 +285,12 @@ class AddEditTaskViewModel @Inject constructor(
                 taskRepository.registerTask(input)
             }
 
-            result.onSuccess {
+            result.onSuccess { savedTask ->
+                val event = if (current.isEditMode) Events.TASK_UPDATED else Events.TASK_CREATED
+                analyticsLogger.logEvent(
+                    event,
+                    mapOf(EventParams.TASK_ID to savedTask.id),
+                )
                 _state.update { it.copy(isSubmitting = false, submitted = true) }
             }.onFailure { err ->
                 _state.update { it.copy(isSubmitting = false, error = err as? AppError) }

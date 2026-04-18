@@ -41,4 +41,8 @@ object ApiPaths {
     const val TRENDING_COLLECTIONS = "trendingCollections"
     const val MY_COLLECTIONS = "myCollections"
     const val SAVED_COLLECTIONS = "savedCollections"
+
+    // FCM (Sprint 8)
+    const val REGISTER_FCM_TOKEN = "registerFcmToken"
+    const val UNREGISTER_FCM_TOKEN = "unregisterFcmToken"
 }

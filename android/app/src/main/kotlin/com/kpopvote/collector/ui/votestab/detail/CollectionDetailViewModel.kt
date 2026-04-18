@@ -3,6 +3,9 @@ package com.kpopvote.collector.ui.votestab.detail
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.kpopvote.collector.core.analytics.AnalyticsLogger
+import com.kpopvote.collector.core.analytics.EventParams
+import com.kpopvote.collector.core.analytics.Events
 import com.kpopvote.collector.core.common.AppError
 import com.kpopvote.collector.data.model.AddSingleTaskData
 import com.kpopvote.collector.data.model.AddToTasksData
@@ -45,6 +48,7 @@ sealed interface CollectionDetailEvent {
 class CollectionDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val repo: CollectionRepository,
+    private val analyticsLogger: AnalyticsLogger,
 ) : ViewModel() {
 
     private val collectionId: String = requireNotNull(savedStateHandle.get<String>(ARG_COLLECTION_ID)) {
@@ -98,6 +102,12 @@ class CollectionDetailViewModel @Inject constructor(
             _state.update { prev ->
                 val data = result.getOrNull()
                 if (data != null && prev.detail != null) {
+                    if (data.saved) {
+                        analyticsLogger.logEvent(
+                            Events.COLLECTION_SAVED,
+                            mapOf(EventParams.COLLECTION_ID to collectionId),
+                        )
+                    }
                     prev.copy(
                         isToggleSaving = false,
                         detail = prev.detail.copy(

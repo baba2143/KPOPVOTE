@@ -3,6 +3,9 @@ package com.kpopvote.collector.ui.vote
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.kpopvote.collector.core.analytics.AnalyticsLogger
+import com.kpopvote.collector.core.analytics.EventParams
+import com.kpopvote.collector.core.analytics.Events
 import com.kpopvote.collector.core.common.AppError
 import com.kpopvote.collector.data.model.InAppVote
 import com.kpopvote.collector.data.model.VoteExecuteResult
@@ -50,6 +53,7 @@ sealed class VoteEvent {
 class VoteDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val voteRepository: VoteRepository,
+    private val analyticsLogger: AnalyticsLogger,
 ) : ViewModel() {
 
     private val voteId: String = requireNotNull(savedStateHandle.get<String>(ARG_VOTE_ID)) {
@@ -114,6 +118,13 @@ class VoteDetailViewModel @Inject constructor(
                 voteCount = current.voteCount,
             )
             result.onSuccess { executeResult ->
+                analyticsLogger.logEvent(
+                    Events.VOTE_EXECUTED,
+                    mapOf(
+                        EventParams.VOTE_ID to voteId,
+                        EventParams.VOTE_COUNT to current.voteCount,
+                    ),
+                )
                 _state.update { it.copy(isVoting = false, lastResult = executeResult) }
                 _events.trySend(VoteEvent.Success(executeResult))
                 load()

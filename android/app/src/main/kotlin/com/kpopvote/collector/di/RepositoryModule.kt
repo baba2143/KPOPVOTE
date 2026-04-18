@@ -8,6 +8,8 @@ import com.kpopvote.collector.data.repository.CollectionCoverImageRepository
 import com.kpopvote.collector.data.repository.CollectionCoverImageRepositoryImpl
 import com.kpopvote.collector.data.repository.CollectionRepository
 import com.kpopvote.collector.data.repository.CollectionRepositoryImpl
+import com.kpopvote.collector.data.repository.FcmTokenRepository
+import com.kpopvote.collector.data.repository.FcmTokenRepositoryImpl
 import com.kpopvote.collector.data.repository.InviteRepository
 import com.kpopvote.collector.data.repository.InviteRepositoryImpl
 import com.kpopvote.collector.data.repository.MasterDataRepository
@@ -93,4 +95,8 @@ abstract class RepositoryModule {
     abstract fun bindProfileImageRepository(
         impl: ProfileImageRepositoryImpl
     ): ProfileImageRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindFcmTokenRepository(impl: FcmTokenRepositoryImpl): FcmTokenRepository
 }

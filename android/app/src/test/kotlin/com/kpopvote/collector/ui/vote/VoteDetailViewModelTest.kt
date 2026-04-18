@@ -53,6 +53,7 @@ class VoteDetailViewModelTest {
         VoteDetailViewModel(
             savedStateHandle = SavedStateHandle(mapOf(VoteDetailViewModel.ARG_VOTE_ID to voteId)),
             voteRepository = repo,
+            analyticsLogger = io.mockk.mockk(relaxed = true),
         )
 
     @Before

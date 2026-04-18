@@ -5,8 +5,8 @@ iOS 版 KPOPVOTE（`ios/` ディレクトリ）の Android ネイティブ移植
 ## プロジェクト状況
 
 - **開始日**: 2026-04-18
-- **現在のスプリント**: Sprint 7 完了（Profile / Bias / InviteCode — v1.0 MVP 最終ピース）
-- **完了スプリント**: Sprint 1 ✅ / Sprint 2 ✅ / Sprint 3 ✅ / Sprint 4 ✅ / Sprint 7 ✅
+- **現在のスプリント**: Sprint 8 完了（Push + 観測性 — v1.0 MVP 完走）
+- **完了スプリント**: Sprint 1 ✅ / Sprint 2 ✅ / Sprint 3 ✅ / Sprint 4 ✅ / Sprint 7 ✅ / Sprint 8 ✅
 - **リリース戦略**: MVP 分割 A案
 - **初期リリース**: v1.0 MVP（課金なし、iOS収益化のみ）
 
@@ -18,6 +18,23 @@ iOS 版 KPOPVOTE（`ios/` ディレクトリ）の Android ネイティブ移植
 | **v1.1** | Community / DM / Fancard / Points履歴 | Sprint 5, 6 |
 | **v1.2** | Admin機能 / 予約通知 / ログ | Sprint 7残り |
 | **v2.0** | IAP（Google Play Billing + バックエンド追加） | 将来 |
+
+## Sprint 8 成果物（2026-04-19 完了）— v1.0 MVP 完了
+
+- **Push 通知パイプライン**: `FcmTokenRepository` + `KpopvoteMessagingService` + `FcmLifecycleObserver`
+  - 認証状態遷移を購読して `/registerFcmToken` / `/unregisterFcmToken` を自動呼び出し
+  - `deviceId` は `DeviceIdDataStore`（DataStore Preferences）で UUID 永続化
+  - Android 13+ の `POST_NOTIFICATIONS` 権限を `ActivityResultContracts.RequestPermission` で要求
+  - `"default"` チャンネル（backend `fcmHelper.ts` と一致）を起動時に作成
+- **Deep Link**: 通知タップからの `Intent` extras を `DeepLinkIntent.resolve(type, voteId)` で正規化
+  - `type == "vote"` + `voteId` 非空 → `Route.VoteDetail(voteId)` に遷移
+  - 既知 iOS タイプ（follow/like/comment/mention/dm/system/sameBiasFans）は `OpenHome` にフォールバック
+- **Analytics**: `AnalyticsLogger`（`FirebaseAnalytics` wrapper）
+  - イベント定数を `Events.kt` に集約（`task_created` / `task_updated` / `vote_executed` / `collection_saved`）
+  - `VoteDetailViewModel.confirmVote()`, `AddEditTaskViewModel.submit()`, `CollectionDetailViewModel.toggleSave()` に配線
+- **Crashlytics**: `CrashlyticsUserObserver` が認証状態に合わせて `setUserId(uid)` / `setUserId("")` を実行、同時に `AnalyticsLogger.setUserId` も呼ぶ
+- **Performance Tracer**: `PerformanceTracer.trace(name) { block }` の薄い wrapper を用意（v1.1 で各 ViewModel 配線予定）
+- **テスト**: **186 ユニットテスト全 green**（Sprint 7 時点の 166 から +20: FCM Repo +5, NotificationPayload +5, FcmLifecycle +4, DeepLink +6, Analytics +5, CrashlyticsUser +3, PerformanceTracer +2）
 
 ## Sprint 7 成果物（2026-04-18 完了）
 
