@@ -34,5 +34,17 @@
         <meta-data
             android:name="firebase_analytics_collection_enabled"
             android:value="true" />
+
+        <!-- FCM messaging service (Sprint 8) -->
+        <service
+            android:name=".notifications.KpopvoteMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="default" />
     </application>
 </manifest>

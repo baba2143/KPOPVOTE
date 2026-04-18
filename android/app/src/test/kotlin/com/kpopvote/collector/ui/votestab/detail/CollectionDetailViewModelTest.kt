@@ -63,6 +63,7 @@ class CollectionDetailViewModelTest {
                 mapOf(CollectionDetailViewModel.ARG_COLLECTION_ID to collectionId),
             ),
             repo = repo,
+            analyticsLogger = io.mockk.mockk(relaxed = true),
         )
 
     @Before

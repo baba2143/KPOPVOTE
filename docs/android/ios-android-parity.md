@@ -22,7 +22,9 @@ iOS 版 KPOPVOTE（`ios/KPOPVOTE/`）の構成要素を Android 版（`android/a
 | `InviteCodeService` | `InviteRepository` | `data.repository` | Sprint 7 |
 | `NotificationSettingsService` | `NotificationSettingsRepository` | `data.repository` | Sprint 7 |
 | `ReportService` (MV watch) | `ReportRepository` | `data.repository` | Sprint 5 |
-| `PushNotificationService` | `FcmTokenRepository` + `KpopvoteMessagingService` | `data.repository` / `notifications` | Sprint 7 |
+| `PushNotificationService` | `FcmTokenRepository` + `KpopvoteMessagingService` + `FcmLifecycleObserver` | `data.repository` / `notifications` / `core.auth` | **Sprint 8 ✅** |
+| `AnalyticsService` | `AnalyticsLogger` | `core.analytics` | **Sprint 8 ✅** |
+| `CrashlyticsManager` | `CrashlyticsUserObserver` + Timber `CrashReportingTree` | `core.auth` | **Sprint 8 ✅** |
 | `StorageService` | `StorageRepository` | `data.repository` | **Sprint 2 ✅** |
 | `AdminService` / `SuspendService` / `LogService` / `ScheduledNotificationService` | `AdminRepository` 群 | `data.repository` | v1.2 (Sprint 7 残り) |
 | `IAPManager` (StoreKit 2) | **v2.0 送り** — 実装しない | — | v2.0 |

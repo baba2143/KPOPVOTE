@@ -7,17 +7,28 @@ import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderF
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.ktx.initialize
+import com.kpopvote.collector.core.auth.CrashlyticsUserObserver
+import com.kpopvote.collector.core.auth.FcmLifecycleObserver
+import com.kpopvote.collector.notifications.NotificationChannelManager
 import dagger.hilt.android.HiltAndroidApp
 import timber.log.Timber
+import javax.inject.Inject
 
 @HiltAndroidApp
 class KpopvoteApplication : Application() {
+
+    @Inject lateinit var notificationChannelManager: NotificationChannelManager
+    @Inject lateinit var fcmLifecycleObserver: FcmLifecycleObserver
+    @Inject lateinit var crashlyticsUserObserver: CrashlyticsUserObserver
 
     override fun onCreate() {
         super.onCreate()
         initLogging()
         initFirebase()
         initAppCheck()
+        notificationChannelManager.ensureDefaultChannel()
+        fcmLifecycleObserver.start()
+        crashlyticsUserObserver.start()
     }
 
     private fun initLogging() {
