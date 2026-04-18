@@ -22,6 +22,10 @@ annotation class IoDispatcher
 @Retention(AnnotationRetention.BINARY)
 annotation class DefaultDispatcher
 
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class CurrentTimeMillis
+
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
@@ -39,4 +43,8 @@ object AppModule {
     @Provides
     @DefaultDispatcher
     fun provideDefaultDispatcher() = Dispatchers.Default
+
+    @Provides
+    @CurrentTimeMillis
+    fun provideCurrentTimeMillis(): () -> Long = System::currentTimeMillis
 }

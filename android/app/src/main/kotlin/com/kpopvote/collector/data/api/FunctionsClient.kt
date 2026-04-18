@@ -73,6 +73,15 @@ class FunctionsClient @Inject constructor(
         execute(request, dataSerializer)
     }
 
+    /**
+     * HTTP POST that ignores the response `data` payload — only `{success: true}` in the envelope
+     * matters. Useful for endpoints like `deleteTask` where the server returns a confirmation
+     * whose shape we don't depend on.
+     */
+    suspend fun postIgnoringData(path: String, bodyJson: String) {
+        post(path, bodyJson, kotlinx.serialization.json.JsonElement.serializer())
+    }
+
     private fun buildUrl(path: String, query: Map<String, String>): okhttp3.HttpUrl {
         val builder = "$baseUrl/$path".toHttpUrl().newBuilder()
         query.forEach { (k, v) -> builder.addQueryParameter(k, v) }

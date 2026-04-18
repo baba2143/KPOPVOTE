@@ -92,12 +92,13 @@ class AuthRepositoryImpl @Inject constructor(
             Unit
         }.recoverCatching { throw it.toAuthError() }
 
-    override suspend fun signOut() = withContext(ioDispatcher) {
+    override suspend fun signOut(): Unit = withContext(ioDispatcher) {
         firebaseAuth.signOut()
         runCatching {
             CredentialManager.create(firebaseAuth.app.applicationContext)
                 .clearCredentialState(androidx.credentials.ClearCredentialStateRequest())
         }.onFailure { Timber.w(it, "clearCredentialState failed — non-fatal") }
+        Unit
     }
 
     override suspend fun getIdToken(forceRefresh: Boolean): String? = withContext(ioDispatcher) {

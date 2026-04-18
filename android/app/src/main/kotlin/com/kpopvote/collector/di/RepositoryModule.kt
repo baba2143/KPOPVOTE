@@ -6,8 +6,14 @@ import com.kpopvote.collector.data.repository.BiasRepository
 import com.kpopvote.collector.data.repository.BiasRepositoryImpl
 import com.kpopvote.collector.data.repository.MasterDataRepository
 import com.kpopvote.collector.data.repository.MasterDataRepositoryImpl
+import com.kpopvote.collector.data.repository.OgpRepository
+import com.kpopvote.collector.data.repository.OgpRepositoryImpl
 import com.kpopvote.collector.data.repository.StorageRepository
 import com.kpopvote.collector.data.repository.StorageRepositoryImpl
+import com.kpopvote.collector.data.repository.TaskCoverImageRepository
+import com.kpopvote.collector.data.repository.TaskCoverImageRepositoryImpl
+import com.kpopvote.collector.data.repository.TaskRepository
+import com.kpopvote.collector.data.repository.TaskRepositoryImpl
 import com.kpopvote.collector.data.repository.UserRepository
 import com.kpopvote.collector.data.repository.UserRepositoryImpl
 import dagger.Binds
@@ -39,4 +45,18 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindStorageRepository(impl: StorageRepositoryImpl): StorageRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTaskRepository(impl: TaskRepositoryImpl): TaskRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTaskCoverImageRepository(
+        impl: TaskCoverImageRepositoryImpl
+    ): TaskCoverImageRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindOgpRepository(impl: OgpRepositoryImpl): OgpRepository
 }
