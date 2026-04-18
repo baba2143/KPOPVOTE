@@ -3,9 +3,7 @@ package com.kpopvote.collector.ui.main
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -21,7 +19,6 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -35,6 +32,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.kpopvote.collector.navigation.Route
 import com.kpopvote.collector.ui.home.HomeScreen
+import com.kpopvote.collector.ui.profile.ProfileScreen
 import com.kpopvote.collector.ui.tasks.TaskListScreen
 import com.kpopvote.collector.ui.votestab.VotesTabScreen
 
@@ -115,7 +113,14 @@ fun MainTabScreen(
                 )
             }
             composable<Route.Community> { PlaceholderTab("Community", "Sprint 5 で実装予定") }
-            composable<Route.Profile> { ProfilePlaceholderTab(onSignOut = onSignOut) }
+            composable<Route.Profile> {
+                ProfileScreen(
+                    onEditProfile = { rootNavController.navigate(Route.ProfileEdit) },
+                    onOpenBiasSettings = { rootNavController.navigate(Route.BiasSettings) },
+                    onOpenInviteCode = { rootNavController.navigate(Route.InviteCode) },
+                    onSignedOut = onSignOut,
+                )
+            }
         }
     }
 }
@@ -126,18 +131,6 @@ private fun PlaceholderTab(title: String, subtitle: String) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
             Text(title, style = MaterialTheme.typography.headlineMedium)
             Text(subtitle, style = MaterialTheme.typography.bodyMedium)
-        }
-    }
-}
-
-@Composable
-private fun ProfilePlaceholderTab(onSignOut: () -> Unit) {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            Text("Profile", style = MaterialTheme.typography.headlineMedium)
-            Text("Sprint 7 で実装予定", style = MaterialTheme.typography.bodyMedium)
-            Spacer(Modifier.height(16.dp))
-            TextButton(onClick = onSignOut) { Text("サインアウト") }
         }
     }
 }

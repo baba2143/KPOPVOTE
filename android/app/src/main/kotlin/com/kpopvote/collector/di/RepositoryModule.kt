@@ -8,10 +8,14 @@ import com.kpopvote.collector.data.repository.CollectionCoverImageRepository
 import com.kpopvote.collector.data.repository.CollectionCoverImageRepositoryImpl
 import com.kpopvote.collector.data.repository.CollectionRepository
 import com.kpopvote.collector.data.repository.CollectionRepositoryImpl
+import com.kpopvote.collector.data.repository.InviteRepository
+import com.kpopvote.collector.data.repository.InviteRepositoryImpl
 import com.kpopvote.collector.data.repository.MasterDataRepository
 import com.kpopvote.collector.data.repository.MasterDataRepositoryImpl
 import com.kpopvote.collector.data.repository.OgpRepository
 import com.kpopvote.collector.data.repository.OgpRepositoryImpl
+import com.kpopvote.collector.data.repository.ProfileImageRepository
+import com.kpopvote.collector.data.repository.ProfileImageRepositoryImpl
 import com.kpopvote.collector.data.repository.StorageRepository
 import com.kpopvote.collector.data.repository.StorageRepositoryImpl
 import com.kpopvote.collector.data.repository.TaskCoverImageRepository
@@ -79,4 +83,14 @@ abstract class RepositoryModule {
     abstract fun bindCollectionCoverImageRepository(
         impl: CollectionCoverImageRepositoryImpl
     ): CollectionCoverImageRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindInviteRepository(impl: InviteRepositoryImpl): InviteRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindProfileImageRepository(
+        impl: ProfileImageRepositoryImpl
+    ): ProfileImageRepository
 }

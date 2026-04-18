@@ -37,4 +37,9 @@ sealed interface Route {
     // Collection authoring screens (Sprint 4 Phase 5)
     @Serializable data object CollectionCreate : Route
     @Serializable data class CollectionEdit(val collectionId: String) : Route
+
+    // Profile sub-screens (Sprint 7)
+    @Serializable data object ProfileEdit : Route
+    @Serializable data object BiasSettings : Route
+    @Serializable data object InviteCode : Route
 }
