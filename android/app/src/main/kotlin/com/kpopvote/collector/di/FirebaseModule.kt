@@ -1,6 +1,7 @@
 package com.kpopvote.collector.di
 
 import com.google.firebase.Firebase
+import com.google.firebase.appcheck.FirebaseAppCheck
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -37,6 +38,10 @@ object FirebaseModule {
     @Provides
     @Singleton
     fun provideFirebaseStorage(): FirebaseStorage = Firebase.storage
+
+    @Provides
+    @Singleton
+    fun provideFirebaseAppCheck(): FirebaseAppCheck = FirebaseAppCheck.getInstance()
 
     @Provides
     @Singleton

@@ -36,6 +36,7 @@ import androidx.navigation.compose.rememberNavController
 import com.kpopvote.collector.navigation.Route
 import com.kpopvote.collector.ui.home.HomeScreen
 import com.kpopvote.collector.ui.tasks.TaskListScreen
+import com.kpopvote.collector.ui.votestab.VotesTabScreen
 
 /**
  * iOS `MainTabView` equivalent: 5 bottom tabs (Home / Ranking / Votes / Community / Profile)
@@ -93,6 +94,7 @@ fun MainTabScreen(
                         tabNavController.navigate(Route.TaskList)
                     },
                     onEditTask = { taskId -> rootNavController.navigate(Route.AddTask(taskId)) },
+                    onOpenVote = { voteId -> rootNavController.navigate(Route.VoteDetail(voteId)) },
                 )
             }
             composable<Route.TaskList> {
@@ -102,7 +104,16 @@ fun MainTabScreen(
                 )
             }
             composable<Route.Ranking> { PlaceholderTab("Ranking", "Sprint 6 で実装予定") }
-            composable<Route.Votes> { PlaceholderTab("Votes", "Sprint 4 で実装予定") }
+            composable<Route.Votes> {
+                VotesTabScreen(
+                    onOpenCollection = { collectionId ->
+                        rootNavController.navigate(Route.CollectionDetail(collectionId))
+                    },
+                    onCreateCollection = {
+                        rootNavController.navigate(Route.CollectionCreate)
+                    },
+                )
+            }
             composable<Route.Community> { PlaceholderTab("Community", "Sprint 5 で実装予定") }
             composable<Route.Profile> { ProfilePlaceholderTab(onSignOut = onSignOut) }
         }

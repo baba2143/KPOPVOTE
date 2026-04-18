@@ -24,4 +24,17 @@ object ApiPaths {
     const val UPDATE_TASK_STATUS = "updateTaskStatus"
     const val DELETE_TASK = "deleteTask"
     const val FETCH_TASK_OGP = "fetchTaskOGP"
+
+    // In-App Votes (Sprint 4)
+    const val LIST_IN_APP_VOTES = "listInAppVotes"
+    const val GET_IN_APP_VOTE = "getInAppVoteDetail"
+    const val EXECUTE_VOTE = "executeVote"
+    const val GET_RANKING = "getRanking"
+
+    // Collections (Sprint 4)
+    const val COLLECTIONS = "collections"
+    const val SEARCH_COLLECTIONS = "searchCollections"
+    const val TRENDING_COLLECTIONS = "trendingCollections"
+    const val MY_COLLECTIONS = "myCollections"
+    const val SAVED_COLLECTIONS = "savedCollections"
 }

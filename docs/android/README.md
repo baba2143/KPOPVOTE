@@ -5,8 +5,8 @@ iOS 版 KPOPVOTE（`ios/` ディレクトリ）の Android ネイティブ移植
 ## プロジェクト状況
 
 - **開始日**: 2026-04-18
-- **現在のスプリント**: Sprint 3 完了（Tasks + Home + MainTab + OGP stub）
-- **完了スプリント**: Sprint 1 ✅ / Sprint 2 ✅ / Sprint 3 ✅
+- **現在のスプリント**: Sprint 4 完了（In-app Votes + Collections — v1.0 MVP 終盤）
+- **完了スプリント**: Sprint 1 ✅ / Sprint 2 ✅ / Sprint 3 ✅ / Sprint 4 ✅
 - **リリース戦略**: MVP 分割 A案
 - **初期リリース**: v1.0 MVP（課金なし、iOS収益化のみ）
 
@@ -18,6 +18,18 @@ iOS 版 KPOPVOTE（`ios/` ディレクトリ）の Android ネイティブ移植
 | **v1.1** | Community / DM / Fancard / Points履歴 | Sprint 5, 6 |
 | **v1.2** | Admin機能 / 予約通知 / ログ | Sprint 7残り |
 | **v2.0** | IAP（Google Play Billing + バックエンド追加） | 将来 |
+
+## Sprint 4 成果物（2026-04-18 完了）
+
+- **アプリ内投票**: `VoteRepository` / `VoteListScreen` / `VoteDetailScreen` / `VoteRankingScreen`
+  - ステータスフィルタ（upcoming / active / ended）、App Check ヘッダ付きで `executeVote`
+  - 4種の業務エラーを `VoteErrorMapper` で `AppError.Vote.*` に正規化
+- **コレクション**: `CollectionRepository` / `VotesTabScreen`（Discover / Saved / My Collections）
+  - 検索・トレンド並び・タグフィルタ付き `DiscoverScreen`
+  - `CollectionDetailScreen` で保存/一括追加/共有/削除（楽観更新 + ロールバック）
+  - `CreateCollectionScreen` で作成/編集（カバー画像、タグ、visibility、タスク並べ替え）
+- **HOME**: 注目投票の横スクロールを追加（タスク/Bias と並列取得、注目取得失敗は HOME 全体を止めない R12）
+- **テスト**: **133 ユニットテスト全 green**（Sprint 3 時点の 52 から +81）
 
 ## 技術スタック
 
@@ -56,6 +68,7 @@ docs/android/
 ├── sprint1-spec.md              # Sprint 1 仕様（基盤 + Auth）
 ├── sprint2-spec.md              # Sprint 2 仕様（コアデータ層 + マスターデータ）
 ├── sprint3-spec.md              # Sprint 3 仕様（Tasks + Home + MainTab + OGP stub）
+├── sprint4-spec.md              # Sprint 4 仕様（In-app Votes + Collections）
 ├── ios-android-parity.md        # iOS ↔ Android 機能対応表
 └── design-tokens.md             # カラー/タイポ/スペーシングトークン
 ```

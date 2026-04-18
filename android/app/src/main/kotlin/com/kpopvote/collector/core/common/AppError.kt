@@ -28,6 +28,41 @@ sealed class AppError : Throwable() {
     data class Unknown(override val cause: Throwable) : AppError() {
         override val message: String? = cause.message
     }
+
+    /** Vote-specific business errors. Refined from 400 responses by VoteErrorMapper. */
+    sealed class Vote : AppError() {
+        object AlreadyVoted : Vote() {
+            override val message: String = "既に投票済みです"
+            private fun readResolve(): Any = AlreadyVoted
+        }
+
+        object InsufficientPoints : Vote() {
+            override val message: String = "ポイントが不足しています"
+            private fun readResolve(): Any = InsufficientPoints
+        }
+
+        object NotActive : Vote() {
+            override val message: String = "この投票は開催されていません"
+            private fun readResolve(): Any = NotActive
+        }
+
+        data class DailyLimitReached(override val message: String) : Vote()
+
+        object AppCheckFailed : Vote() {
+            override val message: String = "端末の検証に失敗しました。時間をおいて再度お試しください。"
+            private fun readResolve(): Any = AppCheckFailed
+        }
+    }
+
+    /** Collection-specific business errors. */
+    sealed class Collection : AppError() {
+        object NotOwner : Collection() {
+            override val message: String = "このコレクションを編集する権限がありません"
+            private fun readResolve(): Any = NotOwner
+        }
+
+        data class QuotaExceeded(override val message: String) : Collection()
+    }
 }
 
 /**

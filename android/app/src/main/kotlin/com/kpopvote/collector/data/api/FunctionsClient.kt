@@ -47,8 +47,18 @@ class FunctionsClient @Inject constructor(
         path: String,
         dataSerializer: KSerializer<R>,
         query: Map<String, String> = emptyMap(),
+    ): R = getMulti(path, dataSerializer, query.map { it.toPair() })
+
+    /**
+     * HTTP GET accepting repeated query params (e.g. `?tags=a&tags=b`).
+     * Preserves order and duplicate keys, which [Map]-based [get] cannot express.
+     */
+    suspend fun <R : Any> getMulti(
+        path: String,
+        dataSerializer: KSerializer<R>,
+        query: List<Pair<String, String>> = emptyList(),
     ): R = withContext(ioDispatcher) {
-        val url = buildUrl(path, query)
+        val url = buildUrlMulti(path, query)
         val request = Request.Builder()
             .url(url)
             .get()
@@ -62,15 +72,16 @@ class FunctionsClient @Inject constructor(
         path: String,
         bodyJson: String,
         dataSerializer: KSerializer<R>,
+        extraHeaders: Map<String, String> = emptyMap(),
     ): R = withContext(ioDispatcher) {
         val url = buildUrl(path, emptyMap())
         val body = bodyJson.toRequestBody(JSON_MEDIA_TYPE)
-        val request = Request.Builder()
+        val builder = Request.Builder()
             .url(url)
             .post(body)
             .bearerAuth()
-            .build()
-        execute(request, dataSerializer)
+        extraHeaders.forEach { (k, v) -> builder.header(k, v) }
+        execute(builder.build(), dataSerializer)
     }
 
     /**
@@ -78,11 +89,46 @@ class FunctionsClient @Inject constructor(
      * matters. Useful for endpoints like `deleteTask` where the server returns a confirmation
      * whose shape we don't depend on.
      */
-    suspend fun postIgnoringData(path: String, bodyJson: String) {
-        post(path, bodyJson, kotlinx.serialization.json.JsonElement.serializer())
+    suspend fun postIgnoringData(
+        path: String,
+        bodyJson: String,
+        extraHeaders: Map<String, String> = emptyMap(),
+    ) {
+        post(path, bodyJson, kotlinx.serialization.json.JsonElement.serializer(), extraHeaders)
     }
 
-    private fun buildUrl(path: String, query: Map<String, String>): okhttp3.HttpUrl {
+    /** HTTP PUT with JSON body. Used for full-resource updates (e.g. `PUT /collections/{id}`). */
+    suspend fun <R : Any> put(
+        path: String,
+        bodyJson: String,
+        dataSerializer: KSerializer<R>,
+    ): R = withContext(ioDispatcher) {
+        val url = buildUrl(path, emptyMap())
+        val body = bodyJson.toRequestBody(JSON_MEDIA_TYPE)
+        val request = Request.Builder()
+            .url(url)
+            .put(body)
+            .bearerAuth()
+            .build()
+        execute(request, dataSerializer)
+    }
+
+    /** HTTP DELETE. Only the envelope `success` is inspected. */
+    suspend fun delete(path: String): Unit = withContext(ioDispatcher) {
+        val url = buildUrl(path, emptyMap())
+        val request = Request.Builder()
+            .url(url)
+            .delete()
+            .bearerAuth()
+            .build()
+        execute(request, kotlinx.serialization.json.JsonElement.serializer())
+        Unit
+    }
+
+    private fun buildUrl(path: String, query: Map<String, String>): okhttp3.HttpUrl =
+        buildUrlMulti(path, query.map { it.toPair() })
+
+    private fun buildUrlMulti(path: String, query: List<Pair<String, String>>): okhttp3.HttpUrl {
         val builder = "$baseUrl/$path".toHttpUrl().newBuilder()
         query.forEach { (k, v) -> builder.addQueryParameter(k, v) }
         return builder.build()

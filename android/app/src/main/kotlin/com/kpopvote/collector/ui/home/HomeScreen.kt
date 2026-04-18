@@ -33,14 +33,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.kpopvote.collector.data.model.InAppVote
 import com.kpopvote.collector.data.model.VoteTask
 import com.kpopvote.collector.ui.tasks.components.TaskCard
+import com.kpopvote.collector.ui.vote.components.VoteCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onOpenTaskList: () -> Unit,
     onEditTask: (String) -> Unit,
+    onOpenVote: (String) -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -63,7 +66,7 @@ fun HomeScreen(
             ) {
                 item { ActiveTasksSection(state.activeTasks, onOpenTaskList, onEditTask, viewModel::completeTask) }
                 item { BiasSection(state.bias.map { it.artistName }) }
-                item { FeaturedVotesPlaceholder() }
+                item { FeaturedVotesSection(state.featuredVotes, onOpenVote) }
 
                 state.error?.let { err ->
                     item {
@@ -151,7 +154,10 @@ private fun BiasSection(biasNames: List<String>) {
 }
 
 @Composable
-private fun FeaturedVotesPlaceholder() {
+private fun FeaturedVotesSection(
+    votes: List<InAppVote>,
+    onOpenVote: (String) -> Unit,
+) {
     Column(Modifier.padding(horizontal = 16.dp)) {
         Text(
             text = "注目の投票",
@@ -159,7 +165,19 @@ private fun FeaturedVotesPlaceholder() {
             fontWeight = FontWeight.Bold,
         )
         Spacer(Modifier.height(8.dp))
-        EmptyStateBox(text = "Sprint 4 で実装予定")
+        if (votes.isEmpty()) {
+            EmptyStateBox(text = "現在注目の投票はありません")
+        } else {
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                items(votes, key = { it.voteId }) { vote ->
+                    VoteCard(
+                        vote = vote,
+                        onTap = { onOpenVote(vote.voteId) },
+                        modifier = Modifier.width(320.dp),
+                    )
+                }
+            }
+        }
     }
 }
 
