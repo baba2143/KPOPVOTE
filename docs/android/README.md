@@ -5,8 +5,8 @@ iOS 版 KPOPVOTE（`ios/` ディレクトリ）の Android ネイティブ移植
 ## プロジェクト状況
 
 - **開始日**: 2026-04-18
-- **現在のスプリント**: Sprint 4 完了（In-app Votes + Collections — v1.0 MVP 終盤）
-- **完了スプリント**: Sprint 1 ✅ / Sprint 2 ✅ / Sprint 3 ✅ / Sprint 4 ✅
+- **現在のスプリント**: Sprint 7 完了（Profile / Bias / InviteCode — v1.0 MVP 最終ピース）
+- **完了スプリント**: Sprint 1 ✅ / Sprint 2 ✅ / Sprint 3 ✅ / Sprint 4 ✅ / Sprint 7 ✅
 - **リリース戦略**: MVP 分割 A案
 - **初期リリース**: v1.0 MVP（課金なし、iOS収益化のみ）
 
@@ -18,6 +18,26 @@ iOS 版 KPOPVOTE（`ios/` ディレクトリ）の Android ネイティブ移植
 | **v1.1** | Community / DM / Fancard / Points履歴 | Sprint 5, 6 |
 | **v1.2** | Admin機能 / 予約通知 / ログ | Sprint 7残り |
 | **v2.0** | IAP（Google Play Billing + バックエンド追加） | 将来 |
+
+## Sprint 7 成果物（2026-04-18 完了）
+
+- **Profile タブ実体化**: `ProfileScreen` が `MainTabScreen` の Profile タブに配線
+  - アバター（72dp）/ 表示名 / メール / ポイントのヘッダ + 3 グループの行メニュー
+  - 利用規約 / プライバシーポリシーは Intent.ACTION_VIEW で外部ブラウザへ
+  - サインアウトは `AuthRepository.signOut()` + ナビゲーション連携
+- **プロフィール編集**: `ProfileEditScreen` / `ProfileEditViewModel`
+  - 表示名（1-30）/ 自己紹介（0-150）/ 写真（≤2MB、`ImageCompress.compressUri` で事前圧縮）
+  - R2 アップロードは `ProfileImageRepository`（パス: `profiles/{uid}/profile.jpg`）
+  - 4 種のバリデーション（REQUIRED / TOO_LONG × 2 / PHOTO_TOO_LARGE）
+- **推し設定**: `BiasSettingsScreen` / `BiasSettingsViewModel`
+  - マスターデータ（`MasterDataRepository.refreshGroups/refreshIdols` を並列取得）
+  - グループ / メンバー の 2 モードを SegmentedButton で切替、検索可
+  - `BiasRepository.getBias/setBias` で iOS 準拠の形式（group-level + member-level 混在）
+- **招待コード**: `InviteCodeScreen` / `InviteCodeViewModel`
+  - 自分のコードをモノスペース表示 + クリップボードコピー + ACTION_SEND で共有
+  - 他人のコード入力欄 + `applyInviteCode`、`InviteErrorMapper` が backend の 400/404 を
+    `AppError.Invite.AlreadyApplied / SelfInvite / NotFound` に正規化
+- **テスト**: **166 ユニットテスト全 green**（Sprint 4 時点の 133 から +33: Phase 1 Data 層 +12, Phase 4 ViewModel +21）
 
 ## Sprint 4 成果物（2026-04-18 完了）
 
@@ -69,6 +89,7 @@ docs/android/
 ├── sprint2-spec.md              # Sprint 2 仕様（コアデータ層 + マスターデータ）
 ├── sprint3-spec.md              # Sprint 3 仕様（Tasks + Home + MainTab + OGP stub）
 ├── sprint4-spec.md              # Sprint 4 仕様（In-app Votes + Collections）
+├── sprint7-spec.md              # Sprint 7 仕様（Profile + Bias + InviteCode）
 ├── ios-android-parity.md        # iOS ↔ Android 機能対応表
 └── design-tokens.md             # カラー/タイポ/スペーシングトークン
 ```

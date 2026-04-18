@@ -63,6 +63,21 @@ sealed class AppError : Throwable() {
 
         data class QuotaExceeded(override val message: String) : Collection()
     }
+
+    /** Invite-code business errors. Refined from 400 responses by InviteErrorMapper. */
+    sealed class Invite : AppError() {
+        object AlreadyApplied : Invite() {
+            override val message: String = "招待コードは既に適用されています"
+            private fun readResolve(): Any = AlreadyApplied
+        }
+
+        object SelfInvite : Invite() {
+            override val message: String = "自分の招待コードは使えません"
+            private fun readResolve(): Any = SelfInvite
+        }
+
+        data class NotFound(override val message: String) : Invite()
+    }
 }
 
 /**

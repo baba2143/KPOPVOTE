@@ -24,6 +24,9 @@ import com.kpopvote.collector.ui.tasks.AddEditTaskScreen
 import com.kpopvote.collector.ui.vote.VoteDetailScreen
 import com.kpopvote.collector.ui.vote.VoteListScreen
 import com.kpopvote.collector.ui.vote.VoteRankingScreen
+import com.kpopvote.collector.ui.profile.bias.BiasSettingsScreen
+import com.kpopvote.collector.ui.profile.edit.ProfileEditScreen
+import com.kpopvote.collector.ui.profile.invite.InviteCodeScreen
 import com.kpopvote.collector.ui.votestab.detail.CollectionDetailScreen
 import com.kpopvote.collector.ui.votestab.edit.CreateCollectionScreen
 
@@ -119,6 +122,24 @@ fun KpopvoteNavHost(
 
         composable<Route.CollectionEdit> {
             CreateCollectionScreen(
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable<Route.ProfileEdit> {
+            ProfileEditScreen(
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable<Route.BiasSettings> {
+            BiasSettingsScreen(
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable<Route.InviteCode> {
+            InviteCodeScreen(
                 onBack = { navController.popBackStack() },
             )
         }

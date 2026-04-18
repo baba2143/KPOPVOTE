@@ -17,6 +17,10 @@ object ApiPaths {
     // User profile
     const val UPDATE_USER_PROFILE = "updateUserProfile"
 
+    // Invite (Sprint 7)
+    const val GENERATE_INVITE_CODE = "generateInviteCode"
+    const val APPLY_INVITE_CODE = "applyInviteCode"
+
     // Tasks (Sprint 3)
     const val GET_USER_TASKS = "getUserTasks"
     const val REGISTER_TASK = "registerTask"
