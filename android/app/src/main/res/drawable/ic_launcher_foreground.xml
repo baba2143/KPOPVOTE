@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Placeholder glyph: heart outline. Replace with actual launcher art before Play Store submission. -->
+    <path
+        android:fillColor="#FF1F8F"
+        android:pathData="M54,76.8l-2.88,-2.62c-10.24,-9.3 -17,-15.44 -17,-22.96 0,-6.14 4.8,-10.94 10.94,-10.94 3.47,0 6.8,1.62 8.94,4.14 2.14,-2.52 5.47,-4.14 8.94,-4.14 6.14,0 10.94,4.8 10.94,10.94 0,7.52 -6.76,13.66 -17,22.96z" />
+</vector>
