@@ -4,6 +4,7 @@ import com.kpopvote.collector.core.common.AppError
 import com.kpopvote.collector.core.common.toAppError
 import com.kpopvote.collector.data.api.ApiPaths
 import com.kpopvote.collector.data.api.FunctionsClient
+import com.kpopvote.collector.di.CurrentTimeMillis
 import com.kpopvote.collector.data.model.ExternalAppListData
 import com.kpopvote.collector.data.model.ExternalAppMaster
 import com.kpopvote.collector.data.model.GroupListData
@@ -25,7 +26,7 @@ private const val CACHE_TTL_MILLIS = 10 * 60 * 1000L  // 10 minutes
 @Singleton
 class MasterDataRepositoryImpl @Inject constructor(
     private val client: FunctionsClient,
-    private val clock: () -> Long = System::currentTimeMillis,
+    @CurrentTimeMillis private val clock: () -> Long = System::currentTimeMillis,
 ) : MasterDataRepository {
 
     private val _idols = MutableStateFlow<MasterDataCache<IdolMaster>>(MasterDataCache.Idle)

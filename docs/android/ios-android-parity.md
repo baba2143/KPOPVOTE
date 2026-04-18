@@ -8,8 +8,8 @@ iOS 版 KPOPVOTE（`ios/KPOPVOTE/`）の構成要素を Android 版（`android/a
 |-------------|--------------------|-----------|---------------|
 | `AuthService` | `AuthRepository` | `data.repository` | **Sprint 1 ✅** |
 | `UserService` | `UserRepository` | `data.repository` | **Sprint 2 ✅** |
-| `OGPService` | `OgpRepository` | `data.repository` | Sprint 3 |
-| `TaskService` | `TaskRepository` | `data.repository` | Sprint 3 |
+| `OGPService` | `OgpRepository` | `data.repository` | **Sprint 3 ✅** |
+| `TaskService` | `TaskRepository` | `data.repository` | **Sprint 3 ✅** |
 | `MasterDataService` (idol/group/externalApp) | `MasterDataRepository` | `data.repository` | **Sprint 2 ✅** |
 | `BiasService` | `BiasRepository` | `data.repository` | **Sprint 2 ✅** |
 | `VoteService` / `VoteCreationService` / `VoteRankingService` | `VoteRepository` (集約) | `data.repository` | Sprint 4 |
@@ -34,11 +34,11 @@ iOS 版 KPOPVOTE（`ios/KPOPVOTE/`）の構成要素を Android 版（`android/a
 | `LoginView` | `LoginScreen` | `ui.auth.login` | **Sprint 1 ✅** |
 | `SignUpView` / `RegisterView` | `RegisterScreen` | `ui.auth.register` | **Sprint 1 ✅** |
 | `ContentView` (ルート) | `KpopvoteNavHost` | `navigation` | **Sprint 1 ✅** |
-| `MainTabView` | `MainTabScreen` (Sprint 3) | `ui.main` | Sprint 3 |
-| `HomeView` | `HomeScreen` | `ui.home` | Sprint 3 |
-| `TaskListView` | `TaskListScreen` | `ui.tasks` | Sprint 3 |
-| `TaskDetailView` | `TaskDetailScreen` | `ui.tasks` | Sprint 3 |
-| `AddTaskView` | `AddTaskScreen` | `ui.tasks` | Sprint 3 |
+| `MainTabView` | `MainTabScreen` | `ui.main` | **Sprint 3 ✅** |
+| `HomeView` | `HomeScreen` | `ui.home` | **Sprint 3 ✅** |
+| `TaskListView` | `TaskListScreen` | `ui.tasks` | **Sprint 3 ✅** |
+| `TaskDetailView` | `TaskDetailScreen` | `ui.tasks` | **Sprint 3 ✅** |
+| `AddTaskView` | `AddEditTaskScreen` | `ui.tasks` | **Sprint 3 ✅** |
 | `VotesTabView` (Discover/Saved/My) | `VotesTabsScreen` (Pager) | `ui.votes` | Sprint 4 |
 | `VoteDetailView` | `VoteDetailScreen` | `ui.votes` | Sprint 4 |
 | `VoteRankingView` | `VoteRankingScreen` | `ui.votes` | Sprint 4 |

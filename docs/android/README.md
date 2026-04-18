@@ -5,8 +5,8 @@ iOS 版 KPOPVOTE（`ios/` ディレクトリ）の Android ネイティブ移植
 ## プロジェクト状況
 
 - **開始日**: 2026-04-18
-- **現在のスプリント**: Sprint 2 完了（コアデータ層 + マスターデータ）
-- **完了スプリント**: Sprint 1 ✅ / Sprint 2 ✅
+- **現在のスプリント**: Sprint 3 完了（Tasks + Home + MainTab + OGP stub）
+- **完了スプリント**: Sprint 1 ✅ / Sprint 2 ✅ / Sprint 3 ✅
 - **リリース戦略**: MVP 分割 A案
 - **初期リリース**: v1.0 MVP（課金なし、iOS収益化のみ）
 
@@ -55,6 +55,7 @@ docs/android/
 ├── setup-guide.md               # 初期セットアップ手順（Firebase 等）
 ├── sprint1-spec.md              # Sprint 1 仕様（基盤 + Auth）
 ├── sprint2-spec.md              # Sprint 2 仕様（コアデータ層 + マスターデータ）
+├── sprint3-spec.md              # Sprint 3 仕様（Tasks + Home + MainTab + OGP stub）
 ├── ios-android-parity.md        # iOS ↔ Android 機能対応表
 └── design-tokens.md             # カラー/タイポ/スペーシングトークン
 ```

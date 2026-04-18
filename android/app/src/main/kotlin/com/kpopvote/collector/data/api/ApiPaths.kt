@@ -16,4 +16,12 @@ object ApiPaths {
 
     // User profile
     const val UPDATE_USER_PROFILE = "updateUserProfile"
+
+    // Tasks (Sprint 3)
+    const val GET_USER_TASKS = "getUserTasks"
+    const val REGISTER_TASK = "registerTask"
+    const val UPDATE_TASK = "updateTask"
+    const val UPDATE_TASK_STATUS = "updateTaskStatus"
+    const val DELETE_TASK = "deleteTask"
+    const val FETCH_TASK_OGP = "fetchTaskOGP"
 }

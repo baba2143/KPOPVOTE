@@ -19,7 +19,8 @@ import com.kpopvote.collector.core.auth.AuthState
 import com.kpopvote.collector.ui.auth.AuthGateViewModel
 import com.kpopvote.collector.ui.auth.login.LoginScreen
 import com.kpopvote.collector.ui.auth.register.RegisterScreen
-import com.kpopvote.collector.ui.home.HomePlaceholderScreen
+import com.kpopvote.collector.ui.main.MainTabScreen
+import com.kpopvote.collector.ui.tasks.AddEditTaskScreen
 
 @Composable
 fun KpopvoteNavHost(
@@ -63,10 +64,19 @@ fun KpopvoteNavHost(
 
         navigation<Route.MainGraph>(startDestination = Route.Home) {
             composable<Route.Home> {
-                HomePlaceholderScreen(
+                MainTabScreen(
+                    rootNavController = navController,
                     onSignOut = authGateViewModel::signOut,
                 )
             }
+        }
+
+        composable<Route.AddTask> {
+            // taskId is passed through Route.AddTask and surfaced via SavedStateHandle
+            // for AddEditTaskViewModel (see `savedStateHandle.get<String>("taskId")`).
+            AddEditTaskScreen(
+                onBack = { navController.popBackStack() },
+            )
         }
     }
 }
